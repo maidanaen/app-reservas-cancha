@@ -1,0 +1,16 @@
+D:\AppReservasCanchas\Infrastructure\bin\Debug\net9.0\Infrastructure.deps.json
+D:\AppReservasCanchas\Infrastructure\bin\Debug\net9.0\Infrastructure.dll
+D:\AppReservasCanchas\Infrastructure\bin\Debug\net9.0\Infrastructure.pdb
+D:\AppReservasCanchas\Infrastructure\bin\Debug\net9.0\Domain.dll
+D:\AppReservasCanchas\Infrastructure\bin\Debug\net9.0\Domain.pdb
+D:\AppReservasCanchas\Infrastructure\obj\Debug\net9.0\Infrastructure.csproj.AssemblyReference.cache
+D:\AppReservasCanchas\Infrastructure\obj\Debug\net9.0\Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+D:\AppReservasCanchas\Infrastructure\obj\Debug\net9.0\Infrastructure.AssemblyInfoInputs.cache
+D:\AppReservasCanchas\Infrastructure\obj\Debug\net9.0\Infrastructure.AssemblyInfo.cs
+D:\AppReservasCanchas\Infrastructure\obj\Debug\net9.0\Infrastructure.csproj.CoreCompileInputs.cache
+D:\AppReservasCanchas\Infrastructure\obj\Debug\net9.0\Infrastructure.sourcelink.json
+D:\AppReservasCanchas\Infrastructure\obj\Debug\net9.0\Infrastr.15EFFBFE.Up2Date
+D:\AppReservasCanchas\Infrastructure\obj\Debug\net9.0\Infrastructure.dll
+D:\AppReservasCanchas\Infrastructure\obj\Debug\net9.0\refint\Infrastructure.dll
+D:\AppReservasCanchas\Infrastructure\obj\Debug\net9.0\Infrastructure.pdb
+D:\AppReservasCanchas\Infrastructure\obj\Debug\net9.0\ref\Infrastructure.dll

@@ -1,0 +1,12 @@
+D:\AppReservasCanchas\Domain\bin\Debug\net9.0\Domain.deps.json
+D:\AppReservasCanchas\Domain\bin\Debug\net9.0\Domain.dll
+D:\AppReservasCanchas\Domain\bin\Debug\net9.0\Domain.pdb
+D:\AppReservasCanchas\Domain\obj\Debug\net9.0\Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\AppReservasCanchas\Domain\obj\Debug\net9.0\Domain.AssemblyInfoInputs.cache
+D:\AppReservasCanchas\Domain\obj\Debug\net9.0\Domain.AssemblyInfo.cs
+D:\AppReservasCanchas\Domain\obj\Debug\net9.0\Domain.csproj.CoreCompileInputs.cache
+D:\AppReservasCanchas\Domain\obj\Debug\net9.0\Domain.sourcelink.json
+D:\AppReservasCanchas\Domain\obj\Debug\net9.0\Domain.dll
+D:\AppReservasCanchas\Domain\obj\Debug\net9.0\refint\Domain.dll
+D:\AppReservasCanchas\Domain\obj\Debug\net9.0\Domain.pdb
+D:\AppReservasCanchas\Domain\obj\Debug\net9.0\ref\Domain.dll

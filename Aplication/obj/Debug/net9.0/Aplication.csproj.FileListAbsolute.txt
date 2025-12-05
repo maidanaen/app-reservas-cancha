@@ -1,0 +1,16 @@
+D:\AppReservasCanchas\Aplication\bin\Debug\net9.0\Aplication.deps.json
+D:\AppReservasCanchas\Aplication\bin\Debug\net9.0\Aplication.dll
+D:\AppReservasCanchas\Aplication\bin\Debug\net9.0\Aplication.pdb
+D:\AppReservasCanchas\Aplication\bin\Debug\net9.0\Domain.dll
+D:\AppReservasCanchas\Aplication\bin\Debug\net9.0\Domain.pdb
+D:\AppReservasCanchas\Aplication\obj\Debug\net9.0\Aplication.csproj.AssemblyReference.cache
+D:\AppReservasCanchas\Aplication\obj\Debug\net9.0\Aplication.GeneratedMSBuildEditorConfig.editorconfig
+D:\AppReservasCanchas\Aplication\obj\Debug\net9.0\Aplication.AssemblyInfoInputs.cache
+D:\AppReservasCanchas\Aplication\obj\Debug\net9.0\Aplication.AssemblyInfo.cs
+D:\AppReservasCanchas\Aplication\obj\Debug\net9.0\Aplication.csproj.CoreCompileInputs.cache
+D:\AppReservasCanchas\Aplication\obj\Debug\net9.0\Aplication.sourcelink.json
+D:\AppReservasCanchas\Aplication\obj\Debug\net9.0\Aplication.csproj.Up2Date
+D:\AppReservasCanchas\Aplication\obj\Debug\net9.0\Aplication.dll
+D:\AppReservasCanchas\Aplication\obj\Debug\net9.0\refint\Aplication.dll
+D:\AppReservasCanchas\Aplication\obj\Debug\net9.0\Aplication.pdb
+D:\AppReservasCanchas\Aplication\obj\Debug\net9.0\ref\Aplication.dll
