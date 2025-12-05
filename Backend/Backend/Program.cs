@@ -8,6 +8,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+// (Permiso para el Frontend):
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("PermitirFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // La dirección de tu Next.js
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 // 1. Agregar configuración de Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -33,6 +43,8 @@ if (app.Environment.IsDevelopment())
 // 3. He borrado el bloque de "app.MapOpenApi();" para que no estorbe.
 
 app.UseHttpsRedirection();
+// (Activar la regla):
+app.UseCors("PermitirFrontend");
 
 app.UseAuthorization();
 

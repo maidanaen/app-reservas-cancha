@@ -14,5 +14,8 @@ namespace Domain.Entities
         public decimal PrecioPorHora { get; set; }
         public bool Techada { get; set; }
         public string imgUrl { get; set; } = string.Empty;
+        // ---> NUEVOS CAMPOS DE HORARIO <---
+        public int HoraApertura { get; set; } // Ej: 8 (para las 08:00)
+        public int HoraCierre { get; set; }   // Ej: 23 (para las 23:00)
     }
 }
