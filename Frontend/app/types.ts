@@ -7,3 +7,11 @@ export interface Cancha {
   techada: boolean; // Ojo: en tu JSON vi "techada", asegúrate que coincida
   imgUrl: string;
 }
+export interface Reserva {
+  id: number;
+  fechaInicio: string; // Vienen como texto desde el JSON
+  fechaFin: string;
+  clienteNombre: string;
+  clienteTelefono: string;
+  canchaId: number;
+}

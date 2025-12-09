@@ -35,5 +35,24 @@ namespace Infrastructure.Repositories
             await _context.SaveChangesAsync();
             return cancha;
         }
-    }
+    
+        //  Actualizar
+        public async Task UpdateAsync(Cancha cancha)
+        {
+            _context.Canchas.Update(cancha);
+            await _context.SaveChangesAsync();
+        }
+
+        // Borrar
+        public async Task DeleteAsync(int id)
+        {
+            var cancha = await _context.Canchas.FindAsync(id);
+            if (cancha != null)
+            {
+                _context.Canchas.Remove(cancha);
+                await _context.SaveChangesAsync();
+            }
+        }
+    } 
 }
+    

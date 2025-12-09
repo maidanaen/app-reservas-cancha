@@ -1,172 +1,154 @@
-"use client"; // Necesario para que funcionen los botones y formularios
-
-import { useState } from "react";
-import { Save, ArrowLeft } from "lucide-react";
+"use client";
+import { useState, useEffect } from "react";
+import { Trash2, Edit, Plus, LogOut, MapPin, Calendar } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Cancha } from "../types"; 
 
-export default function AdminPage() {
-  // Estado para guardar los datos del formulario
-  const [formData, setFormData] = useState({
-    nombre: "",
-    deporte: "Padel", // Valor por defecto
-    precioPorHora: "",
-    techada: false,
-    imgUrl: "",
-    horaApertura: "10", // Valor por defecto sugerido
-    horaCierre: "02", // Valor por defecto sugerido
-  });
+export default function AdminDashboard() {
+  const [canchas, setCanchas] = useState<Cancha[]>([]);
+  const router = useRouter();
 
-  const [mensaje, setMensaje] = useState("");
+  // 1. Verificar si es admin y cargar datos
+  useEffect(() => {
+    const esAdmin = localStorage.getItem("esAdmin");
+    if (!esAdmin) {
+      router.push("/admin/login");
+    } else {
+      cargarCanchas();
+    }
+  }, []);
 
-  // Función que se ejecuta al enviar
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMensaje("Guardando...");
-
+  // Función para traer la lista del Backend
+  const cargarCanchas = async () => {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-      // 1. Convertimos los datos al formato que espera el Backend
-      const canchaNueva = {
-        ...formData,
-        precioPorHora: Number(formData.precioPorHora),
-        horaApertura: Number(formData.horaApertura),
-        horaCierre: Number(formData.horaCierre),
-      };
-
-      // 2. Enviamos al Backend (Cambia el puerto 7123 si es necesario)
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // Truco del certificado
-      
-      const res = await fetch("https://localhost:7123/api/Canchas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(canchaNueva),
-      });
-
+      // ⚠️ Chequea que el puerto 7123 sea el tuyo
+      const res = await fetch("https://localhost:7123/api/Canchas");
       if (res.ok) {
-        setMensaje("✅ ¡Cancha creada con éxito!");
-        // Limpiar formulario
-        setFormData({ ...formData, nombre: "", imgUrl: "", precioPorHora: "" });
-      } else {
-        setMensaje("❌ Error al guardar.");
+        const data = await res.json();
+        setCanchas(data);
       }
     } catch (error) {
-      setMensaje("❌ Error de conexión.");
+      console.error("Error al cargar canchas");
     }
   };
 
+  // Función para BORRAR
+  const handleDelete = async (id: number) => {
+    if (!confirm("¿Estás seguro de borrar esta cancha?")) return;
+
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    try {
+      const res = await fetch(`https://localhost:7123/api/Canchas/${id}`, {
+        method: "DELETE",
+      });
+      
+      if (res.ok) {
+        // Si se borró bien, recargamos la lista
+        cargarCanchas(); 
+      } else {
+        alert("No se pudo borrar");
+      }
+    } catch (error) {
+      alert("Error de conexión");
+    }
+  };
+
+  // Función para cerrar sesión
+  const handleLogout = () => {
+    localStorage.removeItem("esAdmin");
+    router.push("/admin/login");
+  };
+
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <Link href="/" className="flex items-center gap-2 text-gray-500 mb-6 hover:text-green-600">
-        <ArrowLeft size={20} /> Volver al Inicio
-      </Link>
+    <main className="min-h-screen bg-gray-50 p-8">
+      {/* Cabecera */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+            <h1 className="text-3xl font-bold text-gray-800">Panel de Control</h1>
+            <p className="text-gray-500">Gestiona tus complejos deportivos</p>
+        </div>
+        <div className="flex gap-3">
+             <Link href="/" className="px-4 py-2 text-gray-600 bg-white border rounded-lg hover:bg-gray-50">
+                Ver App
+            </Link>
 
-      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-sm p-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          🛠️ Administrar Canchas
-        </h1>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* Nombre */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la Cancha</label>
-            <input
-              type="text"
-              required
-              className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 outline-none"
-              placeholder="Ej: Cancha Central"
-              value={formData.nombre}
-              onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-            />
-          </div>
-
-          {/* Deporte */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Deporte</label>
-            <select
-              className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none"
-              value={formData.deporte}
-              onChange={(e) => setFormData({...formData, deporte: e.target.value})}
+            {/* 2. CAMBIO: BOTÓN NUEVO DE AGENDA */}
+            <Link 
+              href="/admin/reservas" 
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm transition"
             >
-              <option value="Padel">🎾 Padel</option>
-              <option value="Futbol">⚽ Fútbol</option>
-              <option value="Tenis">racket Tenis</option>
-            </select>
-          </div>
+              <Calendar size={18} /> Ver Agenda
+            </Link>
 
-          {/* Precio y Techada (en fila) */}
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Precio x Hora</label>
-              <input
-                type="number"
-                required
-                className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none"
-                placeholder="0.00"
-                value={formData.precioPorHora}
-                onChange={(e) => setFormData({...formData, precioPorHora: e.target.value})}
-              />
+            <button onClick={handleLogout} className="px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 flex items-center gap-2">
+                <LogOut size={18} /> Salir
+            </button>
+        </div>
+      </div>
+
+      {/* Tabla de Gestión */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h2 className="font-bold text-lg">Mis Canchas ({canchas.length})</h2>
+            
+            {/* Botón para ir a CREAR */}
+            <Link href="/admin/create" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                <Plus size={20} /> Nueva Cancha
+            </Link>
+        </div>
+
+        <table className="w-full text-left">
+            <thead className="bg-gray-50 text-gray-500 text-sm">
+                <tr>
+                    <th className="p-4">Cancha</th>
+                    <th className="p-4">Deporte</th>
+                    <th className="p-4">Precio</th>
+                    <th className="p-4 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+                {canchas.map((cancha) => (
+                    <tr key={cancha.id} className="hover:bg-gray-50">
+                        <td className="p-4">
+                            <p className="font-bold text-gray-800">{cancha.nombre}</p>
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                                {cancha.techada ? "🏠 Techada" : "☀️ Al aire libre"}
+                            </span>
+                        </td>
+                        <td className="p-4">
+                            <span className={`px-2 py-1 rounded-md text-xs font-bold ${cancha.deporte === 'Padel' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                                {cancha.deporte}
+                            </span>
+                        </td>
+                        <td className="p-4 font-medium text-gray-700">${cancha.precioPorHora}</td>
+                        <td className="p-4 text-right space-x-2">
+                            {/* Botón Editar */}
+                            <Link 
+                              href={`/admin/editar/${cancha.id}`} 
+                              className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition inline-block"
+                              title="Editar">
+                                <Edit size={18} />
+                            </Link>
+                            {/* Botón Borrar */}
+                            <button 
+                                onClick={() => handleDelete(cancha.id)}
+                                className="p-2 text-gray-400 hover:text-red-600 transition"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+        
+        {canchas.length === 0 && (
+            <div className="p-10 text-center text-gray-400">
+                No hay canchas cargadas todavía.
             </div>
-            <div className="flex items-center pt-6">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                  checked={formData.techada}
-                  onChange={(e) => setFormData({...formData, techada: e.target.checked})}
-                />
-                <span className="text-sm text-gray-700">¿Es Techada? 🏠</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Horarios */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Apertura (Hora)</label>
-              <input
-                type="number" min="0" max="23"
-                className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none"
-                value={formData.horaApertura}
-                onChange={(e) => setFormData({...formData, horaApertura: e.target.value})}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cierre (Hora)</label>
-              <input
-                type="number" min="0" max="23"
-                className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none"
-                value={formData.horaCierre}
-                onChange={(e) => setFormData({...formData, horaCierre: e.target.value})}
-              />
-            </div>
-          </div>
-
-          {/* URL Imagen */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">URL de la Foto</label>
-            <input
-              type="text"
-              className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none text-sm"
-              placeholder="https://..."
-              value={formData.imgUrl}
-              onChange={(e) => setFormData({...formData, imgUrl: e.target.value})}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition flex items-center justify-center gap-2"
-          >
-            <Save size={20} /> Guardar Cancha
-          </button>
-
-          {mensaje && (
-            <p className={`text-center font-medium ${mensaje.includes("exito") ? "text-green-600" : "text-red-500"}`}>
-              {mensaje}
-            </p>
-          )}
-
-        </form>
+        )}
       </div>
     </main>
   );

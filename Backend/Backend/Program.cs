@@ -30,7 +30,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Inyección de Dependencias (Repositorios)
 builder.Services.AddScoped<ICanchaRepository, CanchaRepository>();
-
+builder.Services.AddScoped<IReservaRepository, ReservaRepository>(); 
 var app = builder.Build();
 
 // 2. Activar Swagger UI (AQUÍ ESTABA EL ERROR)

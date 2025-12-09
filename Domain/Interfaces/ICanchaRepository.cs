@@ -13,5 +13,7 @@ namespace Domain.Interfaces
         Task<List<Cancha>> GetAllAsync(); // Traer todas
         Task<Cancha?> GetByIdAsync(int id); // Traer una por ID
         Task<Cancha> AddAsync(Cancha cancha); // Crear nueva
+        Task UpdateAsync(Cancha cancha); // Actualizar existente
+        Task DeleteAsync(int id); // Borrar por ID
     }
 }
