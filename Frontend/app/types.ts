@@ -5,6 +5,8 @@ export interface Cancha {
   deporte: string;
   precioPorHora: number;
   techada: boolean; // Ojo: en tu JSON vi "techada", asegúrate que coincida
+  horaApertura: number;
+  horaCierre: number;
   imgUrl: string;
 }
 export interface Reserva {

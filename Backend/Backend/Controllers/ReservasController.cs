@@ -47,5 +47,19 @@ namespace Backend.Controllers
                 return BadRequest(new { mensaje = ex.Message });
             }
         }
+        // DELETE: api/Reservas/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> CancelarReserva(int id)
+        {
+            await _repository.DeleteAsync(id);
+            return NoContent();
+        }
+
+
+
+
+
+
     }
+
 }

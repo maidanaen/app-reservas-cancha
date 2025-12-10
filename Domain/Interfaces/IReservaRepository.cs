@@ -15,5 +15,7 @@ namespace Domain.Interfaces
 
         // Para crear: Guardar reserva nueva (validando conflicto)
         Task<Reserva> AddAsync(Reserva reserva);
+        // Para eliminar: Borrar reserva por Id
+        Task DeleteAsync(int id);
     }
 }

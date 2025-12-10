@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Calendar, User, Phone, Clock, ArrowLeft, Search,Plus } from "lucide-react";
+import { Calendar, User, Phone, Clock, ArrowLeft, Search,Plus,Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Cancha, Reserva } from "../../types"; // Importamos los moldes
 
@@ -48,6 +48,26 @@ export default function ReservasPage() {
       }
     } catch (error) {
       console.error("Error buscando reservas");
+    }
+  };
+  // Función para Cancelar Turno
+  const handleCancelar = async (id: number) => {
+    if (!confirm("¿Seguro que quieres cancelar este turno? Se liberará el horario.")) return;
+
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    try {
+      const res = await fetch(`https://localhost:7123/api/Reservas/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        // Recargamos la lista para ver el hueco libre
+        buscarReservas();
+      } else {
+        alert("Error al cancelar.");
+      }
+    } catch (error) {
+      alert("Error de conexión.");
     }
   };
 
@@ -114,21 +134,36 @@ export default function ReservasPage() {
                     const horaFin = new Date(reserva.fechaFin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     
                     return (
-                        <div key={reserva.id} className="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-blue-500 flex flex-col gap-3">
-                            <div className="flex items-center gap-2 text-blue-700 font-bold text-lg">
-                                <Clock size={20} />
-                                {horaInicio} - {horaFin}
-                            </div>
-                            <div className="h-px bg-gray-100"></div>
-                            <div className="flex items-center gap-2 text-gray-700">
-                                <User size={18} className="text-gray-400" />
-                                <span className="font-medium">{reserva.clienteNombre}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-gray-500 text-sm">
-                                <Phone size={16} />
-                                <span>{reserva.clienteTelefono}</span>
-                            </div>
-                        </div>
+                      <div key={reserva.id} className="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-blue-500 flex flex-col gap-3 group relative">
+                          
+                          {/* --- CAMBIO AQUÍ: Cabecera con Hora y Botón Borrar --- */}
+                          <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-2 text-blue-700 font-bold text-lg">
+                                  <Clock size={20} />
+                                  {horaInicio} - {horaFin}
+                              </div>
+                              
+                              {/* Botón Borrar (Conectado a tu función handleCancelar) */}
+                              <button 
+                                  onClick={() => handleCancelar(reserva.id)}
+                                  className="text-gray-300 hover:text-red-500 transition p-1 hover:bg-red-50 rounded-full"
+                                  title="Cancelar Turno"
+                              >
+                                  <Trash2 size={20} />
+                              </button>
+                          </div>
+
+                          <div className="h-px bg-gray-100"></div>
+                          
+                          <div className="flex items-center gap-2 text-gray-700">
+                              <User size={18} className="text-gray-400" />
+                              <span className="font-medium">{reserva.clienteNombre}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-500 text-sm">
+                              <Phone size={16} />
+                              <span>{reserva.clienteTelefono}</span>
+                          </div>
+                      </div>
                     )
                 })}
             </div>

@@ -3,15 +3,18 @@
   "WorkspaceRootPath": "D:\\AppReservasCanchas\\Backend\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{E4D3E07F-E3A7-4055-8D48-7ECEC9BD375B}|..\\Infrastructure\\Infrastructure.csproj|d:\\appreservascanchas\\infrastructure\\repositories\\reservarepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{4B0E678C-F86D-4944-8E32-072B3C5793F8}|..\\Domain\\Domain.csproj|d:\\appreservascanchas\\domain\\interfaces\\ireservarepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{E4D3E07F-E3A7-4055-8D48-7ECEC9BD375B}|..\\Infrastructure\\Infrastructure.csproj|d:\\appreservascanchas\\infrastructure\\repositories\\reservarepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\reservascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\reservascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -21,7 +24,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Bookmark",
@@ -33,20 +36,33 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "IReservaRepository.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Domain\\Interfaces\\IReservaRepository.cs",
+              "RelativeDocumentMoniker": "..\\Domain\\Interfaces\\IReservaRepository.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Domain\\Interfaces\\IReservaRepository.cs",
+              "RelativeToolTip": "..\\Domain\\Interfaces\\IReservaRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-09T23:10:06.708Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 2,
               "Title": "ReservasController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ReservasController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\ReservasController.cs",
               "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ReservasController.cs",
               "RelativeToolTip": "Backend\\Controllers\\ReservasController.cs",
-              "ViewState": "AgIAAA0AAAAAAAAAAAAgwAoAAAA4AAAAAAAAAA==",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAwwDcAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-09T15:56:05.534Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Program.cs",
               "RelativeDocumentMoniker": "Backend\\Program.cs",
@@ -54,18 +70,17 @@
               "RelativeToolTip": "Backend\\Program.cs",
               "ViewState": "AgIAABIAAAAAAAAAAAAAACAAAABFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T15:54:17.669Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-09T15:54:17.669Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "ReservaRepository.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Infrastructure\\Repositories\\ReservaRepository.cs",
               "RelativeDocumentMoniker": "..\\Infrastructure\\Repositories\\ReservaRepository.cs",
               "ToolTip": "D:\\AppReservasCanchas\\Infrastructure\\Repositories\\ReservaRepository.cs",
               "RelativeToolTip": "..\\Infrastructure\\Repositories\\ReservaRepository.cs",
-              "ViewState": "AgIAABsAAAAAAAAAAADwvy8AAAAMAAAAAAAAAA==",
+              "ViewState": "AgIAABAAAAAAAAAAAAA1wCYAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-09T15:52:35.01Z",
               "EditorCaption": ""

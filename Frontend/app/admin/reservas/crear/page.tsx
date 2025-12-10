@@ -46,8 +46,8 @@ export default function NuevaReservaPage() {
     // Calculamos la diferencia en minutos
     const diferenciaMinutos = (fin.getTime() - inicio.getTime()) / (1000 * 60);
 
-    if (diferenciaMinutos < 90) {
-      setMensaje("⚠️ Error: El turno debe durar al menos 1 hora y 30 minutos.");
+    if (diferenciaMinutos < 60) {
+      setMensaje("⚠️ Error: El turno debe durar al menos 1 hora ");
       return;
     }
 
@@ -169,7 +169,7 @@ export default function NuevaReservaPage() {
           </div>
             
           <p className="text-xs text-gray-400 text-center">
-             Mínimo 1 hora y 30 minutos de duración.
+             Mínimo 1 hora de duración.
           </p>
 
           <button type="submit" className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 mt-4 shadow-lg shadow-blue-200">

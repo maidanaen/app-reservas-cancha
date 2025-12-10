@@ -21,10 +21,19 @@ namespace Infrastructure.Repositories
 
         public async Task<List<Reserva>> GetByCanchaYFechaAsync(int canchaId, DateTime fecha)
         {
-            // Buscamos reservas que coincidan en Día, Mes y Año
+            // Definimos el rango del día que estamos consultando (de 00:00 a 00:00 del día siguiente)
+            var inicioDia = fecha.Date;
+            var finDia = fecha.Date.AddDays(1);
+
+            // Buscamos reservas que "choquen" con este día.
+            // Lógica: (Empieza antes de que termine el día) Y (Termina después de que empiece el día)
+            // Esto incluye:
+            // 1. Las normales (empiezan y terminan hoy).
+            // 2. Las que empezaron ayer y siguen hoy (Cruce de medianoche).
             return await _context.Reservas
                 .Where(r => r.CanchaId == canchaId
-                            && r.FechaInicio.Date == fecha.Date)
+                            && r.FechaInicio < finDia
+                            && r.FechaFin > inicioDia)
                 .OrderBy(r => r.FechaInicio)
                 .ToListAsync();
         }
@@ -47,6 +56,16 @@ namespace Infrastructure.Repositories
             _context.Reservas.Add(reserva);
             await _context.SaveChangesAsync();
             return reserva;
+        }
+        // Eliminar reserva por Id
+        public async Task DeleteAsync(int id)
+        {
+            var reserva = await _context.Reservas.FindAsync(id);
+            if (reserva != null)
+            {
+                _context.Reservas.Remove(reserva);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

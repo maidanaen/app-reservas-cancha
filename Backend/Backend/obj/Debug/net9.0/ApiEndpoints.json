@@ -168,6 +168,22 @@
   },
   {
     "ContainingType": "Backend.Controllers.ReservasController",
+    "Method": "CancelarReserva",
+    "RelativePath": "api/Reservas/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.ReservasController",
     "Method": "VerTurnos",
     "RelativePath": "api/Reservas/cancha/{canchaId}",
     "HttpMethod": "GET",

@@ -1,5 +1,6 @@
 import { Search, MapPin, Calendar, Trophy, Users } from "lucide-react";
 import { Cancha } from "./types"; // Importamos el molde
+import Link from "next/link";
 
 // Función para pedir los datos al Backend
 async function getCanchas(): Promise<Cancha[]> {
@@ -29,22 +30,7 @@ export default async function Home() {
     <main className="min-h-screen bg-gray-50 pb-20">
       {/* --- HEADER SUPERIOR (ESTO QUEDA IGUAL) --- */}
       <header className="bg-white p-6 rounded-b-3xl shadow-sm">
-        <div className="flex justify-between items-center mb-4 text-gray-500 text-sm">
-          <div className="flex items-center gap-1">
-            <MapPin size={16} className="text-green-600" />
-            <span>San Luis del Palmar</span>
-          </div>
-          <button className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition">
-            🔔
-          </button>
-        </div>
-
-        <h1 className="text-2xl font-bold text-gray-800">
-          ¡Hola Enzo! 👋
-          <br />
-          <span className="text-gray-500 text-lg font-normal">¿Qué hacemos hoy?</span>
-        </h1>
-
+        
         <div className="mt-6 relative">
           <input 
             type="text" 
@@ -113,9 +99,11 @@ export default async function Home() {
                     </p>
                   </div>
                   
-                  <button className="mt-2 text-sm font-semibold text-green-600 text-left hover:underline">
-                    Ver disponibilidad →
-                  </button>
+                  <Link 
+                      href={`/reservar/${cancha.id}`}
+                      className="mt-2 text-sm font-semibold text-green-600 text-left hover:underline inline-block">
+                      Ver disponibilidad →
+                  </Link>
                 </div>
               </div>
             ))
