@@ -54,7 +54,13 @@ namespace Backend.Controllers
             await _repository.DeleteAsync(id);
             return NoContent();
         }
-
+        // GET: api/Reservas/cliente/123456789
+        [HttpGet("cliente/{telefono}")]
+        public async Task<ActionResult<List<Reserva>>> VerMisReservas(string telefono)
+        {
+            var reservas = await _repository.GetByClienteTelefonoAsync(telefono);
+            return Ok(reservas);
+        }
 
 
 

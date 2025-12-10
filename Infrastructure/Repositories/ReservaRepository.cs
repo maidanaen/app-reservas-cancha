@@ -67,5 +67,14 @@ namespace Infrastructure.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+        public async Task<List<Reserva>> GetByClienteTelefonoAsync(string telefono)
+        {
+            // Buscamos por teléfono exacto Y que la fecha sea futura (o de hoy)
+            return await _context.Reservas
+                .Include(r => r.Cancha) // Incluimos datos de la cancha para mostrar el nombre
+                .Where(r => r.ClienteTelefono == telefono && r.FechaInicio >= DateTime.Today)
+                .OrderBy(r => r.FechaInicio)
+                .ToListAsync();
+        }
     }
 }
