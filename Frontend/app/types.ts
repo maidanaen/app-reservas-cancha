@@ -16,4 +16,5 @@ export interface Reserva {
   clienteNombre: string;
   clienteTelefono: string;
   canchaId: number;
+  cancha?: Cancha;
 }

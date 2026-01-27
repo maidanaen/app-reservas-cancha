@@ -2,6 +2,7 @@ using Domain.Interfaces;
 using Infrastructure.Persistence;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Backend.Services;
 // using Swashbuckle.AspNetCore.SwaggerGen; // No es estrictamente necesario aquí si no configuras opciones avanzadas
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,7 +31,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Inyección de Dependencias (Repositorios)
 builder.Services.AddScoped<ICanchaRepository, CanchaRepository>();
-builder.Services.AddScoped<IReservaRepository, ReservaRepository>(); 
+builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+builder.Services.AddScoped<MercadoPagoService>();
 var app = builder.Build();
 
 // 2. Activar Swagger UI (AQUÍ ESTABA EL ERROR)

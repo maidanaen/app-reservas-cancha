@@ -76,5 +76,27 @@ namespace Infrastructure.Repositories
                 .OrderBy(r => r.FechaInicio)
                 .ToListAsync();
         }
+        public async Task<Reserva?> GetByIdAsync(int id)
+        {
+            // AQUÍ ESTÁ LA CLAVE: .Include(r => r.Consumos)
+            return await _context.Reservas
+                .Include(r => r.Consumos)
+                .FirstOrDefaultAsync(r => r.Id == id);
+        }
+
+        public async Task UpdateAsync(Reserva reserva)
+        {
+            _context.Reservas.Update(reserva);
+            await _context.SaveChangesAsync();
+        }
+        // Obtener todas las reservas de una fecha específica
+        public async Task<List<Reserva>> GetAllByFechaAsync(DateTime fecha)
+        {
+            return await _context.Reservas
+                .Include(r => r.Consumos) // Traemos consumos por si queremos ver detalles
+                .Where(r => r.FechaInicio.Date == fecha.Date)
+                .OrderBy(r => r.FechaInicio)
+                .ToListAsync();
+        }
     }
 }

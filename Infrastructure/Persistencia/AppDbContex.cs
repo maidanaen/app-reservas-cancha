@@ -17,5 +17,6 @@ namespace Infrastructure.Persistence
         public DbSet<Cancha> Canchas { get; set; }
         public DbSet<Reserva> Reservas { get; set; }
         public DbSet<Usuario> Usuarios { get; set; }
+        public DbSet<Consumo> Consumos { get; set; }
     }
 }

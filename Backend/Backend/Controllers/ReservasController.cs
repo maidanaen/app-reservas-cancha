@@ -61,11 +61,48 @@ namespace Backend.Controllers
             var reservas = await _repository.GetByClienteTelefonoAsync(telefono);
             return Ok(reservas);
         }
+        // GET: api/Reservas/5 (Para la pantalla de Detalle/Comanda)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Reserva>> GetReserva(int id)
+        {
+            var reserva = await _repository.GetByIdAsync(id);
 
+            if (reserva == null)
+            {
+                return NotFound();
+            }
 
+            return Ok(reserva);
+        }
 
+        // PUT: api/Reservas/5 (Para guardar los Pagos de Caja)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> ActualizarReserva(int id, Reserva reserva)
+        {
+            if (id != reserva.Id)
+            {
+                return BadRequest("El ID no coincide");
+            }
 
+            try
+            {
+                await _repository.UpdateAsync(reserva);
+            }
+            catch (Exception)
+            {
+                // Manejo básico de errores
+                return NotFound();
+            }
+
+            return NoContent();
+        }
+        // GET: api/Reservas/dia/2026-01-27
+        [HttpGet("dia/{fecha}")]
+        public async Task<ActionResult<List<Reserva>>> VerCajaDiaria(DateTime fecha)
+        {
+            var reservas = await _repository.GetAllByFechaAsync(fecha);
+            return Ok(reservas);
+        }
 
     }
-
 }

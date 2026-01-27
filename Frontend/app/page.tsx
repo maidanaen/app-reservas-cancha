@@ -50,7 +50,14 @@ export default async function Home() {
             </div>
             <span className="text-sm font-medium text-gray-700">Reservar</span>
           </button>
-
+          {/* Botón 2: Mis Turnos (Antes Partidos) */}
+          <Link href="/mis-reservas" className="flex-1 flex flex-col items-center gap-2 bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
+            <div className="bg-orange-100 p-3 rounded-full text-orange-600">
+              <Users size={24} />
+            </div>
+            <span className="text-sm font-medium text-gray-700">Mis Turnos</span>
+          </Link>
+          
           <button className="flex-1 flex flex-col items-center gap-2 bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
             <div className="bg-orange-100 p-3 rounded-full text-orange-600">
               <Users size={24} />

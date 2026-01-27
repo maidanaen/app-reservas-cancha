@@ -1,189 +1,236 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Save, ArrowLeft, Clock } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Cancha } from "../../../types"; 
+import { Save, ArrowLeft, CalendarPlus, DollarSign, Clock, CreditCard } from "lucide-react";
+import Link from "next/link";
 
-export default function NuevaReservaPage() {
+interface Cancha {
+  id: number;
+  nombre: string;
+  precioPorHora: number;
+}
+
+export default function CrearReservaAdmin() {
   const router = useRouter();
   const [canchas, setCanchas] = useState<Cancha[]>([]);
-  const [mensaje, setMensaje] = useState("");
-
-  // Datos del formulario
-  const [formData, setFormData] = useState({
-    canchaId: 0,
+  const [cargando, setCargando] = useState(false);
+  
+  // Estado del formulario
+  const [form, setForm] = useState({
+    canchaId: "",
     clienteNombre: "",
     clienteTelefono: "",
-    fecha: new Date().toISOString().split("T")[0], // Hoy: YYYY-MM-DD
-    horaInicio: "14:00", // Hora inicio por defecto
-    horaFin: "15:30",    // Hora fin por defecto (1:30hs después)
+    fecha: new Date().toISOString().split("T")[0], // Fecha de hoy por defecto
+    horaInicio: "14:00",
+    horaFin: "15:00", // Una hora después por defecto
+    metodoPago: "Efectivo" // Valor por defecto
   });
 
-  // 1. Cargar canchas al iniciar
+  // Cargar las canchas
   useEffect(() => {
-    async function cargarCanchas() {
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      const res = await fetch("https://localhost:7123/api/Canchas");
-      if (res.ok) {
-        const data = await res.json();
-        setCanchas(data);
-        if (data.length > 0) setFormData(prev => ({...prev, canchaId: data[0].id}));
-      }
-    }
-    cargarCanchas();
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    fetch("https://localhost:7123/api/Canchas")
+      .then(res => res.json())
+      .then(data => setCanchas(data))
+      .catch(err => console.error("Error cargando canchas", err));
   }, []);
 
-  // 2. Enviar Reserva
+  // Manejar cambios en inputs normales
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMensaje("Validando...");
+    setCargando(true);
 
-    // A. VALIDACIÓN DE TIEMPO MÍNIMO (1 Hora y Media)
-    const inicio = new Date(`2000-01-01T${formData.horaInicio}`);
-    const fin = new Date(`2000-01-01T${formData.horaFin}`);
+    // Validación básica de horario
+    if (form.horaFin <= form.horaInicio) {
+        alert("⚠️ La hora de finalización debe ser posterior a la de inicio.");
+        setCargando(false);
+        return;
+    }
     
-    // Calculamos la diferencia en minutos
-    const diferenciaMinutos = (fin.getTime() - inicio.getTime()) / (1000 * 60);
+    // Armar las fechas en formato ISO para C#
+    const fechaInicioISO = `${form.fecha}T${form.horaInicio}:00`;
+    const fechaFinISO = `${form.fecha}T${form.horaFin}:00`;
 
-    if (diferenciaMinutos < 60) {
-      setMensaje("⚠️ Error: El turno debe durar al menos 1 hora ");
-      return;
-    }
-
-    if (diferenciaMinutos <= 0) {
-      setMensaje("⚠️ Error: La hora de fin debe ser mayor a la de inicio.");
-      return;
-    }
-
-    // B. Construimos las fechas completas para el Backend
-    // Backend espera: "2025-10-20T14:30:00"
-    const inicioIso = `${formData.fecha}T${formData.horaInicio}:00`;
-    const finIso = `${formData.fecha}T${formData.horaFin}:00`;
-
-    const reservaNueva = {
-      canchaId: Number(formData.canchaId),
-      clienteNombre: formData.clienteNombre,
-      clienteTelefono: formData.clienteTelefono,
-      fechaInicio: inicioIso,
-      fechaFin: finIso
+    // Objeto que enviamos al Backend
+    const nuevaReserva = {
+      canchaId: Number(form.canchaId),
+      clienteNombre: form.clienteNombre,
+      clienteTelefono: form.clienteTelefono,
+      fechaInicio: fechaInicioISO,
+      fechaFin: fechaFinISO,
+      metodoPago: form.metodoPago // ¡Aquí va el dato financiero!
     };
 
     try {
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      const res = await fetch("https://localhost:7123/api/Reservas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(reservaNueva),
-      });
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+        const res = await fetch("https://localhost:7123/api/Reservas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(nuevaReserva)
+        });
 
-      if (res.ok) {
-        setMensaje("✅ ¡Reserva creada con éxito!");
-        setTimeout(() => {
-          router.push("/admin/reservas");
-        }, 1500);
-      } else {
-        const errorData = await res.json();
-        setMensaje(`❌ Error: ${errorData.mensaje || "Horario ocupado"}`);
-      }
+        if (res.ok) {
+            alert("✅ Turno registrado con éxito");
+            router.push("/admin/reservas");
+        } else {
+            alert("❌ Error: Verifica que el horario esté disponible.");
+        }
     } catch (error) {
-      setMensaje("❌ Error de conexión");
+        alert("Error de conexión con el servidor");
+    } finally {
+        setCargando(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <Link href="/admin/reservas" className="flex items-center gap-2 text-gray-500 mb-6 hover:text-blue-600">
-        <ArrowLeft size={20} /> Volver a la Agenda
-      </Link>
-
-      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-sm p-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-            <Clock className="text-blue-600" /> Nuevo Turno Flexible
-        </h1>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* Cancha */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cancha</label>
-            <select
-              className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none"
-              value={formData.canchaId}
-              onChange={(e) => setFormData({...formData, canchaId: Number(e.target.value)})}
-            >
-              {canchas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </select>
-          </div>
-
-          {/* Cliente */}
-          <div className="grid grid-cols-2 gap-4">
+    <div className="min-h-screen bg-gray-50 p-6 flex justify-center items-start">
+      <div className="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-lg border border-gray-100 mt-6">
+        
+        {/* Encabezado */}
+        <div className="flex items-center gap-4 mb-8 border-b pb-4">
+            <Link href="/admin/reservas" className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition">
+                <ArrowLeft size={24} />
+            </Link>
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Cliente</label>
-                <input type="text" required className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none"
-                    value={formData.clienteNombre}
-                    onChange={(e) => setFormData({...formData, clienteNombre: e.target.value})}
-                />
+                <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    Nueva Reserva Manual
+                </h1>
+                <p className="text-sm text-gray-500">Registra un turno telefónico o presencial</p>
             </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                <input type="text" className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none"
-                    value={formData.clienteTelefono}
-                    onChange={(e) => setFormData({...formData, clienteTelefono: e.target.value})}
-                />
+            <div className="ml-auto bg-blue-50 p-3 rounded-full text-blue-600">
+                <CalendarPlus size={28} />
             </div>
-          </div>
+        </div>
 
-          {/* Fecha */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha del Turno</label>
-            <input type="date" required className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none"
-                value={formData.fecha}
-                onChange={(e) => setFormData({...formData, fecha: e.target.value})}
-            />
-          </div>
-
-          {/* Horario Flexible */}
-          <div className="flex gap-4 items-end">
-            <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Desde (Inicio)</label>
-                <input 
-                    type="time" 
-                    required 
-                    className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none text-center font-bold text-gray-700"
-                    value={formData.horaInicio}
-                    onChange={(e) => setFormData({...formData, horaInicio: e.target.value})}
-                />
-            </div>
-            <div className="pb-4 text-gray-400">➜</div>
-            <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hasta (Fin)</label>
-                <input 
-                    type="time" 
-                    required 
-                    className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none text-center font-bold text-gray-700"
-                    value={formData.horaFin}
-                    onChange={(e) => setFormData({...formData, horaFin: e.target.value})}
-                />
-            </div>
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
             
-          <p className="text-xs text-gray-400 text-center">
-             Mínimo 1 hora de duración.
-          </p>
+            {/* SECCIÓN 1: DATOS DE CANCHA Y CLIENTE */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Seleccionar Cancha</label>
+                    <select 
+                        name="canchaId"
+                        className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                        value={form.canchaId}
+                        onChange={handleChange}
+                        required
+                    >
+                        <option value="">-- Elegir cancha --</option>
+                        {canchas.map((c) => (
+                            <option key={c.id} value={c.id}>
+                                {c.nombre} (${c.precioPorHora}/hora)
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-          <button type="submit" className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 mt-4 shadow-lg shadow-blue-200">
-            <Save size={20} /> Confirmar Reserva
-          </button>
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre Cliente</label>
+                    <input type="text" name="clienteNombre" required 
+                        className="w-full border border-gray-300 p-3 rounded-xl focus:ring-blue-500 outline-none"
+                        placeholder="Ej: Juan Pérez"
+                        value={form.clienteNombre}
+                        onChange={handleChange}
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
+                    <input type="tel" name="clienteTelefono" required 
+                        className="w-full border border-gray-300 p-3 rounded-xl focus:ring-blue-500 outline-none"
+                        placeholder="Ej: 3794..."
+                        value={form.clienteTelefono}
+                        onChange={handleChange}
+                    />
+                </div>
+            </div>
 
-          {mensaje && (
-             <div className={`text-center font-bold mt-2 p-3 rounded-lg border ${mensaje.includes("Error") ? "bg-red-50 text-red-600 border-red-100" : "bg-green-50 text-green-600 border-green-100"}`}>
-                {mensaje}
-             </div>
-          )}
+            {/* SECCIÓN 2: FECHA Y HORARIOS */}
+            <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+                <div className="flex items-center gap-2 mb-4 text-blue-800 font-bold">
+                    <Clock size={20} />
+                    <h3>Configuración de Horario</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-xs font-bold text-blue-700 mb-1">FECHA</label>
+                        <input type="date" name="fecha" required 
+                            className="w-full border border-blue-200 p-3 rounded-lg focus:ring-blue-500 outline-none"
+                            value={form.fecha}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-green-700 mb-1">HORA INICIO</label>
+                        <input type="time" name="horaInicio" required 
+                            className="w-full border border-green-200 p-3 rounded-lg focus:ring-green-500 outline-none bg-green-50"
+                            value={form.horaInicio}
+                            onChange={handleChange}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-red-700 mb-1">HORA FIN</label>
+                        <input type="time" name="horaFin" required 
+                            className="w-full border border-red-200 p-3 rounded-lg focus:ring-red-500 outline-none bg-red-50"
+                            value={form.horaFin}
+                            onChange={handleChange}
+                        />
+                    </div>
+                </div>
+            </div>
 
+            {/* SECCIÓN 3: MÉTODO DE PAGO */}
+            <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200">
+                <div className="flex items-center gap-2 mb-3 text-gray-700 font-bold">
+                    <CreditCard size={20} />
+                    <h3>Forma de Pago</h3>
+                </div>
+                
+                <div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {/* Botones de selección */}
+                        {["Efectivo", "Transferencia", "Débito", "Crédito"].map((metodo) => (
+                            <label key={metodo} className={`
+                                cursor-pointer border rounded-xl p-3 text-center transition flex flex-col items-center gap-1 select-none
+                                ${form.metodoPago === metodo 
+                                    ? "bg-black text-white border-black ring-2 ring-offset-1 ring-black" 
+                                    : "bg-white text-gray-600 border-gray-200 hover:bg-gray-100"}
+                            `}>
+                                <input 
+                                    type="radio" 
+                                    name="metodoPago" 
+                                    value={metodo} 
+                                    checked={form.metodoPago === metodo}
+                                    onChange={handleChange}
+                                    className="hidden"
+                                />
+                                <span className="font-medium text-sm">{metodo}</span>
+                                {metodo === "Efectivo" && <DollarSign size={14} />}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* BOTÓN FINAL */}
+            <button 
+                type="submit" 
+                disabled={cargando}
+                className={`w-full py-4 rounded-xl font-bold text-lg flex justify-center items-center gap-2 text-white shadow-lg transition transform hover:scale-[1.01] ${
+                    cargando ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-gray-800"
+                }`}
+            >
+                {cargando ? "Guardando..." : <><Save size={20} /> Confirmar Reserva</>}
+            </button>
         </form>
       </div>
-    </main>
+    </div>
   );
 }

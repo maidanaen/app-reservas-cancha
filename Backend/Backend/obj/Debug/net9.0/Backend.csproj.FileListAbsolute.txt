@@ -9,6 +9,7 @@ D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Backend.pdb
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Azure.Core.dll
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Azure.Identity.dll
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Humanizer.dll
+D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\MercadoPago.dll
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Microsoft.AspNetCore.OpenApi.dll
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Microsoft.Bcl.AsyncInterfaces.dll
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Microsoft.Build.Locator.dll
@@ -37,6 +38,10 @@ D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Microsoft.OpenApi.dll
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Microsoft.SqlServer.Server.dll
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Microsoft.Win32.SystemEvents.dll
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Mono.TextTemplating.dll
+D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Newtonsoft.Json.dll
+D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
+D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\System.ClientModel.dll
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\System.CodeDom.dll
 D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\System.Composition.AttributedModel.dll
@@ -160,6 +165,3 @@ D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\refint\Backend.dll
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\Backend.pdb
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\Backend.genruntimeconfig.cache
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\ref\Backend.dll
-D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
-D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
-D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll

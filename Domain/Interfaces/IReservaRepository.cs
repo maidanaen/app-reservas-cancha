@@ -19,5 +19,8 @@ namespace Domain.Interfaces
         Task DeleteAsync(int id);
         // Buscar reservas por teléfono del cliente
         Task<List<Reserva>> GetByClienteTelefonoAsync(string telefono);
+        Task<Reserva?> GetByIdAsync(int id); // Para ver el detalle
+        Task UpdateAsync(Reserva reserva);   // Para guardar los pagos
+        Task<List<Reserva>> GetAllByFechaAsync(DateTime fecha);
     }
 }

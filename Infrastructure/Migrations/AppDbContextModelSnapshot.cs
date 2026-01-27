@@ -59,6 +59,38 @@ namespace Infrastructure.Migrations
                     b.ToTable("Canchas");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Consumo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Cantidad")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Jugador")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Precio")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Producto")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ReservaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReservaId");
+
+                    b.ToTable("Consumos");
+                });
+
             modelBuilder.Entity("Domain.Entities.Reserva", b =>
                 {
                     b.Property<int>("Id")
@@ -78,11 +110,24 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal>("CobradoDigital")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("CobradoEfectivo")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("CobradoTransferencia")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime>("FechaFin")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("MetodoPago")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -103,13 +148,22 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UserName")
+                    b.Property<string>("userName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
                     b.ToTable("Usuarios");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Consumo", b =>
+                {
+                    b.HasOne("Domain.Entities.Reserva", null)
+                        .WithMany("Consumos")
+                        .HasForeignKey("ReservaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Entities.Reserva", b =>
@@ -121,6 +175,11 @@ namespace Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Cancha");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Reserva", b =>
+                {
+                    b.Navigation("Consumos");
                 });
 #pragma warning restore 612, 618
         }

@@ -15,6 +15,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\consumoscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\consumoscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -24,7 +28,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 5,
           "Children": [
             {
               "$type": "Bookmark",
@@ -36,15 +40,41 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Program.cs",
+              "RelativeDocumentMoniker": "Backend\\Program.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Program.cs",
+              "RelativeToolTip": "Backend\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T03:45:32.162Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ReservaRepository.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Infrastructure\\Repositories\\ReservaRepository.cs",
+              "RelativeDocumentMoniker": "..\\Infrastructure\\Repositories\\ReservaRepository.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Infrastructure\\Repositories\\ReservaRepository.cs",
+              "RelativeToolTip": "..\\Infrastructure\\Repositories\\ReservaRepository.cs",
+              "ViewState": "AgIAAEkAAAAAAAAAAAAwwFsAAAA9AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-27T03:14:10.69Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 2,
               "Title": "IReservaRepository.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Domain\\Interfaces\\IReservaRepository.cs",
               "RelativeDocumentMoniker": "..\\Domain\\Interfaces\\IReservaRepository.cs",
               "ToolTip": "D:\\AppReservasCanchas\\Domain\\Interfaces\\IReservaRepository.cs",
               "RelativeToolTip": "..\\Domain\\Interfaces\\IReservaRepository.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAALAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAA/AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T23:10:06.708Z",
+              "WhenOpened": "2026-01-27T03:12:53.575Z",
               "EditorCaption": ""
             },
             {
@@ -55,34 +85,22 @@
               "RelativeDocumentMoniker": "Backend\\Controllers\\ReservasController.cs",
               "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ReservasController.cs",
               "RelativeToolTip": "Backend\\Controllers\\ReservasController.cs",
-              "ViewState": "AgIAACcAAAAAAAAAAAAowD4AAAAJAAAAAAAAAA==",
+              "ViewState": "AgIAAFMAAAAAAAAAAAAqwGgAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T15:56:05.534Z",
+              "WhenOpened": "2026-01-27T03:10:43.402Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "Program.cs",
-              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Program.cs",
-              "RelativeDocumentMoniker": "Backend\\Program.cs",
-              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Program.cs",
-              "RelativeToolTip": "Backend\\Program.cs",
-              "ViewState": "AgIAABIAAAAAAAAAAAAAACAAAABFAAAAAAAAAA==",
+              "DocumentIndex": 4,
+              "Title": "ConsumosController.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ConsumosController.cs",
+              "RelativeDocumentMoniker": "Backend\\Controllers\\ConsumosController.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ConsumosController.cs",
+              "RelativeToolTip": "Backend\\Controllers\\ConsumosController.cs",
+              "ViewState": "AgIAABMAAAAAAAAAAAAgwDUAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T15:54:17.669Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "ReservaRepository.cs",
-              "DocumentMoniker": "D:\\AppReservasCanchas\\Infrastructure\\Repositories\\ReservaRepository.cs",
-              "RelativeDocumentMoniker": "..\\Infrastructure\\Repositories\\ReservaRepository.cs",
-              "ToolTip": "D:\\AppReservasCanchas\\Infrastructure\\Repositories\\ReservaRepository.cs",
-              "RelativeToolTip": "..\\Infrastructure\\Repositories\\ReservaRepository.cs",
-              "ViewState": "AgIAAC0AAAAAAAAAAAAowE0AAAAJAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T15:52:35.01Z",
+              "WhenOpened": "2026-01-27T03:05:20.1Z",
               "EditorCaption": ""
             }
           ]
