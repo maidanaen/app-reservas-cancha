@@ -84,16 +84,19 @@ export default function AdminDashboard() {
                     </p>
                 </div>
 
-                {/* 2. PARTIDOS JUGADOS */}
+                {/* 2. TURNOS RESERVADOS */}
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
                     <div className="absolute right-0 top-0 p-8 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110">
                         <Users size={32} className="text-blue-600" />
                     </div>
-                    <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-1">Partidos Jugados</p>
+                    <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-1">Turnos Reservados</p>
                     <h2 className="text-4xl font-black text-slate-900">{data.kpis.partidosJugados}</h2>
                     <p className="text-xs font-bold text-blue-600 mt-2 flex items-center gap-1">
-                        <PlayCircle size={14}/> Turnos completados
+                        <PlayCircle size={14}/> Ver Turnos <Link href="/admin/reservas" className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition">
+                        <ArrowRight size={20}/>
+                    </Link>
                     </p>
+                    
                 </div>
 
                 {/* 3. ESTADO DE CAJA (Interactivo) */}
@@ -189,12 +192,9 @@ export default function AdminDashboard() {
                         ) : (
                             data.proximos.map((turno) => (
                                 <div key={turno.id} className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-2xl transition-colors border border-transparent hover:border-slate-100 group">
-                                    {/* HORA */}
+                                    {/* HORA y FECHA */}
                                     <div className="bg-slate-100 text-slate-600 font-bold p-3 rounded-xl text-center min-w-[60px] group-hover:bg-slate-900 group-hover:text-white transition-colors">
                                         <div className="text-xs uppercase">{new Date(turno.hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-                                    </div>
-                                    {/*FECHA*/}
-                                    <div className="bg-slate-100 text-slate-600 font-bold p-3 rounded-xl text-center min-w-[60px] group-hover:bg-slate-900 group-hover:text-white transition-colors">
                                         <div className="text-xs uppercase">{new Date(turno.hora).toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'})}</div>
                                     </div>
                                     

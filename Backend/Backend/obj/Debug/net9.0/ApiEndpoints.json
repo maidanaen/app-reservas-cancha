@@ -897,6 +897,32 @@
   },
   {
     "ContainingType": "Backend.Controllers.ReservasController",
+    "Method": "GetReservasPorCliente",
+    "RelativePath": "api/Reservas/cliente/{telefono}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "telefono",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Domain.Entities.Reserva, Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "Backend.Controllers.ReservasController",
     "Method": "CobrarReserva",
     "RelativePath": "api/Reservas/cobrar/{id}",
     "HttpMethod": "POST",

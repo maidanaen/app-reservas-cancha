@@ -173,7 +173,7 @@ export default function CantinaPage() {
     };
 
     const productosFiltrados = productos.filter(p => (categoriaActiva === "Todas" || p.categoria === categoriaActiva) && p.nombre.toLowerCase().includes(filtro.toLowerCase()));
-    const categorias = ["Todas", "Bebidas", "Comidas", "Accesorios", "Varios"];
+    const categorias = ["Todas", "Bebidas", "Comidas", "Accesorios", "General"];
 
     return (
         <div className="flex h-[calc(100vh-theme(spacing.24))] gap-6 font-sans relative">

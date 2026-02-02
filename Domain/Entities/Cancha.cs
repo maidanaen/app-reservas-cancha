@@ -17,5 +17,6 @@ namespace Domain.Entities
         // ---> NUEVOS CAMPOS DE HORARIO <---
         public int HoraApertura { get; set; } // Ej: 8 (para las 08:00)
         public int HoraCierre { get; set; }   // Ej: 23 (para las 23:00)
+        public bool Activa { get; set; } = true;
     }
 }

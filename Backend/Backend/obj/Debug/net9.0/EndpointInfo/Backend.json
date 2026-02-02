@@ -1515,6 +1515,54 @@
         }
       }
     },
+    "/api/Reservas/cliente/{telefono}": {
+      "get": {
+        "tags": [
+          "Reservas"
+        ],
+        "parameters": [
+          {
+            "name": "telefono",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Reserva"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Reserva"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Reserva"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Reservas/{id}": {
       "delete": {
         "tags": [
@@ -1782,6 +1830,9 @@
           "horaCierre": {
             "type": "integer",
             "format": "int32"
+          },
+          "activa": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

@@ -58,6 +58,25 @@ namespace Backend.Controllers
             var turnos = await _repository.GetByCanchaYFechaAsync(canchaId, fechaFiltro);
             return Ok(turnos);
         }
+        
+        [HttpGet("cliente/{telefono}")]
+        public async Task<ActionResult<IEnumerable<Reserva>>> GetReservasPorCliente(string telefono)
+        {
+            if (string.IsNullOrEmpty(telefono))
+            {
+                return BadRequest("Debes enviar un teléfono.");
+            }
+
+            // Buscamos reservas donde el teléfono coincida (parcialmente)
+            var reservas = await _context.Reservas
+                .Include(r => r.Cancha) // 🟢 CLAVE: Traemos los datos de la cancha
+                .Where(r => r.ClienteTelefono.Contains(telefono))
+                .OrderByDescending(r => r.FechaInicio) // Las más recientes primero
+                .ToListAsync();
+
+            return reservas;
+        }
+
 
         // ==========================================
         // 1. CREAR RESERVA DE CANCHA (AGENDA) 🎾
