@@ -22,5 +22,7 @@ namespace Domain.Interfaces
         Task<Reserva?> GetByIdAsync(int id); // Para ver el detalle
         Task UpdateAsync(Reserva reserva);   // Para guardar los pagos
         Task<List<Reserva>> GetAllByFechaAsync(DateTime fecha);
+        // Para la barra: Obtener o crear la reserva de barra del día
+        Task<Reserva> GetOrCreateBarraAsync(DateTime fecha);
     }
 }

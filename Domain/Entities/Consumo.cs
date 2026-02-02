@@ -1,20 +1,29 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Domain.Entities // <--- Fíjate que el namespace ahora es Domain
+namespace Domain.Entities
 {
     public class Consumo
     {
+        [Key]
         public int Id { get; set; }
-        public string Producto { get; set; } = string.Empty;
-        public decimal Precio { get; set; }
-        public int Cantidad { get; set; }
-        public string Jugador { get; set; } = string.Empty; // Quién lo pidió
 
-        // Relación con Reserva
         public int ReservaId { get; set; }
+        [ForeignKey("ReservaId")]
+        public virtual Reserva? Reserva { get; set; }
+
+        public string Producto { get; set; } = string.Empty;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Precio { get; set; }
+
+        public int Cantidad { get; set; } = 1;
+        public string Jugador { get; set; } = string.Empty;
+
+        public string? MetodoPago { get; set; }
+
+        // 👇 ¡ESTA LÍNEA ES LA QUE FALTA! 👇
+        public DateTime FechaHora { get; set; } = DateTime.Now;
     }
 }

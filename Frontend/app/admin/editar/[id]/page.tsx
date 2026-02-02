@@ -112,7 +112,6 @@ export default function EditarCanchaPage() {
             >
               <option value="Padel">🎾 Padel</option>
               <option value="Futbol">⚽ Fútbol</option>
-              <option value="Tenis">racket Tenis</option>
             </select>
           </div>
 
@@ -130,6 +129,13 @@ export default function EditarCanchaPage() {
             
             <div className="flex-1">
                {/* Horarios */}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Apertura (Hora)</label>
+              <input
+                type="number"
+                className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none"
+                value={formData.horaApertura}
+                onChange={(e) => setFormData({...formData, horaApertura: Number(e.target.value)})}
+              />
                <label className="block text-sm font-medium text-gray-700 mb-1">Cierre (Hora)</label>
                <input
                 type="number"

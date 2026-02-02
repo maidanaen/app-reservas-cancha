@@ -165,3 +165,4 @@ D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\refint\Backend.dll
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\Backend.pdb
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\Backend.genruntimeconfig.cache
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\ref\Backend.dll
+D:\AppReservasCanchas\Backend\Backend\bin\Debug\net9.0\Backend.staticwebassets.runtime.json

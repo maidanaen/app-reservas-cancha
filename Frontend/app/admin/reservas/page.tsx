@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { 
   Calendar, User, Phone, ArrowLeft, Search, 
-  Trash2, CalendarPlus, RefreshCw, DollarSign, CreditCard, Landmark, Timer, ArrowRight 
+  Trash2, CalendarPlus, RefreshCw, DollarSign, CreditCard, Landmark, Timer, ArrowRight, CheckCircle 
 } from "lucide-react";
 import Link from "next/link";
 
@@ -12,6 +12,11 @@ interface Cancha {
   precioPorHora: number;
 }
 
+// 🟢 ACTUALIZAMOS LA INTERFAZ PARA INCLUIR CONSUMOS Y PAGOS
+interface Consumo {
+    precio: number;
+}
+
 interface Reserva {
   id: number;
   canchaId: number;
@@ -19,7 +24,10 @@ interface Reserva {
   clienteTelefono: string;
   fechaInicio: string;
   fechaFin: string;
-  metodoPago: string;
+  metodoPago: string; // "Efectivo", "Transferencia", "Mixto", "Pagado"
+  cobradoEfectivo: number;
+  cobradoTransferencia: number;
+  consumos: Consumo[];
 }
 
 export default function ReservasPage() {
@@ -27,11 +35,9 @@ export default function ReservasPage() {
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [cargando, setCargando] = useState(false);
   
-  // Filtros
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [canchaId, setCanchaId] = useState<number>(0);
 
-  // 1. Cargar Canchas
   useEffect(() => {
     async function cargarCanchas() {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -42,14 +48,11 @@ export default function ReservasPage() {
           setCanchas(data);
           if (data.length > 0) setCanchaId(data[0].id);
         }
-      } catch (error) {
-        console.error("Error cargando canchas");
-      }
+      } catch (error) { console.error("Error cargando canchas"); }
     }
     cargarCanchas();
   }, []);
 
-  // 2. Cargar Reservas
   useEffect(() => {
     if (canchaId === 0) return;
     buscarReservas();
@@ -62,15 +65,16 @@ export default function ReservasPage() {
       const res = await fetch(`https://localhost:7123/api/Reservas/cancha/${canchaId}?fecha=${fecha}`);
       if (res.ok) {
         const data = await res.json();
-        // Ordenamos por hora de inicio
-        data.sort((a: Reserva, b: Reserva) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
-        setReservas(data);
+        
+        // Filtramos y Ordenamos
+        const soloJuegos = data.filter((r: any) => r.clienteNombre !== "🍻 VENTAS BARRA");
+        soloJuegos.sort((a: any, b: any) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
+        
+        setReservas(soloJuegos);
       }
     } catch (error) {
       console.error("Error buscando reservas");
-    } finally {
-        setCargando(false);
-    }
+    } finally { setCargando(false); }
   };
 
   const handleCancelar = async (id: number) => {
@@ -93,18 +97,49 @@ export default function ReservasPage() {
     return `${minsRestantes} min`;
   };
 
-  const getPrecioTotal = (inicio: string, fin: string) => {
+  // Calcula Precio Cancha + Consumos Reales (excluyendo items de pago/alquiler repetido)
+  const getDeudaTotal = (reserva: Reserva) => {
     const canchaActual = canchas.find(c => c.id === canchaId);
     if (!canchaActual) return 0;
-    const diffHoras = (new Date(fin).getTime() - new Date(inicio).getTime()) / (1000 * 60 * 60);
-    return Math.round(diffHoras * canchaActual.precioPorHora);
+    
+    // 1. Precio Cancha
+    const diffHoras = (new Date(reserva.fechaFin).getTime() - new Date(reserva.fechaInicio).getTime()) / (1000 * 60 * 60);
+    const precioCancha = Math.round(diffHoras * canchaActual.precioPorHora);
+
+    // 2. Precio Consumos (Cantina)
+    // Filtramos los items especiales para no sumar doble si hay lógica de "Alquiler" como item
+    // Pero asumimos que 'consumos' trae todo lo que hay que cobrar.
+    // Si usas el sistema de "items de pago" (✅ PAGO EFECTIVO), hay que excluirlos del DEBE.
+    const consumos = reserva.consumos || [];
+    const totalCantina = consumos
+        .filter(c => !(c as any).producto?.startsWith("✅") && !(c as any).producto?.startsWith("Alquiler")) 
+        .reduce((acc, curr) => acc + curr.precio, 0);
+
+    return precioCancha + totalCantina;
   };
 
-  const renderMetodoPago = (metodo: string) => {
-    if (metodo === "Efectivo") return <span className="flex items-center gap-1 text-green-700 bg-green-100 px-2 py-1 rounded text-xs font-bold"><DollarSign size={12}/> Efectivo</span>;
-    if (metodo === "Mercado Pago") return <span className="flex items-center gap-1 text-blue-700 bg-blue-100 px-2 py-1 rounded text-xs font-bold"><CreditCard size={12}/> MP/Tarjeta</span>;
-    if (metodo === "Transferencia") return <span className="flex items-center gap-1 text-purple-700 bg-purple-100 px-2 py-1 rounded text-xs font-bold"><Landmark size={12}/> Transferencia</span>;
-    return <span className="text-gray-500 bg-gray-100 px-2 py-1 rounded text-xs font-bold">{metodo || "N/A"}</span>;
+  const renderEstadoPago = (reserva: Reserva) => {
+      const totalDeuda = getDeudaTotal(reserva);
+      const totalPagado = (reserva.cobradoEfectivo || 0) + (reserva.cobradoTransferencia || 0);
+      const saldo = totalDeuda - totalPagado;
+
+      // Si ya pagó todo (o pagó de más por propina)
+      if (saldo <= 0) {
+          return (
+              <div className="bg-green-100 text-green-800 px-3 py-1 rounded-lg flex items-center gap-1 shadow-sm border border-green-200">
+                  <CheckCircle size={16} className="text-green-600"/>
+                  <span className="text-xs font-black uppercase tracking-wide">PAGADO</span>
+              </div>
+          );
+      }
+
+      // Si falta pagar
+      return (
+          <div className="text-right">
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">A COBRAR</p>
+              <p className="font-bold text-lg text-red-600">${saldo.toLocaleString()}</p>
+          </div>
+      );
   };
 
   return (
@@ -161,14 +196,7 @@ export default function ReservasPage() {
       {/* Lista de Tarjetas */}
       <div className="space-y-4">
         <div className="flex items-center justify-between mb-2 px-1">
-            <h2 className="font-bold text-gray-700">
-                Reservas ({reservas.length})
-            </h2>
-            {reservas.length > 0 && (
-                <span className="text-sm font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                    Total a cobrar: ${reservas.reduce((acc, curr) => acc + getPrecioTotal(curr.fechaInicio, curr.fechaFin), 0).toLocaleString()}
-                </span>
-            )}
+            <h2 className="font-bold text-gray-700">Reservas ({reservas.length})</h2>
         </div>
 
         {reservas.length === 0 ? (
@@ -178,17 +206,13 @@ export default function ReservasPage() {
         ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {reservas.map((reserva) => {
-                    // Formateamos AMBOS horarios
                     const horaInicio = new Date(reserva.fechaInicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     const horaFin = new Date(reserva.fechaFin).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    
                     const duracion = getDuracion(reserva.fechaInicio, reserva.fechaFin);
-                    const precio = getPrecioTotal(reserva.fechaInicio, reserva.fechaFin);
                     
                     return (
                       <div key={reserva.id} className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition relative group">
                           
-                          {/* Cabecera Tarjeta: Horarios Completos */}
                           <div className="flex justify-between items-start mb-4 border-b border-gray-100 pb-3">
                               <div>
                                   <div className="flex items-center gap-2 text-black font-extrabold text-xl">
@@ -200,26 +224,22 @@ export default function ReservasPage() {
                               </div>
                               
                               <div className="flex gap-2">
-                                {/* BOTÓN NUEVO: IR A GESTIÓN DE TURNO */}
                                 <Link 
                                     href={`/admin/reservas/${reserva.id}`}
                                     className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition"
-                                    title="Gestionar Turno y Cantina"
+                                    title="Gestionar Turno"
                                 >
                                     <ArrowRight size={20} />
                                 </Link>
-
                                 <button 
                                     onClick={() => handleCancelar(reserva.id)}
                                     className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition"
-                                    title="Cancelar Turno"
                                 >
                                     <Trash2 size={20} />
                                 </button>
                               </div>
                           </div>
 
-                          {/* Cuerpo: Cliente */}
                           <div className="space-y-2 mb-4">
                               <div className="flex items-center gap-3 text-gray-800">
                                   <div className="bg-gray-100 p-1.5 rounded text-gray-500"><User size={16} /></div>
@@ -227,20 +247,22 @@ export default function ReservasPage() {
                               </div>
                               <div className="flex items-center gap-3 text-gray-600 text-sm">
                                   <div className="bg-gray-100 p-1.5 rounded text-gray-500"><Phone size={16} /></div>
-                                  <span>{reserva.clienteTelefono}</span>
+                                  <span>{reserva.clienteTelefono || "Sin teléfono"}</span>
                               </div>
                           </div>
 
-                          {/* Footer: Finanzas */}
+                          {/* 🟢 FOOTER INTELIGENTE */}
                           <div className="bg-gray-50 -mx-5 -mb-5 p-4 border-t border-gray-100 flex justify-between items-center rounded-b-xl">
-                                <div>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">MÉTODO PAGO</p>
-                                    {renderMetodoPago(reserva.metodoPago)}
+                                <div className="flex flex-col gap-1">
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">ESTADO</p>
+                                    {/* Muestra si fue Efvo o Transf solo si ya pagó, sino muestra Pendiente */}
+                                    <span className="text-xs font-bold text-gray-600 bg-white px-2 py-1 rounded border border-gray-200 inline-block w-max">
+                                        {reserva.metodoPago === "Sin especificar" ? "Pendiente" : reserva.metodoPago}
+                                    </span>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">A COBRAR</p>
-                                    <p className="font-bold text-lg text-gray-900">${precio.toLocaleString()}</p>
-                                </div>
+                                
+                                {/* AQUÍ SE MUESTRA EL SELLO VERDE O EL MONTO ROJO */}
+                                {renderEstadoPago(reserva)}
                           </div>
                       </div>
                     )

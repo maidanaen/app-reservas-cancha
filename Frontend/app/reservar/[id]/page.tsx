@@ -1,19 +1,30 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Calendar, Clock, User, Phone, CheckCircle, CreditCard, Banknote, Landmark, ArrowRight, ArrowLeft, Grid, Timer } from "lucide-react";
+import { 
+  Calendar, Clock, User, Phone, CheckCircle, CreditCard, 
+  Banknote, Landmark, ArrowLeft, ArrowRight, Grid, Timer, Hourglass 
+} from "lucide-react";
 import Link from "next/link";
 
 interface Cancha {
   id: number;
   nombre: string;
   precioPorHora: number;
+  horaApertura: number;
+  horaCierre: number;
 }
 
-interface ReservaExistente {
-  fechaInicio: string; // ISO String
-  fechaFin: string;    // ISO String
-}
+// Duraciones disponibles
+const DURACIONES = [
+    { label: "1 Hora", minutos: 60 },
+    { label: "1 Hora 30 min", minutos: 90 },
+    { label: "2 Horas", minutos: 120 },
+    { label: "2 Horas 30 min", minutos: 150 },
+    { label: "3 Horas", minutos: 180 },
+    { label: "3 Horas 30 min", minutos: 210 },
+    { label: "4 Horas", minutos: 240 },
+];
 
 export default function ReservarPage() {
   const { id } = useParams();
@@ -21,25 +32,28 @@ export default function ReservarPage() {
 
   // --- ESTADOS ---
   const [cancha, setCancha] = useState<Cancha | null>(null);
-  const [reservasDelDia, setReservasDelDia] = useState<ReservaExistente[]>([]);
+  
+  // CAMBIO 1: Lista simple de textos para los horarios ocupados
+  const [horariosOcupados, setHorariosOcupados] = useState<string[]>([]);
+  
   const [cargando, setCargando] = useState(false);
   
-  // Control de Pasos
+  // Pasos del Wizard
   const [paso, setPaso] = useState(1);
 
-  // Configuración de la Reserva
+  // Formulario
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date().toISOString().split('T')[0]);
   const [horaSeleccionada, setHoraSeleccionada] = useState("");
-  const [duracionSeleccionada, setDuracionSeleccionada] = useState(60); // En minutos (60, 90, 120)
+  const [horaFinCalculada, setHoraFinCalculada] = useState("");
+  const [duracionSeleccionada, setDuracionSeleccionada] = useState(90); 
   
-  // Formulario Final
-  const [form, setForm] = useState({
+  const [formDatos, setFormDatos] = useState({
     nombre: "",
     telefono: "",
     metodoPago: "Mercado Pago"
   });
 
-  // 1. Cargar Datos de la Cancha
+  // 1. Cargar Cancha
   useEffect(() => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     fetch(`https://localhost:7123/api/Canchas/${id}`)
@@ -48,100 +62,90 @@ export default function ReservarPage() {
       .catch((err) => console.error(err));
   }, [id]);
 
-  // 2. Cargar Reservas OCUPADAS cuando cambia la fecha
+  // 2. Cargar Disponibilidad (CAMBIO 2: Usamos el endpoint 'ocupadas')
   useEffect(() => {
-    const cargarOcupadas = async () => {
+    if (id && fechaSeleccionada) {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        try {
-            // Usamos el endpoint que busca por cancha y fecha
-            const res = await fetch(`https://localhost:7123/api/Reservas/cancha/${id}?fecha=${fechaSeleccionada}`);
-            if (res.ok) {
-                const data = await res.json();
-                setReservasDelDia(data);
-            }
-        } catch (error) {
-            console.error("Error cargando disponibilidad");
-        }
-    };
-    cargarOcupadas();
+        fetch(`https://localhost:7123/api/Reservas/ocupadas?canchaId=${id}&fecha=${fechaSeleccionada}`)
+            .then((res) => res.json())
+            .then((data: string[]) => {
+                setHorariosOcupados(data); // Guardamos directamente ["14:00", "15:00"]
+            })
+            .catch((err) => {
+                console.error(err);
+                setHorariosOcupados([]); // Si falla, liberamos todo por seguridad
+            });
+    }
   }, [id, fechaSeleccionada]);
 
-
-  // --- LÓGICA DE HORARIOS ---
-  
-  // Generar lista de horarios cada 30 minutos (de 08:00 a 23:00)
+  // --- LÓGICA DE GRILLA ---
   const generarGrillaHorarios = () => {
-    const horarios = [];
-    let horaActual = 8; // Empieza 8 AM
-    let minutoActual = 0;
+    if (!cancha) return [];
+    
+    let horarios = [];
+    let inicioMinutos = cancha.horaApertura * 60; 
+    let finMinutos = cancha.horaCierre * 60;      
 
-    while (horaActual < 23) { // Hasta las 23 PM
-        const horaStr = horaActual.toString().padStart(2, '0');
-        const minStr = minutoActual.toString().padStart(2, '0');
-        horarios.push(`${horaStr}:${minStr}`);
-
-        // Sumar 30 minutos
-        minutoActual += 30;
-        if (minutoActual === 60) {
-            minutoActual = 0;
-            horaActual += 1;
-        }
+    // Si cierra de madrugada
+    if (finMinutos <= inicioMinutos) {
+        finMinutos += 24 * 60;
     }
+
+    // Intervalos de 30 min
+    for (let tiempo = inicioMinutos; tiempo < finMinutos; tiempo += 30) {
+        let tiempoNormalizado = tiempo % (24 * 60);
+        let horas = Math.floor(tiempoNormalizado / 60);
+        let minutos = tiempoNormalizado % 60;
+        let horaStr = `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+        horarios.push(horaStr);
+    }
+    
     return horarios;
   };
 
-  // VERIFICAR SI UN HORARIO ESTÁ DISPONIBLE
-  const verificarDisponibilidad = (horaInicioStr: string) => {
-    // 1. Convertir la hora del botón a objeto Date
-    const inicioCandidato = new Date(`${fechaSeleccionada}T${horaInicioStr}:00`);
-    // 2. Calcular cuándo terminaría esa reserva según la duración elegida (60, 90 min...)
-    const finCandidato = new Date(inicioCandidato.getTime() + duracionSeleccionada * 60000);
-
-    // 3. Revisar si choca con alguna reserva existente
-    for (const reserva of reservasDelDia) {
-        const ocupadoInicio = new Date(reserva.fechaInicio);
-        const ocupadoFin = new Date(reserva.fechaFin);
-
-        // Lógica de colisión de rangos de tiempo
-        // (Si el candidato empieza antes de que termine el ocupado Y termina después de que empiece el ocupado)
-        if (inicioCandidato < ocupadoFin && finCandidato > ocupadoInicio) {
-            return false; // ESTÁ OCUPADO
-        }
-    }
-    return true; // ESTÁ LIBRE
-  };
-
   const seleccionarHorario = (hora: string) => {
+    // Calcular fin visualmente
+    const fechaBase = new Date(`${fechaSeleccionada}T${hora}:00`);
+    fechaBase.setMinutes(fechaBase.getMinutes() + duracionSeleccionada);
+    const horaFinStr = fechaBase.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false});
+
     setHoraSeleccionada(hora);
-    setPaso(2);
+    setHoraFinCalculada(horaFinStr);
+    setPaso(2); 
   };
 
-  // --- CONFIRMAR RESERVA ---
+  // Función visual para la fecha "2026-01-29" -> "29/01/2026"
+  const formatearFechaVisual = (fechaISO: string) => {
+      if(!fechaISO) return "";
+      const [anio, mes, dia] = fechaISO.split('-');
+      return `${dia}/${mes}/${anio}`;
+  };
+
+  // --- CONFIRMAR ---
   const handleReservar = async () => {
     setCargando(true);
     
-    // Calcular fechas exactas
-    const inicioDate = new Date(`${fechaSeleccionada}T${horaSeleccionada}:00`);
-    const finDate = new Date(inicioDate.getTime() + duracionSeleccionada * 60000); // Sumar minutos
-
-    // Ajuste de zona horaria local a ISO (simple)
-    // Nota: Para producción idealmente usar librerías como 'date-fns' o manejar UTC
-    const isoString = (d: Date) => {
-        const pad = (n: number) => n < 10 ? '0' + n : n;
-        return d.getFullYear() + '-' + 
-            pad(d.getMonth() + 1) + '-' + 
-            pad(d.getDate()) + 'T' + 
-            pad(d.getHours()) + ':' + 
-            pad(d.getMinutes()) + ':00';
-    };
+    // Crear ISO para Backend
+    const fechaInicioISO = `${fechaSeleccionada}T${horaSeleccionada}:00`;
+    
+    const fechaObjInicio = new Date(fechaInicioISO);
+    fechaObjInicio.setMinutes(fechaObjInicio.getMinutes() + duracionSeleccionada);
+    
+    // Reconstrucción manual ISO Local para fecha fin
+    const anio = fechaObjInicio.getFullYear();
+    const mes = String(fechaObjInicio.getMonth()+1).padStart(2,'0');
+    const dia = String(fechaObjInicio.getDate()).padStart(2,'0');
+    const hora = String(fechaObjInicio.getHours()).padStart(2,'0');
+    const min = String(fechaObjInicio.getMinutes()).padStart(2,'0');
+    const fechaFinISO = `${anio}-${mes}-${dia}T${hora}:${min}:00`;
 
     const nuevaReserva = {
       canchaId: Number(id),
-      clienteNombre: form.nombre,
-      clienteTelefono: form.telefono,
-      fechaInicio: isoString(inicioDate),
-      fechaFin: isoString(finDate),
-      metodoPago: form.metodoPago
+      clienteNombre: formDatos.nombre,
+      clienteTelefono: formDatos.telefono,
+      fechaInicio: fechaInicioISO,
+      fechaFin: fechaFinISO,
+      metodoPago: formDatos.metodoPago
     };
 
     try {
@@ -154,20 +158,18 @@ export default function ReservarPage() {
 
       if (res.ok) {
         const data = await res.json();
-        if (form.metodoPago === "Mercado Pago" && data.urlPago) {
-            // Calcular precio proporcional a la duración
-            // Esto asume que el backend recalculó el precio o generó el link base.
-            // Si tu backend no ajusta precio por duración, enviará el precio por hora.
-             window.location.href = data.urlPago;
+        if (formDatos.metodoPago === "Mercado Pago" && data.urlPago) {
+            window.location.href = data.urlPago;
         } else {
-            router.push(`/reservar/exito?pago=${form.metodoPago}`);
+            router.push(`/reservar/exito`);
         }
       } else {
-        alert("❌ Ups, alguien te ganó el turno justo ahora.");
-        // Recargar disponibilidad
-        const resRefresh = await fetch(`https://localhost:7123/api/Reservas/cancha/${id}?fecha=${fechaSeleccionada}`);
+        alert("❌ Ups, el horario ya no está disponible.");
+        // Recargar disponibilidad usando el nuevo endpoint
+        const resRefresh = await fetch(`https://localhost:7123/api/Reservas/ocupadas?canchaId=${id}&fecha=${fechaSeleccionada}`);
         const dataRefresh = await resRefresh.json();
-        setReservasDelDia(dataRefresh);
+        setHorariosOcupados(dataRefresh);
+        setPaso(1);
       }
     } catch (error) {
       alert("Error de conexión");
@@ -176,191 +178,194 @@ export default function ReservarPage() {
     }
   };
 
-  if (!cancha) return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
+  if (!cancha) return <div className="min-h-screen flex items-center justify-center font-bold text-gray-500">Cargando...</div>;
 
   return (
-    <main className="min-h-screen bg-gray-50 flex justify-center items-start p-6">
-      <div className="bg-white max-w-2xl w-full rounded-3xl shadow-xl overflow-hidden mt-6">
+    <main className="min-h-screen bg-gray-50 flex justify-center items-start p-4 md:p-8">
+      <div className="bg-white max-w-2xl w-full rounded-3xl shadow-xl overflow-hidden border border-gray-100 mt-4">
         
-        {/* --- PASO 1: CALENDARIO Y HORARIOS --- */}
+        {/* --- PASO 1: SELECCIÓN --- */}
         {paso === 1 && (
-            <div className="p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <Grid className="text-blue-600"/> Elegí tu Horario
-                    </h1>
-                    <Link href="/" className="text-sm text-gray-500 hover:text-black">Cancelar</Link>
+            <div className="p-6 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8 border-b pb-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800">{cancha.nombre}</h1>
+                        <p className="text-sm text-gray-500 flex items-center gap-1"><Grid size={14}/> Reserva Online</p>
+                    </div>
+                    <Link href="/" className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition"><ArrowLeft size={20}/></Link>
                 </div>
 
-                {/* CONTROLES: FECHA Y DURACIÓN */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Filtros */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-2xl border border-gray-200">
                     <div>
-                        <label className="block text-sm font-bold text-gray-600 mb-2">Fecha</label>
-                        <input 
-                            type="date" 
-                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500"
-                            value={fechaSeleccionada}
-                            onChange={(e) => setFechaSeleccionada(e.target.value)}
-                        />
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Fecha</label>
+                        <div className="relative">
+                            <input 
+                                type="date" 
+                                className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-xl font-bold text-gray-800 outline-none focus:ring-2 focus:ring-black"
+                                value={fechaSeleccionada}
+                                onChange={(e) => setFechaSeleccionada(e.target.value)}
+                            />
+                            <Calendar className="absolute left-3 top-3.5 text-gray-400" size={18}/>
+                        </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-gray-600 mb-2">Duración</label>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Duración</label>
                         <div className="relative">
                             <select 
-                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                className="w-full p-3 pl-10 bg-white border border-gray-200 rounded-xl font-bold text-gray-800 outline-none focus:ring-2 focus:ring-black appearance-none"
                                 value={duracionSeleccionada}
                                 onChange={(e) => setDuracionSeleccionada(Number(e.target.value))}
                             >
-                                <option value={60}>1 Hora</option>
-                                <option value={90}>1 Hora y media (90 min)</option>
-                                <option value={120}>2 Horas</option>
-                                <option value={150}>2 Horas y media (150 min)</option>
-                                <option value={180}>3 Horas</option>
-                                <option value={210}>3 Horas y media (210 min)</option>
-                                <option value={240}>4 Horas</option>
+                                {DURACIONES.map(d => (
+                                    <option key={d.minutos} value={d.minutos}>{d.label}</option>
+                                ))}
                             </select>
-                            <Timer className="absolute right-3 top-3 text-gray-400" size={20}/>
+                            <Hourglass className="absolute left-3 top-3.5 text-gray-400" size={18}/>
                         </div>
                     </div>
                 </div>
 
-                <div className="border-t border-gray-100 my-4"></div>
-
-                {/* GRILLA DE HORARIOS INTELIGENTE */}
-                <p className="text-sm text-gray-500 mb-3">Horarios de inicio disponibles:</p>
+                {/* GRILLA */}
+                <p className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <Clock size={18} className="text-blue-600"/> Horarios Disponibles
+                </p>
+                
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                     {generarGrillaHorarios().map((hora) => {
-                        const estaLibre = verificarDisponibilidad(hora);
+                        // CAMBIO 3: Verificación simple con .includes
+                        const estaOcupado = horariosOcupados.includes(hora);
                         
                         return (
                             <button
                                 key={hora}
-                                onClick={() => estaLibre && seleccionarHorario(hora)}
-                                disabled={!estaLibre}
+                                onClick={() => !estaOcupado && seleccionarHorario(hora)}
+                                disabled={estaOcupado}
                                 className={`
-                                    p-2 rounded-lg text-sm font-bold transition border shadow-sm
-                                    ${estaLibre 
-                                        ? "bg-white border-gray-200 text-gray-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 hover:scale-105 transform cursor-pointer" 
-                                        : "bg-gray-100 border-transparent text-gray-300 cursor-not-allowed line-through decoration-gray-300"}
+                                    py-3 rounded-lg text-sm font-bold transition border shadow-sm relative overflow-hidden flex items-center justify-center
+                                    ${estaOcupado 
+                                        ? "bg-red-500 text-white border-red-600 opacity-90 cursor-not-allowed" // 🔴 ROJO FUERTE
+                                        : "bg-white border-gray-200 text-gray-700 hover:border-black hover:bg-black hover:text-white hover:scale-105 transform cursor-pointer"}
                                 `}
                             >
-                                {hora}
+                                {estaOcupado ? (
+                                    <span className="line-through decoration-white/50">{hora}</span>
+                                ) : (
+                                    hora
+                                )}
                             </button>
                         );
                     })}
                 </div>
                 
-                <div className="mt-6 flex items-center gap-4 text-xs text-gray-400 justify-center">
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-white border border-gray-300 rounded"></div> Libre</div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 bg-gray-100 rounded"></div> Ocupado</div>
+                <div className="mt-8 flex items-center gap-6 justify-center text-xs font-medium text-gray-500 border-t pt-4">
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 bg-white border border-gray-300 rounded"></div> Libre</div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 bg-red-500 rounded"></div> Ocupado</div>
                 </div>
             </div>
         )}
 
-        {/* --- PASO 2: FORMULARIO DE PAGO --- */}
+        {/* --- PASO 2: CONFIRMACIÓN --- */}
         {paso === 2 && (
             <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+                
                 {/* Header Negro */}
-                <div className="bg-black text-white p-6 flex items-center gap-3">
-                    <button onClick={() => setPaso(1)} className="hover:bg-gray-800 p-2 rounded-full transition">
-                        <ArrowLeft size={20} />
+                <div className="bg-black text-white p-8">
+                    <button onClick={() => setPaso(1)} className="mb-6 flex items-center gap-2 text-gray-400 hover:text-white transition text-sm">
+                        <ArrowLeft size={16} /> Volver a horarios
                     </button>
-                    <div>
-                        <h1 className="text-xl font-bold">Confirmar Reserva</h1>
-                        <div className="flex items-center gap-2 text-gray-400 text-xs mt-1">
-                            <Calendar size={12}/> {new Date(fechaSeleccionada).toLocaleDateString()} 
-                            <Clock size={12}/> {horaSeleccionada} hs 
-                            <Timer size={12} className="ml-2"/> {duracionSeleccionada} min
+                    <h2 className="text-3xl font-bold mb-1">Confirmar Reserva</h2>
+                    <p className="text-gray-400 text-sm">Completa tus datos para finalizar</p>
+                    
+                    <div className="mt-6 flex flex-wrap gap-4">
+                        <div className="bg-gray-900 px-4 py-2 rounded-lg flex items-center gap-2 border border-gray-800">
+                            <Calendar size={16} className="text-blue-400"/>
+                            <span className="font-bold text-sm">{formatearFechaVisual(fechaSeleccionada)}</span>
+                        </div>
+                        <div className="bg-gray-900 px-4 py-2 rounded-lg flex items-center gap-2 border border-gray-800">
+                            <Clock size={16} className="text-green-400"/>
+                            <span className="font-bold text-sm">{horaSeleccionada} - {horaFinCalculada}</span>
+                        </div>
+                        <div className="bg-gray-900 px-4 py-2 rounded-lg flex items-center gap-2 border border-gray-800">
+                            <Timer size={16} className="text-yellow-400"/>
+                            <span className="font-bold text-sm">{duracionSeleccionada} min</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="p-8 space-y-6">
-                    {/* Precio Estimado */}
-                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex justify-between items-center">
-                        <span className="text-gray-600 font-medium">Total a pagar:</span>
-                        <span className="text-xl font-bold text-black">
+                <div className="p-8 space-y-8">
+                    
+                    {/* Precio */}
+                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <span className="text-gray-600 font-bold">Total a pagar</span>
+                        <span className="text-2xl font-black text-black">
                             ${(cancha.precioPorHora * (duracionSeleccionada / 60)).toLocaleString()}
                         </span>
                     </div>
 
-                    {/* Datos Personales */}
+                    {/* Formulario */}
                     <div className="space-y-4">
-                        <label className="text-sm font-bold text-gray-800">Tus Datos</label>
-                        <div className="space-y-3">
-                            <div className="flex items-center bg-gray-50 border rounded-xl px-4 py-3">
-                                <User className="text-gray-400" size={20} />
-                                <input 
-                                    required 
-                                    type="text" 
-                                    placeholder="Nombre y Apellido"
-                                    className="w-full bg-transparent px-3 outline-none text-gray-800"
-                                    value={form.nombre}
-                                    onChange={e => setForm({...form, nombre: e.target.value})}
-                                />
-                            </div>
-                            <div className="flex items-center bg-gray-50 border rounded-xl px-4 py-3">
-                                <Phone className="text-gray-400" size={20} />
-                                <input 
-                                    required 
-                                    type="tel" 
-                                    placeholder="Teléfono (WhatsApp)"
-                                    className="w-full bg-transparent px-3 outline-none text-gray-800"
-                                    value={form.telefono}
-                                    onChange={e => setForm({...form, telefono: e.target.value})}
-                                />
-                            </div>
-                        </div>
+                        <h3 className="font-bold text-gray-800 flex items-center gap-2"><User size={18}/> Tus Datos</h3>
+                        <input 
+                            type="text" 
+                            placeholder="Nombre y Apellido"
+                            className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black transition"
+                            value={formDatos.nombre}
+                            onChange={e => setFormDatos({...formDatos, nombre: e.target.value})}
+                        />
+                        <input 
+                            type="tel" 
+                            placeholder="Teléfono (WhatsApp)"
+                            className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-black transition"
+                            value={formDatos.telefono}
+                            onChange={e => setFormDatos({...formDatos, telefono: e.target.value})}
+                        />
                     </div>
 
-                    {/* Medios de Pago */}
-                    <div className="space-y-3">
-                        <label className="text-sm font-bold text-gray-800">Método de Pago</label>
-                        
-                        <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${form.metodoPago === "Mercado Pago" ? "border-blue-500 bg-blue-50 ring-1 ring-blue-500" : "hover:bg-gray-50"}`}>
-                            <input type="radio" name="pago" className="hidden" checked={form.metodoPago === "Mercado Pago"} onChange={() => setForm({...form, metodoPago: "Mercado Pago"})} />
-                            <div className="bg-blue-100 p-2 rounded-lg text-blue-600"><CreditCard size={20} /></div>
-                            <div className="flex-1">
-                                <span className="font-bold text-sm block text-gray-800">Mercado Pago</span>
-                                <span className="text-xs text-gray-500">Tarjetas / Débito</span>
-                            </div>
-                            {form.metodoPago === "Mercado Pago" && <CheckCircle size={18} className="text-blue-500" />}
-                        </label>
-
-                        <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${form.metodoPago === "Efectivo" ? "border-green-500 bg-green-50 ring-1 ring-green-500" : "hover:bg-gray-50"}`}>
-                            <input type="radio" name="pago" className="hidden" checked={form.metodoPago === "Efectivo"} onChange={() => setForm({...form, metodoPago: "Efectivo"})} />
-                            <div className="bg-green-100 p-2 rounded-lg text-green-600"><Banknote size={20} /></div>
-                            <div className="flex-1">
-                                <span className="font-bold text-sm block text-gray-800">Efectivo</span>
-                                <span className="text-xs text-gray-500">Pagar en cancha</span>
-                            </div>
-                            {form.metodoPago === "Efectivo" && <CheckCircle size={18} className="text-green-500" />}
-                        </label>
-
-                        <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition ${form.metodoPago === "Transferencia" ? "border-purple-500 bg-purple-50 ring-1 ring-purple-500" : "hover:bg-gray-50"}`}>
-                            <input type="radio" name="pago" className="hidden" checked={form.metodoPago === "Transferencia"} onChange={() => setForm({...form, metodoPago: "Transferencia"})} />
-                            <div className="bg-purple-100 p-2 rounded-lg text-purple-600"><Landmark size={20} /></div>
-                            <div className="flex-1">
-                                <span className="font-bold text-sm block text-gray-800">Transferencia</span>
-                                <span className="text-xs text-gray-500">Envío a CBU</span>
-                            </div>
-                            {form.metodoPago === "Transferencia" && <CheckCircle size={18} className="text-purple-500" />}
-                        </label>
+                    {/* Métodos de Pago */}
+                    <div className="space-y-4">
+                        <h3 className="font-bold text-gray-800 flex items-center gap-2"><CreditCard size={18}/> Forma de Pago</h3>
+                        <div className="grid grid-cols-1 gap-3">
+                            
+                            <label className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition ${formDatos.metodoPago === "Efectivo" ? "border-green-500 bg-green-50 ring-1 ring-green-500" : "hover:bg-gray-50"}`}>
+                                <input type="radio" className="hidden" checked={formDatos.metodoPago === "Efectivo"} onChange={() => setFormDatos({...formDatos, metodoPago: "Efectivo"})} />
+                                <div className="bg-green-100 p-2 rounded-lg text-green-600"><Banknote size={24} /></div>
+                                <div>
+                                    <span className="font-bold block text-gray-900">Efectivo en Cancha</span>
+                                    <span className="text-xs text-gray-500">Pagas al llegar al complejo</span>
+                                </div>
+                                {formDatos.metodoPago === "Efectivo" && <CheckCircle className="ml-auto text-green-500"/>}
+                            </label>
+                            
+                             <label className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition ${formDatos.metodoPago === "Transferencia" ? "border-purple-500 bg-purple-50 ring-1 ring-purple-500" : "hover:bg-gray-50"}`}>
+                                <input type="radio" className="hidden" checked={formDatos.metodoPago === "Transferencia"} onChange={() => setFormDatos({...formDatos, metodoPago: "Transferencia"})} />
+                                <div className="bg-purple-100 p-2 rounded-lg text-purple-600"><Landmark size={24} /></div>
+                                <div>
+                                    <span className="font-bold block text-gray-900">Transferencia Bancaria</span>
+                                    <span className="text-xs text-gray-500">Envío a CBU / Alias</span>
+                                </div>
+                                {formDatos.metodoPago === "Transferencia" && <CheckCircle className="ml-auto text-purple-500"/>}
+                            </label>
+                        </div>
                     </div>
 
                     <button 
                         onClick={handleReservar}
-                        disabled={cargando}
-                        className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition flex items-center justify-center gap-2 shadow-lg hover:scale-[1.01] transform"
+                        disabled={cargando || !formDatos.nombre || !formDatos.telefono}
+                        className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg transition transform active:scale-95 ${
+                            cargando || !formDatos.nombre || !formDatos.telefono 
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                            : "bg-blue-600 text-white hover:bg-blue-700"
+                        }`}
                     >
-                        {cargando ? "Procesando..." : (
-                            <>Confirmar Reserva <ArrowRight size={20} /></>
-                        )}
+                        {cargando ? "Procesando..." : <>Confirmar Reserva <ArrowRight size={20}/></>}
                     </button>
+
                 </div>
             </div>
         )}
-
       </div>
     </main>
   );

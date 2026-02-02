@@ -1,4 +1,3 @@
-import { Search, MapPin, Calendar, Trophy, Users } from "lucide-react";
 import { Cancha } from "./types"; // Importamos el molde
 import Link from "next/link";
 
@@ -28,53 +27,7 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-gray-50 pb-20">
-      {/* --- HEADER SUPERIOR (ESTO QUEDA IGUAL) --- */}
-      <header className="bg-white p-6 rounded-b-3xl shadow-sm">
-        
-        <div className="mt-6 relative">
-          <input 
-            type="text" 
-            placeholder="Buscar club, zona o deporte..." 
-            className="w-full py-3 pl-12 pr-4 bg-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-gray-700 placeholder-gray-400"
-          />
-          <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
-        </div>
-      </header>
-
-      {/* --- SECCIÓN ACCIONES RÁPIDAS (ESTO QUEDA IGUAL) --- */}
-      <section className="p-6">
-        <div className="flex justify-between gap-4">
-          <button className="flex-1 flex flex-col items-center gap-2 bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
-            <div className="bg-green-100 p-3 rounded-full text-green-600">
-              <Calendar size={24} />
-            </div>
-            <span className="text-sm font-medium text-gray-700">Reservar</span>
-          </button>
-          {/* Botón 2: Mis Turnos (Antes Partidos) */}
-          <Link href="/mis-reservas" className="flex-1 flex flex-col items-center gap-2 bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
-            <div className="bg-orange-100 p-3 rounded-full text-orange-600">
-              <Users size={24} />
-            </div>
-            <span className="text-sm font-medium text-gray-700">Mis Turnos</span>
-          </Link>
-          
-          <button className="flex-1 flex flex-col items-center gap-2 bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
-            <div className="bg-orange-100 p-3 rounded-full text-orange-600">
-              <Users size={24} />
-            </div>
-            <span className="text-sm font-medium text-gray-700">Partidos</span>
-          </button>
-
-          <button className="flex-1 flex flex-col items-center gap-2 bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
-            <div className="bg-blue-100 p-3 rounded-full text-blue-600">
-              <Trophy size={24} />
-            </div>
-            <span className="text-sm font-medium text-gray-700">Torneos</span>
-          </button>
-        </div>
-      </section>
-
-      {/* --- 3. CAMBIO: SECCIÓN DINÁMICA (LISTA DE CANCHAS) --- */}
+      {/* --- 1. CAMBIO: SECCIÓN DINÁMICA (LISTA DE CANCHAS) --- */}
       <section className="px-6">
         <h2 className="font-bold text-gray-800 mb-4 text-lg">Canchas Destacadas</h2>
         

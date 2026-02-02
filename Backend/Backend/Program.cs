@@ -1,14 +1,17 @@
 using Domain.Interfaces;
-using Infrastructure.Persistence;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Backend.Services;
+using System.Text.Json.Serialization;
+using Infrastructure.Persistencia;
 // using Swashbuckle.AspNetCore.SwaggerGen; // No es estrictamente necesario aquí si no configuras opciones avanzadas
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(x =>
+    x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 // (Permiso para el Frontend):
 builder.Services.AddCors(options =>
 {
@@ -49,7 +52,7 @@ app.UseHttpsRedirection();
 app.UseCors("PermitirFrontend");
 
 app.UseAuthorization();
-
+app.UseStaticFiles();
 app.MapControllers();
 
 app.Run();

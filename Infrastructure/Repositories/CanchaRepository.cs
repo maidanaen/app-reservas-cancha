@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Domain.Entities;
 using Domain.Interfaces;
-using Infrastructure.Persistence;
+using Infrastructure.Persistencia;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories
@@ -46,9 +46,18 @@ namespace Infrastructure.Repositories
         // Borrar
         public async Task DeleteAsync(int id)
         {
+            // 1. Buscamos la cancha
             var cancha = await _context.Canchas.FindAsync(id);
+
             if (cancha != null)
             {
+                // 🟢 NUEVO: Buscamos todas las reservas de esta cancha
+                var reservasAsociadas = _context.Reservas.Where(r => r.CanchaId == id);
+
+                // 🟢 NUEVO: Las borramos primero (Limpieza de historial)
+                _context.Reservas.RemoveRange(reservasAsociadas);
+
+                // 2. Ahora sí, borramos la cancha sin que SQL se queje
                 _context.Canchas.Remove(cancha);
                 await _context.SaveChangesAsync();
             }
