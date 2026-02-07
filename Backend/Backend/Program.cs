@@ -30,7 +30,7 @@ builder.Services.AddSwaggerGen();
 // Configuración de la Base de Datos
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseNpgsql(connectionString));
 
 // Inyección de Dependencias (Repositorios)
 builder.Services.AddScoped<ICanchaRepository, CanchaRepository>();
