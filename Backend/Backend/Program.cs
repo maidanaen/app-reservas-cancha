@@ -7,6 +7,16 @@ using Infrastructure.Persistencia;
 // using Swashbuckle.AspNetCore.SwaggerGen; // No es estrictamente necesario aquí si no configuras opciones avanzadas
 
 var builder = WebApplication.CreateBuilder(args);
+// 1. Configurar CORS para permitir que Vercel acceda
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("PermitirVercel", policy =>
+    {
+        policy.AllowAnyOrigin() // Permitimos acceso desde cualquier lugar (para evitar problemas)
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -63,7 +73,7 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 // (Activar la regla):
-app.UseCors("PermitirFrontend");
+app.UseCors("PermitirVercel");
 
 app.UseAuthorization();
 app.UseStaticFiles();
