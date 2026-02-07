@@ -31,7 +31,10 @@ namespace Backend.Controllers
             var nuevoUsuario = new Usuario
             {
                 userName = request.userName,
-                Password = request.Password // NOTA: Idealmente esto se encripta, por ahora texto plano para aprender
+                Password = request.Password, // NOTA: Idealmente esto se encripta, por ahora texto plano para aprender
+                NombreNegocio = request.nombreNegocio ?? "Negocio Sin Nombre", // Guardamos el nombre del club
+                Activo = true,             // Nace activo
+                FechaAlta = DateTime.Now
             };
 
             _context.Usuarios.Add(nuevoUsuario);
@@ -40,19 +43,68 @@ namespace Backend.Controllers
             return Ok(new { message = "Usuario registrado con éxito" });
         }
 
-        // POST: api/Auth/login
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
+            // 1. Buscamos al usuario por nombre y contraseña
             var usuario = await _context.Usuarios
                 .FirstOrDefaultAsync(u => u.userName == request.userName && u.Password == request.Password);
 
+            // 2. Si no existe o la contraseña está mal
             if (usuario == null)
             {
                 return Unauthorized(new { message = "Credenciales incorrectas" });
             }
 
-            return Ok(new { message = "Login exitoso", usuario = usuario.userName });
+            // 🛑 3. NUEVO BLOQUEO: Verificamos si estás bloqueado por el Super Admin
+            if (usuario.Activo == false)
+            {
+                return Unauthorized(new { message = "⛔ Su cuenta está suspendida por falta de pago. Contacte al soporte." });
+            }
+
+            // 4. Si pasa todo, Login exitoso
+            return Ok(new
+            {
+                message = "Login exitoso",
+                usuario = usuario.userName,
+                // Agregamos esto por si quieres mostrarlo en el Dashboard luego:
+                nombreNegocio = usuario.NombreNegocio,
+                id=usuario.Id,
+                esAdmin=true
+            });
+        }
+
+        
+        // GET: api/Auth/estado/usuario123
+        [HttpGet("estado/{userName}")]
+        public async Task<IActionResult> GetEstadoUsuario(string userName)
+        {
+            var usuario = await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.userName == userName);
+
+            if (usuario == null) return NotFound(); // No existe
+
+            // Devolvemos si está activo (true) o bloqueado (false)
+            return Ok(usuario.Activo);
+        }
+
+        // GET: api/Auth/clubes-publicos
+        [HttpGet("clubes-publicos")]
+        public async Task<ActionResult> GetClubesPublicos()
+        {
+            // Seleccionamos solo los datos públicos (ID y Nombre).
+            // Filtramos que tengan nombre de negocio y estén activos.
+            var clubes = await _context.Usuarios
+                .Where(u => u.Activo == true && u.NombreNegocio != null && u.NombreNegocio != "")
+                .Select(u => new
+                {
+                    u.Id,
+                    u.NombreNegocio,
+                    // Podrías agregar dirección o ciudad si las tuvieras en el futuro
+                })
+                .ToListAsync();
+
+            return Ok(clubes);
         }
     }
 
@@ -61,5 +113,6 @@ namespace Backend.Controllers
     {
         public string userName { get; set; }
         public string Password { get; set; }
+        public string? nombreNegocio { get; set; }
     }
 }

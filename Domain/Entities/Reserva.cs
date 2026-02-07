@@ -42,6 +42,10 @@ namespace Domain.Entities
         // Agrega esta propiedad para saber en qué caja impactó el dinero
         public int? CajaId { get; set; }
         public List<Consumo> Consumos { get; set; } = new List<Consumo>();
-       
+        public int UsuarioId { get; set; }
+
+        [ForeignKey("UsuarioId")]
+        public Usuario? Usuario { get; set; }
+        public string? GrupoId { get; set; } // Identificador para borrar en lote
     }
 }

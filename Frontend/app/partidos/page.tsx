@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Users, Plus, UserPlus, Calendar, Trash2, MessageCircle, CheckCircle, MapPin, Trophy } from "lucide-react";
+import { Users, Plus, UserPlus, Calendar, Trash2, MessageCircle, CheckCircle, MapPin, Trophy, AlertCircle, X } from "lucide-react";
 
 interface Inscripcion {
     id: number;
@@ -18,20 +18,19 @@ interface Partido {
   jugadoresFaltantes: number;
   claveBorrado?: string;
   deporte: string; 
-  lugar: string;    
+  lugar: string;     
   inscripciones: Inscripcion[];
-}
-
-interface Cancha {
-    id: number;
-    nombre: string;
 }
 
 export default function PartidosPage() {
   const [partidos, setPartidos] = useState<Partido[]>([]);
-  const [canchasDisponibles, setCanchasDisponibles] = useState<Cancha[]>([]); 
   const [mostrarForm, setMostrarForm] = useState(false);
   const [cargando, setCargando] = useState(false);
+
+  // 🟢 NUEVOS ESTADOS PARA SEDES
+  const [sedes, setSedes] = useState<any[]>([]);
+  const [clubSeleccionado, setClubSeleccionado] = useState<string>("");
+  const [canchaSeleccionada, setCanchaSeleccionada] = useState<string>("");
 
   // Modal Unirse
   const [partidoAUnirse, setPartidoAUnirse] = useState<Partido | null>(null);
@@ -43,11 +42,18 @@ export default function PartidosPage() {
   const [nuevoContacto, setNuevoContacto] = useState("");
   const [nuevaFecha, setNuevaFecha] = useState(new Date().toISOString().split('T')[0]);
   const [nuevaHora, setNuevaHora] = useState("20:00");
-  const [nuevoNivel, setNuevoNivel] = useState("7ma");
+ 
   const [cuantosFaltan, setCuantosFaltan] = useState(2);
   const [nuevaClave, setNuevaClave] = useState("");
   const [nuevoDeporte, setNuevoDeporte] = useState("Padel");
-  const [nuevoLugar, setNuevoLugar] = useState("");
+
+  // 🟢 SISTEMA DE NOTIFICACIONES (TOAST)
+  const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
+
+  const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
+      setNotificacion({ tipo, msj });
+      setTimeout(() => setNotificacion(null), 4000);
+  };
 
   const cargarDatos = async () => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -55,12 +61,10 @@ export default function PartidosPage() {
         const resPartidos = await fetch("https://localhost:7123/api/Partidos");
         if (resPartidos.ok) setPartidos(await resPartidos.json());
 
-        const resCanchas = await fetch("https://localhost:7123/api/Canchas");
-        if (resCanchas.ok) {
-            const dataCanchas = await resCanchas.json();
-            setCanchasDisponibles(dataCanchas);
-            if(dataCanchas.length > 0) setNuevoLugar(dataCanchas[0].nombre);
-        }
+        // Cargar Sedes (Clubes y Canchas)
+        const resSedes = await fetch("https://localhost:7123/api/Publico/sedes");
+        if (resSedes.ok) setSedes(await resSedes.json());
+
     } catch (error) { console.error(error); }
   };
 
@@ -69,39 +73,36 @@ export default function PartidosPage() {
   // 🟢 FUNCIÓN INTELIGENTE PARA GENERAR LINK DE WHATSAPP
   const generarLinkWhatsApp = (numero: string, nombreOrg: string, deporte: string) => {
       if (!numero) return "#";
-
-      // 1. Dejar solo números
       let limpio = numero.replace(/\D/g, "");
-
-      // 2. Si empieza con '0' (ej: 0379...), quitarlo
       if (limpio.startsWith("0")) limpio = limpio.substring(1);
-
-      // 3. Si ya empieza con '54', asumimos que está completo. Si no, agregamos '549'
-      if (!limpio.startsWith("54")) {
-          limpio = "549" + limpio;
-      }
-
+      if (!limpio.startsWith("54")) limpio = "549" + limpio;
       return `https://wa.me/${limpio}?text=Hola ${nombreOrg}, vi tu partido de ${deporte} en Nexus Sport y quiero sumarme.`;
   };
 
   const crearSala = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nuevaClave.trim()) { alert("Crea una clave para poder borrar la sala después."); return; }
-    if (!nuevoLugar) { alert("Debes seleccionar una cancha."); return; }
+    
+    // Validaciones
+    if (!nuevaClave.trim()) { mostrarMensaje('error', "Crea una clave para poder borrar la sala después."); return; }
+    if (!clubSeleccionado || !canchaSeleccionada) { mostrarMensaje('error', "Debes seleccionar un Club y una Cancha."); return; }
 
     setCargando(true);
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     
+    // Armar nombre del lugar
+    const clubObj = sedes.find(s => s.clubId === Number(clubSeleccionado));
+    const canchaObj = clubObj?.canchas.find((c: any) => c.id === Number(canchaSeleccionada));
+    const lugarFinal = `${canchaObj.nombre} - ${clubObj.nombreClub}`;
+
     const nuevoPartido = {
         creador: nuevoCreador,
         contacto: nuevoContacto,
         fecha: nuevaFecha,
         hora: nuevaHora,
-        nivel: nuevoNivel,
         jugadoresFaltantes: Number(cuantosFaltan),
         claveBorrado: nuevaClave,
         deporte: nuevoDeporte, 
-        lugar: nuevoLugar      
+        lugar: lugarFinal      
     };
 
     await fetch("https://localhost:7123/api/Partidos", {
@@ -113,8 +114,10 @@ export default function PartidosPage() {
     setMostrarForm(false);
     setCargando(false);
     setNuevaClave(""); 
+    setClubSeleccionado("");
+    setCanchaSeleccionada("");
     cargarDatos(); 
-    alert("✅ Sala creada correctamente.");
+    mostrarMensaje('exito', "✅ Sala creada correctamente.");
   };
 
   const confirmarUnion = async (e: React.FormEvent) => {
@@ -135,17 +138,18 @@ export default function PartidosPage() {
       });
 
       if (res.ok) {
-          alert("👏 ¡Te anotaste correctamente!");
+          mostrarMensaje('exito', "👏 ¡Te anotaste correctamente!");
           setPartidoAUnirse(null);
           setMiNombre("");
           setMiContacto("");
           cargarDatos();
       } else {
-          alert("Error: Quizás ya se llenó el cupo.");
+          mostrarMensaje('error', "Error: Quizás ya se llenó el cupo.");
       }
   };
 
   const borrarSalaPropia = async (id: number) => {
+      // Nota: prompt() sigue siendo la mejor opción rápida para pedir contraseña sin crear otro modal complejo
       const claveIngresada = prompt("🔒 Clave de borrado:");
       if (!claveIngresada) return;
 
@@ -155,16 +159,32 @@ export default function PartidosPage() {
       });
 
       if (res.ok) {
-          alert("🗑️ Sala eliminada.");
+          mostrarMensaje('exito', "🗑️ Sala eliminada.");
           cargarDatos();
       } else {
-          alert("⛔ Clave incorrecta.");
+          mostrarMensaje('error', "⛔ Clave incorrecta.");
       }
   };
 
   return (
     <main className="max-w-6xl mx-auto p-6 min-h-screen font-sans relative">
       
+      {/* 🔔 NOTIFICACIÓN FLOTANTE */}
+      {notificacion && (
+          <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
+              notificacion.tipo === 'error' 
+                ? 'bg-red-50 text-red-800 border-red-200' 
+                : 'bg-green-50 text-green-800 border-green-200'
+          }`}>
+              {notificacion.tipo === 'error' ? <AlertCircle size={24} className="text-red-600"/> : <CheckCircle size={24} className="text-green-600"/>}
+              <div>
+                  <h4 className="font-black text-sm uppercase">{notificacion.tipo === 'error' ? 'Error' : 'Éxito'}</h4>
+                  <p className="font-medium text-sm">{notificacion.msj}</p>
+              </div>
+              <button onClick={() => setNotificacion(null)} className="ml-4 opacity-50 hover:opacity-100"><X size={18}/></button>
+          </div>
+      )}
+
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
         <div>
@@ -200,34 +220,44 @@ export default function PartidosPage() {
                         </select>
                     </div>
 
-                     <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase">Cancha / Lugar</label>
-                        {canchasDisponibles.length > 0 ? (
-                             <select className="w-full p-3 border rounded-xl font-bold bg-white" value={nuevoLugar} onChange={e => setNuevoLugar(e.target.value)}>
-                                {canchasDisponibles.map(c => (
-                                    <option key={c.id} value={c.nombre}>{c.nombre}</option>
+                    {/* SELECCIÓN DE LUGAR INTELIGENTE */}
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs font-bold text-gray-500 uppercase">Club</label>
+                            <select 
+                                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-700"
+                                value={clubSeleccionado}
+                                onChange={(e) => {
+                                    setClubSeleccionado(e.target.value);
+                                    setCanchaSeleccionada(""); 
+                                }}
+                            >
+                                <option value="">Elegir Club</option>
+                                {sedes.map((sede) => (
+                                    <option key={sede.clubId} value={sede.clubId}>{sede.nombreClub}</option>
                                 ))}
-                                <option value="A confirmar">📍 A confirmar</option>
                             </select>
-                        ) : (
-                            <input type="text" placeholder="Ej: Cancha 1" className="w-full p-3 border rounded-xl font-bold bg-gray-50" value={nuevoLugar} onChange={e => setNuevoLugar(e.target.value)}/>
-                        )}
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs font-bold text-gray-500 uppercase">Cancha</label>
+                            <select 
+                                className={`w-full p-3 border border-gray-200 rounded-xl font-bold text-gray-700 ${!clubSeleccionado ? 'bg-gray-100 opacity-50' : 'bg-white'}`}
+                                value={canchaSeleccionada}
+                                onChange={(e) => setCanchaSeleccionada(e.target.value)}
+                                disabled={!clubSeleccionado}
+                            >
+                                <option value="">{!clubSeleccionado ? "..." : "Elegir"}</option>
+                                {clubSeleccionado && sedes
+                                    .find(s => s.clubId === Number(clubSeleccionado))
+                                    ?.canchas.map((c: any) => (
+                                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase">Nivel</label>
-                        <select className="w-full p-3 border rounded-xl font-bold bg-gray-50" value={nuevoNivel} onChange={e => setNuevoNivel(e.target.value)}>
-                            <option value="8va">8va Categoría</option>
-                            <option value="7ma">7ma Categoría</option>
-                            <option value="6ta">6ta Categoría</option>
-                            <option value="5ta">5ta Categoría</option>
-                            <option value="4ta">4ta Categoría</option>
-                            <option value="3ta">3ta Categoría</option>
-                            <option value="2ta">2ta Categoría</option>
-                            <option value="1ta">1ta Categoría</option>
-                            <option value="Amistoso">Amistoso / Libre</option>
-                        </select>
-                    </div>
+                    
                 </div>
 
                 {/* Columna Derecha */}
@@ -286,10 +316,6 @@ export default function PartidosPage() {
                                 <span className="bg-slate-100 text-slate-700 text-xs font-black px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
                                     {iconoDeporte} {p.deporte}
                                 </span>
-                                <span className={`text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider 
-                                    ${estaCompleto ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                                    {p.nivel}
-                                </span>
                              </div>
                             <button onClick={() => borrarSalaPropia(p.id)} className="text-gray-300 hover:text-red-500 transition"><Trash2 size={18} /></button>
                         </div>
@@ -335,7 +361,6 @@ export default function PartidosPage() {
                     </div>
 
                     <div className="p-6 pt-0">
-                        {/* 🟢 ENLACE WHATSAPP MEJORADO */}
                         {p.contacto && (
                             <a 
                                 href={generarLinkWhatsApp(p.contacto, p.creador, p.deporte)}

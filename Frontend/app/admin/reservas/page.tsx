@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 import { 
   Calendar, User, Phone, ArrowLeft, Search, 
-  Trash2, CalendarPlus, RefreshCw, DollarSign, CreditCard, Landmark, Timer, ArrowRight, CheckCircle 
+  Trash2, CalendarPlus, RefreshCw, Timer, ArrowRight, CheckCircle 
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation"; 
 
 interface Cancha {
   id: number;
@@ -12,7 +13,6 @@ interface Cancha {
   precioPorHora: number;
 }
 
-// 🟢 ACTUALIZAMOS LA INTERFAZ PARA INCLUIR CONSUMOS Y PAGOS
 interface Consumo {
     precio: number;
 }
@@ -24,7 +24,7 @@ interface Reserva {
   clienteTelefono: string;
   fechaInicio: string;
   fechaFin: string;
-  metodoPago: string; // "Efectivo", "Transferencia", "Mixto", "Pagado"
+  metodoPago: string; 
   cobradoEfectivo: number;
   cobradoTransferencia: number;
   consumos: Consumo[];
@@ -34,15 +34,23 @@ export default function ReservasPage() {
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [cargando, setCargando] = useState(false);
+  const router = useRouter(); 
   
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [canchaId, setCanchaId] = useState<number>(0);
 
   useEffect(() => {
     async function cargarCanchas() {
+      const userId = localStorage.getItem("usuarioId");
+      if (!userId) {
+          router.push("/admin/login");
+          return;
+      }
+
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       try {
-        const res = await fetch("https://localhost:7123/api/Canchas"); 
+        const res = await fetch(`https://localhost:7123/api/Canchas?usuarioId=${userId}`);
+        
         if (res.ok) {
           const data = await res.json();
           setCanchas(data);
@@ -51,7 +59,7 @@ export default function ReservasPage() {
       } catch (error) { console.error("Error cargando canchas"); }
     }
     cargarCanchas();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (canchaId === 0) return;
@@ -66,7 +74,6 @@ export default function ReservasPage() {
       if (res.ok) {
         const data = await res.json();
         
-        // Filtramos y Ordenamos
         const soloJuegos = data.filter((r: any) => r.clienteNombre !== "🍻 VENTAS BARRA");
         soloJuegos.sort((a: any, b: any) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
         
@@ -86,7 +93,6 @@ export default function ReservasPage() {
     } catch (error) { alert("Error de conexión."); }
   };
 
-  // --- HELPERS ---
   const getDuracion = (inicio: string, fin: string) => {
     const diff = new Date(fin).getTime() - new Date(inicio).getTime();
     const minutos = Math.floor(diff / 60000);
@@ -97,33 +103,21 @@ export default function ReservasPage() {
     return `${minsRestantes} min`;
   };
 
-  // Calcula Precio Cancha + Consumos Reales (excluyendo items de pago/alquiler repetido)
-  const getDeudaTotal = (reserva: Reserva) => {
-    const canchaActual = canchas.find(c => c.id === canchaId);
-    if (!canchaActual) return 0;
-    
-    // 1. Precio Cancha
-    const diffHoras = (new Date(reserva.fechaFin).getTime() - new Date(reserva.fechaInicio).getTime()) / (1000 * 60 * 60);
-    const precioCancha = Math.round(diffHoras * canchaActual.precioPorHora);
-
-    // 2. Precio Consumos (Cantina)
-    // Filtramos los items especiales para no sumar doble si hay lógica de "Alquiler" como item
-    // Pero asumimos que 'consumos' trae todo lo que hay que cobrar.
-    // Si usas el sistema de "items de pago" (✅ PAGO EFECTIVO), hay que excluirlos del DEBE.
-    const consumos = reserva.consumos || [];
-    const totalCantina = consumos
-        .filter(c => !(c as any).producto?.startsWith("✅") && !(c as any).producto?.startsWith("Alquiler")) 
-        .reduce((acc, curr) => acc + curr.precio, 0);
-
-    return precioCancha + totalCantina;
-  };
-
   const renderEstadoPago = (reserva: Reserva) => {
-      const totalDeuda = getDeudaTotal(reserva);
+      // (Tu lógica original de cálculo de deuda)
+      const canchaActual = canchas.find(c => c.id === canchaId);
+      let totalDeuda = 0;
+      if (canchaActual) {
+        const diffHoras = (new Date(reserva.fechaFin).getTime() - new Date(reserva.fechaInicio).getTime()) / (1000 * 60 * 60);
+        const precioCancha = Math.round(diffHoras * canchaActual.precioPorHora);
+        const consumos = reserva.consumos || [];
+        const totalCantina = consumos.reduce((acc, curr) => acc + curr.precio, 0);
+        totalDeuda = precioCancha + totalCantina;
+      }
+
       const totalPagado = (reserva.cobradoEfectivo || 0) + (reserva.cobradoTransferencia || 0);
       const saldo = totalDeuda - totalPagado;
 
-      // Si ya pagó todo (o pagó de más por propina)
       if (saldo <= 0) {
           return (
               <div className="bg-green-100 text-green-800 px-3 py-1 rounded-lg flex items-center gap-1 shadow-sm border border-green-200">
@@ -133,7 +127,6 @@ export default function ReservasPage() {
           );
       }
 
-      // Si falta pagar
       return (
           <div className="text-right">
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">A COBRAR</p>
@@ -143,7 +136,7 @@ export default function ReservasPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6 font-sans">
+    <main className="max-w-7xl mx-auto p-6 font-sans bg-gray-50 min-h-screen relative">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -158,6 +151,7 @@ export default function ReservasPage() {
         </div>
 
         <div className="flex items-center gap-3">
+            {/* 🟢 VOLVIMOS AL LINK HACIA LA OTRA PÁGINA */}
             <Link href="/admin/reservas/crear" className="bg-black text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 flex items-center gap-2 shadow-sm transition">
                 <CalendarPlus size={18} /> Nuevo Turno
             </Link>
@@ -176,6 +170,7 @@ export default function ReservasPage() {
                 value={canchaId}
                 onChange={(e) => setCanchaId(Number(e.target.value))}
             >
+                {canchas.length === 0 && <option>No tienes canchas creadas</option>}
                 {canchas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
         </div>
@@ -251,17 +246,13 @@ export default function ReservasPage() {
                               </div>
                           </div>
 
-                          {/* 🟢 FOOTER INTELIGENTE */}
                           <div className="bg-gray-50 -mx-5 -mb-5 p-4 border-t border-gray-100 flex justify-between items-center rounded-b-xl">
                                 <div className="flex flex-col gap-1">
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">ESTADO</p>
-                                    {/* Muestra si fue Efvo o Transf solo si ya pagó, sino muestra Pendiente */}
                                     <span className="text-xs font-bold text-gray-600 bg-white px-2 py-1 rounded border border-gray-200 inline-block w-max">
                                         {reserva.metodoPago === "Sin especificar" ? "Pendiente" : reserva.metodoPago}
                                     </span>
                                 </div>
-                                
-                                {/* AQUÍ SE MUESTRA EL SELLO VERDE O EL MONTO ROJO */}
                                 {renderEstadoPago(reserva)}
                           </div>
                       </div>

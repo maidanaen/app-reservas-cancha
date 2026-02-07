@@ -16,6 +16,7 @@ namespace Domain.Entities
         public string Concepto { get; set; } = string.Empty;
         public string MetodoPago { get; set; } = string.Empty;
         public decimal Monto { get; set; }
+        public int UsuarioId { get; set; }
 
         [JsonIgnore]
         public CajaTurno? Turno { get; set; }

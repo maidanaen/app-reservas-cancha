@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react";
 import { 
     Plus, Edit2, Trash2, LayoutGrid, Users, 
-    Trophy, X, Save, Image as ImageIcon, Clock, Lock, Phone, User, Activity, CheckCircle,
-    PauseCircle, PlayCircle, AlertTriangle // Importamos los iconos necesarios
+    Trophy, X, Save, Clock, Lock, Phone, User, Activity, CheckCircle,
+    PauseCircle, PlayCircle, AlertCircle, MapPin, Sun, Warehouse, 
+    Calendar, AlertTriangle
 } from "lucide-react";
 
 // --- INTERFACES ---
@@ -17,6 +18,7 @@ interface Cancha {
     horaApertura: number;
     horaCierre: number;
     activa: boolean;
+    usuarioId: number; 
 }
 
 interface SalaPartido {
@@ -39,7 +41,6 @@ export default function GestionCanchasPage() {
     const [canchas, setCanchas] = useState<Cancha[]>([]);
     const [showModalCancha, setShowModalCancha] = useState(false);
     
-    // 🟢 ACTUALIZADO: Inicializamos activa en true
     const [canchaForm, setCanchaForm] = useState<Partial<Cancha>>({ 
         nombre: "", deporte: "Padel", precioPorHora: 0, techada: false,
         imgUrl: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=1000&auto=format&fit=crop", 
@@ -47,10 +48,29 @@ export default function GestionCanchasPage() {
     });
     const [isEditingCancha, setIsEditingCancha] = useState(false);
 
+    // --- ESTADOS: MODALES DE CONFIRMACIÓN (Canchas) ---
+    const [canchaAEditarEstado, setCanchaAEditarEstado] = useState<Cancha | null>(null);
+    const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false);
+    
+    const [canchaAEliminar, setCanchaAEliminar] = useState<Cancha | null>(null);
+    const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
+
+    // --- ESTADOS: MODALES DE CONFIRMACIÓN (Salas/Partidos) 🟢 NUEVO
+    const [salaAEliminar, setSalaAEliminar] = useState<SalaPartido | null>(null);
+    const [mostrarModalEliminarSala, setMostrarModalEliminarSala] = useState(false);
+
+    // --- NOTIFICACIONES ---
+    const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
+
     // --- ESTADOS: SALAS (PARTIDOS) ---
     const [salas, setSalas] = useState<SalaPartido[]>([]);
     const [showModalSala, setShowModalSala] = useState(false); 
     const [salaForm, setSalaForm] = useState<Partial<SalaPartido>>({}); 
+
+    const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
+        setNotificacion({ tipo, msj });
+        setTimeout(() => setNotificacion(null), 4000);
+    };
 
     useEffect(() => {
         if (activeTab === 'infra') cargarCanchas();
@@ -59,10 +79,15 @@ export default function GestionCanchasPage() {
 
     // --- CARGAR DATOS ---
     const cargarCanchas = async () => {
+        const userId = localStorage.getItem("usuarioId");
+        if (!userId) return; 
+
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const res = await fetch("https://localhost:7123/api/Canchas");
-            if (res.ok) setCanchas(await res.json());
+            const res = await fetch(`https://localhost:7123/api/Canchas?usuarioId=${userId}`);
+            if (res.ok) {
+                setCanchas(await res.json());
+            }
         } catch (error) { console.error(error); }
     };
 
@@ -90,57 +115,86 @@ export default function GestionCanchasPage() {
     };
 
     // --- LOGICA CANCHAS ---
+    
     const guardarCancha = async () => {
-        if (!canchaForm.nombre || !canchaForm.precioPorHora) return alert("Faltan datos");
+        if (!canchaForm.nombre || !canchaForm.precioPorHora) return mostrarMensaje('error', "Faltan datos");
+
+        const userId = localStorage.getItem("usuarioId");
+        if (!userId) {
+            mostrarMensaje('error', "Sesión expirada.");
+            return;
+        }
+
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         const url = isEditingCancha ? `https://localhost:7123/api/Canchas/${canchaForm.id}` : "https://localhost:7123/api/Canchas";
         const method = isEditingCancha ? "PUT" : "POST";
+
+        const canchaParaGuardar = {
+            ...canchaForm,
+            usuarioId: Number(userId) 
+        };
+
         try {
-            const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(canchaForm) });
-            if (res.ok) { setShowModalCancha(false); cargarCanchas(); }
+            const res = await fetch(url, { 
+                method, 
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify(canchaParaGuardar) 
+            });
+            if (res.ok) { 
+                setShowModalCancha(false); 
+                cargarCanchas(); 
+                mostrarMensaje('exito', isEditingCancha ? "Cancha actualizada" : "Cancha creada");
+            }
+            else { mostrarMensaje('error', "Error al guardar"); }
         } catch (e) { console.error(e); }
     };
 
-    const eliminarCancha = async (id: number) => {
-        if (!confirm("Se borrará la cancha. ¿Seguir?")) return;
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        await fetch(`https://localhost:7123/api/Canchas/${id}`, { method: "DELETE" });
-        cargarCanchas();
+    const iniciarEliminacion = (cancha: Cancha) => {
+        setCanchaAEliminar(cancha);
+        setMostrarModalEliminar(true);
     };
 
-    // 🟢 NUEVA LÓGICA: Alternar estado Activa/Pausada
-    const toggleEstadoCancha = async (cancha: Cancha) => {
-        const nuevoEstado = !cancha.activa;
-        const confirmacion = confirm(nuevoEstado 
-            ? `¿Reactivar "${cancha.nombre}"?` 
-            : `¿Pausar "${cancha.nombre}"? No se podrá reservar.`);
-        
-        if (!confirmacion) return;
-
-        // Copiamos la cancha y cambiamos solo el estado
-        const canchaActualizada = { ...cancha, activa: nuevoEstado };
+    const confirmarEliminacion = async () => {
+        if (!canchaAEliminar) return;
+        const userId = localStorage.getItem("usuarioId");
+        if(!userId) return;
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const res = await fetch(`https://localhost:7123/api/Canchas/${cancha.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(canchaActualizada)
-            });
+            await fetch(`https://localhost:7123/api/Canchas/${canchaAEliminar.id}?usuarioId=${userId}`, { method: "DELETE" });
+            mostrarMensaje('exito', "Cancha eliminada correctamente");
+            cargarCanchas();
+        } catch (error) { mostrarMensaje('error', "Error al eliminar"); } 
+        finally { setMostrarModalEliminar(false); setCanchaAEliminar(null); }
+    };
 
-            if (res.ok) cargarCanchas();
+    const iniciarToggleEstado = (cancha: Cancha) => {
+        setCanchaAEditarEstado(cancha);
+        setMostrarModalConfirmacion(true);
+    };
+
+    const confirmarToggleEstado = async () => {
+        if(!canchaAEditarEstado) return;
+        const userId = localStorage.getItem("usuarioId");
+        if(!userId) return;
+
+        const nuevoEstado = !canchaAEditarEstado.activa;
+        const canchaActualizada = { ...canchaAEditarEstado, activa: nuevoEstado, usuarioId: Number(userId) };
+
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+        try {
+            const res = await fetch(`https://localhost:7123/api/Canchas/${canchaAEditarEstado.id}`, {
+                method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(canchaActualizada)
+            });
+            if (res.ok) { cargarCanchas(); mostrarMensaje('exito', nuevoEstado ? "Cancha Habilitada" : "Cancha Pausada"); }
         } catch (error) { console.error(error); }
+        finally { setMostrarModalConfirmacion(false); setCanchaAEditarEstado(null); }
     };
 
     const abrirModalCancha = (cancha?: Cancha) => {
         if (cancha) { setCanchaForm(cancha); setIsEditingCancha(true); }
         else { 
-            // 🟢 Reseteamos el formulario incluyendo activa: true
-            setCanchaForm({ 
-                nombre: "", deporte: "Padel", precioPorHora: 0, techada: false, 
-                imgUrl: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=1000&auto=format&fit=crop", 
-                horaApertura: 8, horaCierre: 23, activa: true 
-            }); 
+            setCanchaForm({ nombre: "", deporte: "Padel", precioPorHora: 0, techada: false, imgUrl: "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=1000&auto=format&fit=crop", horaApertura: 8, horaCierre: 23, activa: true }); 
             setIsEditingCancha(false); 
         }
         setShowModalCancha(true);
@@ -157,7 +211,6 @@ export default function GestionCanchasPage() {
             contacto: salaForm.contacto || "",
             fecha: salaForm.fecha,
             hora: salaForm.hora,
-            nivel: salaForm.nivel || "Amateur",
             jugadoresFaltantes: salaForm.faltan,
             claveBorrado: salaForm.clave,
             deporte: salaForm.deporte,
@@ -169,20 +222,40 @@ export default function GestionCanchasPage() {
             const res = await fetch(`https://localhost:7123/api/Partidos/${salaForm.id}`, {
                 method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(partidoBackend)
             });
-            if (res.ok) { setShowModalSala(false); cargarSalas(); }
+            if (res.ok) { setShowModalSala(false); cargarSalas(); mostrarMensaje('exito', "Partido actualizado"); }
         } catch (error) { console.error(error); }
     };
 
-    const eliminarSala = async (id: number) => {
-        if(!confirm("¿Eliminar este partido público?")) return;
+    // 🟢 NUEVA LÓGICA DE ELIMINACIÓN DE SALA (Con Modal)
+    const iniciarEliminacionSala = (sala: SalaPartido) => {
+        setSalaAEliminar(sala);
+        setMostrarModalEliminarSala(true);
+    };
+
+    const confirmarEliminacionSala = async () => {
+        if (!salaAEliminar) return;
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        await fetch(`https://localhost:7123/api/Partidos/admin/${id}`, { method: "DELETE" });
-        cargarSalas();
+        try {
+            await fetch(`https://localhost:7123/api/Partidos/admin/${salaAEliminar.id}`, { method: "DELETE" });
+            mostrarMensaje('exito', "Partido público eliminado");
+            cargarSalas();
+        } catch (error) { mostrarMensaje('error', "Error al eliminar"); }
+        finally { setMostrarModalEliminarSala(false); setSalaAEliminar(null); }
     };
 
     return (
         <main className="max-w-7xl mx-auto p-6 font-sans bg-gray-50 min-h-screen">
             
+            {/* 🔔 NOTIFICACIÓN FLOTANTE */}
+            {notificacion && (
+                <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
+                    notificacion.tipo === 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
+                }`}>
+                    {notificacion.tipo === 'error' ? <AlertCircle size={24}/> : <CheckCircle size={24}/>}
+                    <p className="font-bold">{notificacion.msj}</p>
+                </div>
+            )}
+
             {/* HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                 <div>
@@ -200,7 +273,7 @@ export default function GestionCanchasPage() {
                 </div>
             </div>
 
-            {/* PESTAÑA 1: INFRAESTRUCTURA */}
+            {/* PESTAÑA 1: INFRAESTRUCTURA (Tarjetas) */}
             {activeTab === 'infra' && (
                 <div className="animate-in fade-in slide-in-from-bottom-2">
                     <div className="flex justify-end mb-4">
@@ -209,140 +282,150 @@ export default function GestionCanchasPage() {
                         </button>
                     </div>
 
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-400 border-b border-gray-100">
-                                <tr>
-                                    <th className="p-5 pl-8">Cancha</th>
-                                    <th className="p-5">Horario</th>
-                                    <th className="p-5">Precio Hora</th>
-                                    {/* 🟢 NUEVO HEADER */}
-                                    <th className="p-5">Estado</th>
-                                    <th className="p-5  text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 text-sm">
-                                {canchas.map(c => (
-                                    // 🟢 ROW CON ESTILO GRIS SI ESTÁ PAUSADA
-                                    <tr key={c.id} className={`transition group ${c.activa ? 'hover:bg-blue-50/30' : 'bg-gray-50/80 grayscale'}`}>
-                                        <td className="p-5 pl-8">
-                                            <div className="flex items-center gap-3">
-                                                {/* 🟢 IMAGEN OPACA SI ESTÁ PAUSADA */}
-                                                <img src={c.imgUrl} alt={c.nombre} className="w-20 h-14 rounded-full object-cover bg-gray-200"/>
-                                                <div>
-                                                    <div className="font-bold text-slate-900">{c.nombre}</div>
-                                                    <div className="flex gap-2 mt-1">
-                                                        <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-bold uppercase">{c.deporte}</span>
-                                                        {c.techada && <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold uppercase">Techada 🏠</span>}
-                                                        {!c.techada && <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold uppercase">Descubierta☀️s</span>}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="p-5 text-gray-500 font-medium">{c.horaApertura}:00 - {c.horaCierre}:00</td>
-                                        <td className="p-8 font-mono font-bold text-slate-900">${(c.precioPorHora || 0).toLocaleString()}</td>
-                                        
-                                        {/* 🟢 NUEVA COLUMNA ESTADO */}
-                                        <td className="p-5">
-                                            {c.activa ? (
-                                                <span className="text-xs font-bold text-green-600 flex items-center gap-1 bg-green-50 px-2 py-1 rounded w-fit">
-                                                    Disponible
-                                                </span>
-                                            ) : (
-                                                <span className="text-xs font-bold text-orange-600 flex items-center gap-1 bg-orange-50 px-2 py-1 rounded w-fit border border-orange-100">
-                                                    <AlertTriangle size={12}/> Mantenimiento
-                                                </span>
-                                            )}
-                                        </td>
-
-                                        <td className="p-5 text-right flex justify-end gap-2 items-center">
-                                            {/* 🟢 BOTÓN DE PAUSA/PLAY */}
-                                            <button 
-                                                onClick={() => toggleEstadoCancha(c)} 
-                                                className={`p-2 rounded-lg transition flex items-center gap-2 ${c.activa ? 'text-orange-400 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50 bg-white shadow-sm border border-green-100'}`}
-                                                title={c.activa ? "Pausar Cancha" : "Activar Cancha"}
-                                            >
-                                                {c.activa ? <PauseCircle size={20}/> : <><PlayCircle size={20}/><span className="text-xs font-bold">Activar</span></>}
-                                            </button>
-
-                                            <div className="w-px h-4 bg-gray-200 mx-1"></div>
-
-                                            <button onClick={() => abrirModalCancha(c)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 size={18}/></button>
-                                            <button onClick={() => eliminarCancha(c.id)} className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg"><Trash2 size={18}/></button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="grid gap-4">
+                        {canchas.map((c) => (
+                            <div key={c.id} className={`bg-white p-4 rounded-2xl border flex flex-col md:flex-row items-center gap-6 transition-all duration-300 ${!c.activa ? 'border-orange-200 bg-orange-50/30' : 'border-gray-100 shadow-sm hover:shadow-md'}`}>
+                                <div className="w-full md:w-48 h-32 rounded-xl overflow-hidden relative shrink-0">
+                                    <img src={c.imgUrl || "https://via.placeholder.com/300"} alt={c.nombre} className={`w-full h-full object-cover ${!c.activa && 'grayscale opacity-70'}`} />
+                                    {!c.activa && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/10 backdrop-blur-[1px]">
+                                            <span className="bg-orange-500 text-white text-xs font-black px-2 py-1 rounded shadow-sm">EN MANTENIMIENTO</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1 w-full md:w-auto text-center md:text-left">
+                                    <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
+                                        <h3 className="text-xl font-black text-slate-900">{c.nombre}</h3>
+                                        <div className="flex justify-center md:justify-start gap-1">
+                                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded">{c.deporte}</span>
+                                            {c.techada ? <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-[10px] font-bold uppercase rounded flex items-center gap-1"><Warehouse size={10}/> Techada</span> : <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-[10px] font-bold uppercase rounded flex items-center gap-1"><Sun size={10}/> Aire Libre</span>}
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-center md:justify-start gap-6 text-sm text-slate-500 font-medium mb-4">
+                                        <span>⏱ {c.horaApertura}:00 - {c.horaCierre}:00 hs</span>
+                                        <span className="text-slate-900 font-bold">${c.precioPorHora.toLocaleString()} /hr</span>
+                                    </div>
+                                    <div className="flex items-center justify-center md:justify-start gap-2">
+                                        <button onClick={() => iniciarToggleEstado(c)} className={`px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 border transition ${c.activa ? 'bg-white border-gray-200 text-gray-500 hover:text-orange-500 hover:border-orange-200' : 'bg-green-500 text-white border-green-500 hover:bg-green-600'}`}>
+                                            {c.activa ? <><PauseCircle size={16}/> Pausar</> : <><PlayCircle size={16}/> Activar</>}
+                                        </button>
+                                        <button onClick={() => abrirModalCancha(c)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={18}/></button>
+                                        <button onClick={() => iniciarEliminacion(c)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={18}/></button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}
 
-            {/* PESTAÑA 2: PARTIDOS PÚBLICOS (SALAS) */}
+            {/* PESTAÑA 2: PARTIDOS PÚBLICOS (Diseño Mejorado) */}
             {activeTab === 'salas' && (
                 <div className="animate-in fade-in slide-in-from-bottom-2">
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-                         <div className="p-6 border-b border-gray-100 bg-yellow-50/50 flex gap-3 items-center">
-                            <Trophy className="text-yellow-600" size={24}/>
-                            <div>
-                                <h3 className="font-bold text-slate-900">Partidos Públicos</h3>
-                                <p className="text-xs text-gray-500">Partidos creados por usuarios. Puedes editar sus datos o borrarlos.</p>
+                    <div className="grid gap-4">
+                        {salas.length === 0 ? (
+                            <div className="p-10 text-center bg-white rounded-3xl border border-dashed border-gray-300 text-gray-400">
+                                No hay partidos públicos activos por el momento.
                             </div>
-                        </div>
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-400 border-b border-gray-100">
-                                <tr>
-                                    <th className="p-5 pl-8">Fecha/Hora</th>
-                                    <th className="p-5">Cancha/Lugar</th>
-                                    <th className="p-5">Organizador</th>
-                                    <th className="p-5 text-center">Faltan</th>
-                                    <th className="p-5 text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 text-sm">
-                                {salas.length === 0 ? (
-                                    <tr><td colSpan={5} className="p-10 text-center text-gray-400">No hay partidos públicos activos.</td></tr>
-                                ) : (
-                                    salas.map(s => (
-                                        <tr key={s.id} className="hover:bg-yellow-50/30 transition">
-                                            <td className="p-5 pl-8">
-                                                <div className="font-bold text-slate-900">{new Date(s.fecha).toLocaleDateString()}</div>
-                                                <div className="text-xs text-gray-500 font-bold">{s.hora ? `${s.hora}hs` : "---"}</div>
-                                            </td>
-                                            <td className="p-5">
-                                                <div className="font-bold text-slate-700">{s.canchaNombre}</div>
-                                                <span className="text-[10px] text-gray-400 uppercase font-bold">{s.deporte}</span>
-                                            </td>
-                                            <td className="p-5 text-blue-600 font-bold">{s.organizador}</td>
-                                            <td className="p-5 text-center">
-                                                {s.faltan <= 0 ? (
-                                                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-black text-xs flex items-center justify-center gap-1">
-                                                        <CheckCircle size={12}/> Completo
-                                                    </span>
-                                                ) : (
-                                                    <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full font-black text-xs">
-                                                        -{s.faltan}
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="p-5 text-right flex justify-end gap-2">
-                                                <button onClick={() => abrirEditarSala(s)} className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg" title="Editar / Ver Clave">
-                                                    <Edit2 size={18}/>
-                                                </button>
-                                                <button onClick={() => eliminarSala(s.id)} className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg" title="Borrar">
-                                                    <Trash2 size={18}/>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                        ) : (
+                            salas.map(s => (
+                                <div key={s.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col md:flex-row items-center gap-6">
+                                    {/* FECHA Y HORA */}
+                                    <div className="flex flex-col items-center md:items-start min-w-[120px] text-center md:text-left border-b md:border-b-0 md:border-r border-gray-100 pb-4 md:pb-0 md:pr-6">
+                                        <div className="text-sm font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wide">
+                                            <Calendar size={14}/> {new Date(s.fecha).toLocaleDateString()}
+                                        </div>
+                                        <div className="text-3xl font-black text-slate-900">{s.hora}hs</div>
+                                    </div>
+
+                                    {/* INFO PRINCIPAL */}
+                                    <div className="flex-1 w-full text-center md:text-left">
+                                        <h3 className="text-lg font-black text-slate-900 mb-1">{s.canchaNombre}</h3>
+                                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-slate-500 font-medium">
+                                            <span className="bg-slate-100 px-2 py-0.5 rounded text-xs font-bold uppercase">{s.deporte}</span>
+                                            <span className="flex items-center gap-1"><User size={14} className="text-blue-500"/> Org: <strong className="text-blue-600">{s.organizador}</strong></span>
+                                            
+                                        </div>
+                                    </div>
+
+                                    {/* ESTADO Y CLAVE */}
+                                    <div className="flex flex-col items-end gap-2 w-full md:w-auto">
+                                        {s.faltan <= 0 ? (
+                                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-black text-xs flex items-center gap-1 w-full md:w-auto justify-center">
+                                                <CheckCircle size={12}/> Completo
+                                            </span>
+                                        ) : (
+                                            <span className="bg-red-50 text-red-600 px-3 py-1 rounded-full font-black text-xs w-full md:w-auto text-center border border-red-100">
+                                                Faltan {s.faltan}
+                                            </span>
+                                        )}
+                                        
+                                        <div className="flex items-center gap-2 bg-yellow-50 px-3 py-1 rounded-lg border border-yellow-100" title="Clave de borrado">
+                                            <Lock size={12} className="text-yellow-600"/>
+                                            <span className="text-xs font-mono font-bold text-yellow-700">{s.clave}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* ACCIONES */}
+                                    <div className="flex gap-2 w-full md:w-auto justify-center border-t md:border-t-0 pt-4 md:pt-0">
+                                        <button onClick={() => abrirEditarSala(s)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg border border-transparent hover:border-blue-100 transition"><Edit2 size={18}/></button>
+                                        <button onClick={() => iniciarEliminacionSala(s)} className="p-2 text-red-400 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100 transition"><Trash2 size={18}/></button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             )}
 
-            {/* MODAL CANCHA (CREAR/EDITAR) */}
+            {/* MODAL DE CONFIRMACIÓN (TOGGLE ESTADO CANCHA) */}
+            {mostrarModalConfirmacion && canchaAEditarEstado && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${canchaAEditarEstado.activa ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
+                            {canchaAEditarEstado.activa ? <PauseCircle size={32}/> : <PlayCircle size={32}/>}
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900 mb-2">{canchaAEditarEstado.activa ? "¿Pausar esta cancha?" : "¿Reactivar cancha?"}</h3>
+                        <p className="text-gray-500 mb-6 text-sm">El estado de la cancha cambiará inmediatamente.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setMostrarModalConfirmacion(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                            <button onClick={confirmarToggleEstado} className={`flex-1 py-3 text-white font-bold rounded-xl shadow-lg transition ${canchaAEditarEstado.activa ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'}`}>{canchaAEditarEstado.activa ? "Sí, Pausar" : "Sí, Activar"}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL ELIMINAR CANCHA */}
+            {mostrarModalEliminar && canchaAEliminar && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-red-500">
+                        <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4"><Trash2 size={32}/></div>
+                        <h3 className="text-xl font-black text-slate-900 mb-2">¿Eliminar cancha?</h3>
+                        <p className="text-gray-500 mb-6 text-sm">Esta acción es irreversible.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setMostrarModalEliminar(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                            <button onClick={confirmarEliminacion} className="flex-1 py-3 text-white font-bold bg-red-600 hover:bg-red-700 rounded-xl shadow-lg transition">Sí, Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL ELIMINAR SALA (PARTIDO) */}
+            {mostrarModalEliminarSala && salaAEliminar && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-red-500">
+                        <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4"><Trash2 size={32}/></div>
+                        <h3 className="text-xl font-black text-slate-900 mb-2">¿Borrar Partido?</h3>
+                        <p className="text-gray-500 mb-6 text-sm">Estás a punto de cancelar el partido organizado por <strong>{salaAEliminar.organizador}</strong>.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setMostrarModalEliminarSala(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                            <button onClick={confirmarEliminacionSala} className="flex-1 py-3 text-white font-bold bg-red-600 hover:bg-red-700 rounded-xl shadow-lg transition">Sí, Borrar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL CANCHA (CREAR/EDITAR) - Mismo código... */}
             {showModalCancha && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -351,26 +434,52 @@ export default function GestionCanchasPage() {
                             <button onClick={() => setShowModalCancha(false)} className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition"><X size={20}/></button>
                         </div>
                         <div className="space-y-4">
-                             <div><label className="text-xs font-bold text-gray-400 uppercase">Nombre</label><input type="text" className="w-full p-3 bg-gray-50 rounded-xl font-bold" value={canchaForm.nombre} onChange={e => setCanchaForm({...canchaForm, nombre: e.target.value})}/></div>
-                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">Deporte</label><select className="w-full p-3 bg-gray-50 rounded-xl font-bold" value={canchaForm.deporte} onChange={e => setCanchaForm({...canchaForm, deporte: e.target.value})}><option value="Padel">Padel</option><option value="Futbol">Fútbol</option><option value="Tenis">Tenis</option></select></div>
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">Precio</label><input type="number" className="w-full p-3 bg-gray-50 rounded-xl font-bold" value={canchaForm.precioPorHora} onChange={e => setCanchaForm({...canchaForm, precioPorHora: Number(e.target.value)})}/></div>
-                             </div>
-                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">Apertura</label><input type="number" className="w-full p-3 bg-gray-50 rounded-xl font-bold" value={canchaForm.horaApertura} onChange={e => setCanchaForm({...canchaForm, horaApertura: Number(e.target.value)})}/></div>
-                                <div><label className="text-xs font-bold text-gray-400 uppercase">Cierre</label><input type="number" className="w-full p-3 bg-gray-50 rounded-xl font-bold" value={canchaForm.horaCierre} onChange={e => setCanchaForm({...canchaForm, horaCierre: Number(e.target.value)})}/></div>
-                             </div>
-                             <div><label className="text-xs font-bold text-gray-400 uppercase">Imagen URL</label><input type="text" className="w-full p-3 bg-gray-50 rounded-xl font-medium text-xs" value={canchaForm.imgUrl} onChange={e => setCanchaForm({...canchaForm, imgUrl: e.target.value})}/></div>
-                             
-                             {/* 🟢 NUEVO: Selector de Estado en el Modal */}
-                             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 cursor-pointer" onClick={() => setCanchaForm({...canchaForm, activa: !canchaForm.activa})}>
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${canchaForm.activa ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300'}`}>
-                                    {canchaForm.activa && <span className="text-white text-xs">✓</span>}
-                                </div>
-                                <span className="text-sm font-bold text-slate-700">Cancha Activa (Disponible para reservas)</span>
+                            {/* FORMULARIO DE CANCHA... (Igual que antes) */}
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase">Nombre</label>
+                                <input type="text" className="w-full p-3 bg-gray-50 rounded-xl font-bold border-none outline-none focus:ring-2 focus:ring-slate-900" value={canchaForm.nombre} onChange={e => setCanchaForm({...canchaForm, nombre: e.target.value})}/>
                             </div>
-
-                             <button onClick={guardarCancha} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition flex justify-center items-center gap-2 mt-2"><Save size={20}/> Guardar</button>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Deporte</label>
+                                    <select className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" value={canchaForm.deporte} onChange={e => setCanchaForm({...canchaForm, deporte: e.target.value})}>
+                                        <option value="Padel">Padel</option>
+                                        <option value="Futbol">Fútbol</option>
+                                        <option value="Tenis">Tenis</option>
+                                        <option value="Voley">Voley</option>
+                                        <option value="Basket">Basket</option>
+                                        <option value="Others">Otros</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Cobertura</label>
+                                    <select className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" value={canchaForm.techada ? "true" : "false"} onChange={e => setCanchaForm({...canchaForm, techada: e.target.value === "true"})}>
+                                        <option value="false">☀️ Descubierta</option>
+                                        <option value="true">🏠 Techada</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase">Precio por Hora</label>
+                                <input type="number" className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none focus:ring-2 focus:ring-slate-900" value={canchaForm.precioPorHora} onChange={e => setCanchaForm({...canchaForm, precioPorHora: Number(e.target.value)})}/>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Apertura</label>
+                                    <input type="number" className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" value={canchaForm.horaApertura} onChange={e => setCanchaForm({...canchaForm, horaApertura: Number(e.target.value)})}/>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Cierre</label>
+                                    <input type="number" className="w-full p-3 bg-gray-50 rounded-xl font-bold outline-none" value={canchaForm.horaCierre} onChange={e => setCanchaForm({...canchaForm, horaCierre: Number(e.target.value)})}/>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase">Imagen URL</label>
+                                <input type="text" className="w-full p-3 bg-gray-50 rounded-xl font-medium text-xs outline-none" value={canchaForm.imgUrl} onChange={e => setCanchaForm({...canchaForm, imgUrl: e.target.value})}/>
+                            </div>
+                            <button onClick={guardarCancha} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition flex justify-center items-center gap-2 mt-2">
+                                <Save size={20}/> Guardar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -384,7 +493,7 @@ export default function GestionCanchasPage() {
                             <h2 className="text-xl font-black text-slate-900">Editar Partido</h2>
                             <button onClick={() => setShowModalSala(false)} className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition"><X size={20}/></button>
                         </div>
-                        
+                        {/* FORMULARIO DE SALA... (Igual que antes) */}
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
@@ -408,18 +517,7 @@ export default function GestionCanchasPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div><label className="block text-xs font-bold text-gray-400 uppercase">Faltan</label><input type="number" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold" value={salaForm.faltan} onChange={e => setSalaForm({...salaForm, faltan: Number(e.target.value)})}/></div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1 flex items-center gap-1">
-                                        <Activity size={12}/> Nivel
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-slate-900" 
-                                        value={salaForm.nivel || ""} 
-                                        onChange={e => setSalaForm({...salaForm, nivel: e.target.value})}
-                                        placeholder="Ej: 5ta, Amateur..."
-                                    />
-                                </div>
+                                
                             </div>
                             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
                                 <label className="block text-xs font-black text-yellow-600 uppercase mb-1 flex items-center gap-1"><Lock size={12}/> Contraseña del Cliente</label>

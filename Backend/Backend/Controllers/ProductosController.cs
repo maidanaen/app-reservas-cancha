@@ -16,22 +16,27 @@ namespace Backend.Controllers
             _context = context;
         }
 
-        // GET: api/Productos
-        // 🟢 IMPORTANTE: Solo traemos los que tienen Activo = true
+        // GET: api/Productos?usuarioId=5
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Producto>>> GetProductos()
+        public async Task<ActionResult<IEnumerable<Producto>>> GetProductos([FromQuery] int usuarioId)
         {
-            return await _context.Productos.Where(p => p.Activo).ToListAsync();
+            if (usuarioId == 0) return BadRequest("Falta usuarioId");
+
+            return await _context.Productos
+                .Where(p => p.Activo && p.UsuarioId == usuarioId) // 🔒 SOLO SUS PRODUCTOS
+                .ToListAsync();
         }
 
         // POST: api/Productos
         [HttpPost]
         public async Task<ActionResult<Producto>> PostProducto(Producto producto)
         {
-            producto.Activo = true; // Nace activo
+            if (producto.UsuarioId == 0) return BadRequest("Falta usuarioId");
+
+            producto.Activo = true;
             _context.Productos.Add(producto);
             await _context.SaveChangesAsync();
-            return CreatedAtAction("GetProductos", new { id = producto.Id }, producto);
+            return Ok(producto);
         }
 
         // PUT: api/Productos/5
@@ -40,38 +45,31 @@ namespace Backend.Controllers
         {
             if (id != producto.Id) return BadRequest();
 
-            _context.Entry(producto).State = EntityState.Modified;
+            // Verificamos seguridad antes de editar
+            var existente = await _context.Productos.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+            if (existente == null) return NotFound();
+            if (existente.UsuarioId != producto.UsuarioId) return Unauthorized();
 
-            // Aseguramos que siga activo al editar
+            _context.Entry(producto).State = EntityState.Modified;
             producto.Activo = true;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Productos.Any(e => e.Id == id)) return NotFound();
-                else throw;
-            }
+            try { await _context.SaveChangesAsync(); }
+            catch (DbUpdateConcurrencyException) { throw; }
 
             return NoContent();
         }
 
-        // DELETE: api/Productos/5
-        // 🛡️ BORRADO LÓGICO (SEGURIDAD TOTAL)
+        // DELETE: api/Productos/5?usuarioId=5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProducto(int id)
+        public async Task<IActionResult> DeleteProducto(int id, [FromQuery] int usuarioId)
         {
             var producto = await _context.Productos.FindAsync(id);
             if (producto == null) return NotFound();
 
-            // En lugar de _context.Productos.Remove(producto)...
-            // Simplemente lo desactivamos.
-            producto.Activo = false;
+            if (usuarioId != 0 && producto.UsuarioId != usuarioId) return Unauthorized();
 
+            producto.Activo = false; // Borrado lógico
             await _context.SaveChangesAsync();
-
             return NoContent();
         }
     }

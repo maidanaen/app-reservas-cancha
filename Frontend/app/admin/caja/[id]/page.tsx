@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Printer, Calendar, Lock, Unlock, Banknote, Smartphone, TrendingUp, Activity, Utensils, ShoppingBag, List, Clock, X, Eye } from "lucide-react";
+import { ArrowLeft, Printer, Unlock, Lock, Banknote, Smartphone, Calendar, Activity, Utensils, ShoppingBag, List, X, TrendingUp } from "lucide-react";
 
 // --- INTERFACES ---
 interface DetalleMetodos {
@@ -50,6 +50,7 @@ export default function DetalleCajaPage() {
 
     const [reporte, setReporte] = useState<ReporteCaja | null>(null);
     const [cargando, setCargando] = useState(true);
+    const [error, setError] = useState("");
     
     // Estado para el Modal de Movimientos
     const [showModalMovimientos, setShowModalMovimientos] = useState(false);
@@ -57,17 +58,47 @@ export default function DetalleCajaPage() {
     useEffect(() => {
         if (!id) return;
         const cargar = async () => {
+            // 🟢 1. RECUPERAR ID
+            const userId = localStorage.getItem("usuarioId");
+            if (!userId) {
+                setError("Sesión no válida");
+                setCargando(false);
+                return;
+            }
+
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
             try {
-                const res = await fetch(`https://localhost:7123/api/Cajas/${id}`);
-                if (res.ok) setReporte(await res.json());
-            } catch (e) { console.error(e); } finally { setCargando(false); }
+                // 🟢 2. ENVIAR ID EN URL (Para verificar que la caja es mía)
+                const res = await fetch(`https://localhost:7123/api/Cajas/${id}?usuarioId=${userId}`);
+                
+                if (res.ok) {
+                    setReporte(await res.json());
+                } else {
+                    if (res.status === 401) setError("⛔ No tienes permiso para ver esta caja.");
+                    else setError("Caja no encontrada.");
+                }
+            } catch (e) { console.error(e); setError("Error de conexión"); } 
+            finally { setCargando(false); }
         };
         cargar();
     }, [id]);
 
     if (cargando) return <div className="p-20 text-center animate-pulse text-gray-500 font-bold">Cargando reporte...</div>;
-    if (!reporte) return <div className="p-20 text-center text-red-500 font-bold">Reporte no encontrado.</div>;
+    
+    if (error) return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50">
+            <div className="bg-white p-8 rounded-3xl shadow-xl text-center max-w-md">
+                <div className="text-red-500 text-5xl mb-4">🚫</div>
+                <h2 className="text-2xl font-black text-slate-900 mb-2">Acceso Denegado</h2>
+                <p className="text-gray-500 mb-6">{error}</p>
+                <Link href="/admin/caja/historial" className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition">
+                    Volver al Historial
+                </Link>
+            </div>
+        </div>
+    );
+
+    if (!reporte) return null;
 
     const { caja, resumen, movimientos } = reporte;
     
@@ -101,7 +132,7 @@ export default function DetalleCajaPage() {
                 <div className="p-8 border-b border-gray-100 bg-slate-50 print:bg-white print:border-b-2 print:border-black">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">REPORTE DE CIERRE </h1>
+                            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">REPORTE DE CIERRE #{caja.id}</h1>
                             <p className="text-gray-500 font-medium mt-1">NEXUS SPORT - Panel Administrativo</p>
                         </div>
                         <div className="text-right">
@@ -192,7 +223,7 @@ export default function DetalleCajaPage() {
                     </table>
                 </div>
 
-                {/* BOTÓN PARA VER MOVIMIENTOS (Oculto al imprimir si no se quiere la lista) */}
+                {/* BOTÓN PARA VER MOVIMIENTOS */}
                 <div className="p-8 border-t border-gray-100 bg-gray-50 print:bg-white print:border-t-2 print:border-black">
                     <button 
                         onClick={() => setShowModalMovimientos(true)}
@@ -200,8 +231,6 @@ export default function DetalleCajaPage() {
                     >
                         <List size={20}/> Ver Listado Detallado de Movimientos ({movimientos.length})
                     </button>
-                    
-                    {/* Al imprimir, mostramos un resumen pequeño o nada, para no gastar hoja */}
                     <p className="hidden print:block text-center text-xs text-gray-400">
                         Detalle de movimientos disponible en versión digital.
                     </p>
@@ -214,7 +243,7 @@ export default function DetalleCajaPage() {
                 </div>
             </div>
 
-            {/* 🟢 MODAL DE MOVIMIENTOS (Se abre al hacer clic) */}
+            {/* MODAL DE MOVIMIENTOS */}
             {showModalMovimientos && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setShowModalMovimientos(false)}>
                     <div className="bg-white w-full max-w-4xl h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
@@ -250,7 +279,6 @@ export default function DetalleCajaPage() {
                                                 <td className="p-4 text-gray-600 text-xs align-top">
                                                     <div className="font-bold mb-1 text-slate-800">{m.detalle}</div>
                                                     
-                                                    {/* LÓGICA DE AGRUPACIÓN (3x Heineken) */}
                                                     {m.items && m.items.length > 0 && (
                                                         <div className="space-y-1 mt-2 pl-2 border-l-2 border-gray-100">
                                                             {(() => {

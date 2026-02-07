@@ -14,5 +14,6 @@ namespace Backend.Domain.Entities
 
         // Para saber rápido cuál es la cuenta abierta de esta mesa (si la tiene)
         public int? ReservaActualId { get; set; }
+        public int UsuarioId { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,5 +19,11 @@ namespace Domain.Entities
         public int HoraApertura { get; set; } // Ej: 8 (para las 08:00)
         public int HoraCierre { get; set; }   // Ej: 23 (para las 23:00)
         public bool Activa { get; set; } = true;
+        public int UsuarioId { get; set; }
+
+        // Relación opcional (si quieres navegar a los datos del usuario)
+        [ForeignKey("UsuarioId")]
+        public Usuario? Usuario { get; set; }
+
     }
 }

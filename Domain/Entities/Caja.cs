@@ -12,7 +12,7 @@ namespace Domain.Entities
         public DateTime? FechaCierre { get; set; }
 
         public string Usuario { get; set; } = "Admin";
-
+        public int UsuarioId { get; set; }
         // Fondos
         [Column(TypeName = "decimal(18,2)")]
         public decimal MontoInicial { get; set; } // Cambio inicial

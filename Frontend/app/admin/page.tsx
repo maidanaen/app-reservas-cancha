@@ -2,223 +2,231 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { 
-    TrendingUp, Users, DollarSign, Calendar, ArrowRight, 
-    Activity, Clock, PlayCircle, Lock, Unlock 
-} from "lucide-react";
-import { 
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
-
-// Definimos la estructura de datos que nos manda el Backend
-interface DashboardData {
-    kpis: {
-        ingresosHoy: number;
-        partidosJugados: number;
-        totalEnCaja: number;
-        hayCajaAbierta: boolean;
-    };
-    grafico: { fecha: string; dia: string; monto: number }[];
-    proximos: { id: number; hora: string; cancha: string; cliente: string; estado: string }[];
-}
+import { 
+  DollarSign, Users, TrendingUp, AlertTriangle, Calendar, 
+  ArrowRight, Lock 
+} from "lucide-react";
 
 export default function AdminDashboard() {
-    const [data, setData] = useState<DashboardData | null>(null);
-    const [cargando, setCargando] = useState(true);
+  const [nombreNegocio, setNombreNegocio] = useState("Panel Principal");
+  
+  // Datos Estadísticos
+  const [stats, setStats] = useState({
+    ventasDiarias: 0,
+    turnosHoy: 0,
+    cajaActual: 0,
+    grafico: [] as any[]
+  });
 
-    useEffect(() => {
-        const cargarDatos = async () => {
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-            try {
-                // Conectamos con tu nuevo Controlador
-                const res = await fetch("https://localhost:7123/api/Dashboard/resumen");
-                if (res.ok) {
-                    const jsonData = await res.json();
-                    setData(jsonData);
-                }
-            } catch (error) { console.error("Error cargando dashboard:", error); }
-            finally { setCargando(false); }
-        };
-        cargarDatos();
-    }, []);
+  const [proximosTurnos, setProximosTurnos] = useState<any[]>([]);
+  const [cargando, setCargando] = useState(true);
 
-    if (cargando) return (
-        <div className="min-h-screen bg-gray-50 p-10 flex flex-col items-center justify-center gap-4">
-            <div className="animate-spin w-12 h-12 border-4 border-slate-900 border-t-transparent rounded-full"></div>
-            <p className="text-slate-500 font-medium animate-pulse">Analizando datos del negocio...</p>
+  useEffect(() => {
+    async function cargarTodo() {
+      const userId = localStorage.getItem("usuarioId");
+      const nombre = localStorage.getItem("nombreNegocio");
+      if (nombre) setNombreNegocio(nombre);
+      
+      if (!userId) {
+        window.location.href = "/admin/login";
+        return;
+      }
+
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      
+      // 1. CARGAR ESTADÍSTICAS (KPIs y Gráfico)
+      try {
+        const resStats = await fetch(`https://localhost:7123/api/Dashboard/resumen?usuarioId=${userId}`);
+        if (resStats.ok) {
+          const data = await resStats.json();
+          setStats(prev => ({
+            ...prev,
+            ventasDiarias: data.ventasDiarias || 0,
+            turnosHoy: data.turnosHoy || 0,
+            cajaActual: data.cajaActual || 0,
+            grafico: Array.isArray(data.grafico) ? data.grafico.map((g: any) => ({
+                fecha: new Date(g.fecha).toLocaleDateString('es-AR', { weekday: 'short' }),
+                total: g.total
+            })) : []
+          }));
+        }
+      } catch (err) { console.error("Error stats:", err); }
+
+      // 2. CARGAR PRÓXIMOS TURNOS (Independiente)
+      try {
+        const resReservas = await fetch(`https://localhost:7123/api/Reservas?usuarioId=${userId}`);
+        if (resReservas.ok) {
+            const todasLasReservas = await resReservas.json();
+            const ahora = new Date(); 
+
+            const filtradas = todasLasReservas
+                .filter((r: any) => {
+                    const fechaR = new Date(r.fechaInicio);
+                    // Solo futuros y tipo Cancha
+                    return fechaR >= ahora && (r.tipo === "Cancha" || r.canchaId != null); 
+                })
+                .sort((a: any, b: any) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime()) 
+                .slice(0, 5); 
+
+            setProximosTurnos(filtradas);
+        }
+      } catch (err) { console.error("Error turnos:", err); }
+      
+      setCargando(false);
+    }
+
+    cargarTodo();
+  }, []);
+
+  if (cargando) return <div className="min-h-screen flex items-center justify-center text-gray-400 font-medium">Cargando tu imperio...</div>;
+
+  return (
+    <main className="max-w-7xl mx-auto p-4 font-sans bg-gray-50 min-h-screen relative" >
+      
+      {/* --- ENCABEZADO --- */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div>
+            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">{nombreNegocio} 🚀</h1>
+            <p className="text-gray-500 font-medium">Resumen de actividad en tiempo real.</p>
         </div>
-    );
+        <div className="flex gap-5 mb-4">
+            <Link href="/admin/reservas" className="bg-white text-slate-700 border border-gray-200 px-5 py-3 rounded-xl font-bold hover:bg-gray-50 transition shadow-sm flex items-center gap-2">
+                <Calendar size={18}/> Ver Agenda
+            </Link>
+            <Link href="/admin/caja" className="bg-slate-900 text-white px-5 py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg shadow-slate-200 flex items-center gap-2">
+                <DollarSign size={18}/> Ir a Caja
+            </Link>
+        </div>
+      </div>
 
-    if (!data) return <div className="p-10 text-center text-red-500">No se pudieron cargar los datos. Revisa que el Backend esté corriendo.</div>;
-
-    return (
-        <main className="max-w-7xl mx-auto p-6 font-sans bg-gray-50 min-h-screen">
-            
-            {/* --- HEADER DE BIENVENIDA --- */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      {/* --- TARJETAS (KPIs) --- */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-">
+        
+        {/* Card 1: Ventas */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 relative overflow-hidden group">
+            <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Panel de Control 🚀</h1>
-                    <p className="text-gray-500 font-medium">Resumen de actividad en tiempo real.</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Ventas de la Jornada</p>
+                    <h2 className="text-4xl font-black text-slate-900">${stats.ventasDiarias.toLocaleString()}</h2>
+                    <div className="flex items-center gap-1 text-green-600 font-bold text-xs mt-2 bg-green-50 w-fit px-2 py-1 rounded-full">
+                        <TrendingUp size={14}/> Facturación diaria
+                    </div>
                 </div>
-                <div className="flex gap-3">
-                    <Link href="/admin/reservas" className="bg-white text-slate-700 px-5 py-3 rounded-xl font-bold border border-slate-200 hover:bg-slate-50 transition flex items-center gap-2 shadow-sm">
-                        <Calendar size={18}/> Ver Agenda
-                    </Link>
-                    <Link href="/admin/caja" className="bg-slate-900 text-white px-5 py-3 rounded-xl font-bold hover:bg-slate-800 transition flex items-center gap-2 shadow-lg shadow-slate-200/50">
-                        <DollarSign size={18}/> Ir a Caja
-                    </Link>
+                <div className="p-3 bg-green-50 text-green-600 rounded-2xl">
+                    <TrendingUp size={24}/>
                 </div>
             </div>
+        </div>
 
-            {/* --- SECCIÓN 1: TARJETAS KPI (INDICADORES CLAVE) --- */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                
-                {/* 1. VENTAS DE HOY */}
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-                    <div className="absolute right-0 top-0 p-8 bg-green-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110">
-                        <TrendingUp size={32} className="text-green-600" />
-                    </div>
-                    <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-1">Ventas de la Jornada</p>
-                    <h2 className="text-4xl font-black text-slate-900">${data.kpis.ingresosHoy.toLocaleString()}</h2>
-                    <p className="text-xs font-bold text-green-600 mt-2 flex items-center gap-1">
-                        <Activity size={14}/> Facturación diaria
-                    </p>
-                </div>
-
-                {/* 2. TURNOS RESERVADOS */}
-                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-                    <div className="absolute right-0 top-0 p-8 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110">
-                        <Users size={32} className="text-blue-600" />
-                    </div>
-                    <p className="text-xs font-black text-gray-400 uppercase tracking-wider mb-1">Turnos Reservados</p>
-                    <h2 className="text-4xl font-black text-slate-900">{data.kpis.partidosJugados}</h2>
-                    <p className="text-xs font-bold text-blue-600 mt-2 flex items-center gap-1">
-                        <PlayCircle size={14}/> Ver Turnos <Link href="/admin/reservas" className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition">
-                        <ArrowRight size={20}/>
+        {/* Card 2: Turnos */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 relative overflow-hidden group">
+             <div className="flex justify-between items-start">
+                <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Turnos Reservados</p>
+                    <h2 className="text-4xl font-black text-slate-900">{stats.turnosHoy}</h2>
+                    <Link href="/admin/reservas" className="flex items-center gap-1 text-blue-600 font-bold text-xs mt-2 hover:underline">
+                        <Users size={14}/> Ver Turnos <ArrowRight size={12}/>
                     </Link>
-                    </p>
-                    
                 </div>
-
-                {/* 3. ESTADO DE CAJA (Interactivo) */}
-                <Link href="/admin/caja">
-                    <div className={`cursor-pointer h-full p-6 rounded-3xl shadow-lg relative overflow-hidden transition-transform hover:scale-[1.02] ${data.kpis.hayCajaAbierta ? 'bg-slate-900 text-white' : 'bg-red-500 text-white'}`}>
-                        <div className="absolute right-0 top-0 p-8 bg-white/10 rounded-bl-full -mr-4 -mt-4">
-                            {data.kpis.hayCajaAbierta ? <Unlock size={32}/> : <Lock size={32}/>}
-                        </div>
-                        <p className="text-xs font-black uppercase tracking-wider mb-1 opacity-80">
-                            Caja Actual
-                        </p>
-                        <h2 className="text-4xl font-black mb-2">
-                            {data.kpis.hayCajaAbierta ? `$${data.kpis.totalEnCaja.toLocaleString()}` : "CERRADA"}
-                        </h2>
-                        <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full bg-white ${data.kpis.hayCajaAbierta ? 'animate-pulse' : ''}`}></div>
-                            <span className="text-[10px] font-black uppercase tracking-wide">
-                                {data.kpis.hayCajaAbierta ? 'Turno Operativo' : 'Requiere Apertura'}
-                            </span>
-                        </div>
-                    </div>
-                </Link>
+                <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+                    <Users size={24}/>
+                </div>
             </div>
+        </div>
 
-            {/* --- SECCIÓN 2: GRÁFICO Y LISTA --- */}
-            <div className="grid lg:grid-cols-3 gap-8">
-                
-                {/* GRÁFICO DE BARRAS (Ocupa 2 espacios) */}
-                <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-gray-200 shadow-sm flex flex-col">
-                    <div className="mb-6">
-                        <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                            Ingresos de la Semana
-                        </h3>
-                        <p className="text-sm text-gray-400 font-medium">Evolución de ventas últimos 7 días</p>
-                    </div>
-                    
-                    <div className="flex-1 w-full min-h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={data.grafico} margin={{top: 10, right: 10, left: -20, bottom: 0}}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
-                                <XAxis 
-                                    dataKey="dia" 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 'bold'}} 
-                                    dy={10}
-                                    tickFormatter={(val) => val.charAt(0).toUpperCase() + val.slice(1)} // Capitalize
-                                />
-                                <YAxis 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{fill: '#94a3b8', fontSize: 11}} 
-                                    tickFormatter={(val) => `$${val/1000}k`} // Formato $10k
-                                />
-                                <Tooltip 
-                                    cursor={{fill: '#f8fafc'}}
-                                    contentStyle={{
-                                        borderRadius: '16px', 
-                                        border: 'none', 
-                                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                                        padding: '12px 16px'
-                                    }}
-                                        formatter={(value: any) => [`$${Number(value).toLocaleString()}`, "Ingresos"]}                                   labelStyle={{color: '#64748b', fontWeight: 'bold', marginBottom: '4px'}}
-                                />
-                                <Bar dataKey="monto" radius={[8, 8, 0, 0]} barSize={40}>
-                                    {data.grafico.map((entry, index) => (
-                                        <Cell 
-                                            key={`cell-${index}`} 
-                                            fill={entry.fecha === new Date().toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'}) ? '#0f172a' : '#cbd5e1'} 
-                                        />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
+        {/* Card 3: Caja (Negra) */}
+        <div className="bg-slate-900 p-6 rounded-3xl shadow-xl text-white relative overflow-hidden">
+            <div className="flex justify-between items-start relative z-10">
+                <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Caja Actual</p>
+                    <h2 className="text-4xl font-black text-white">${stats.cajaActual.toLocaleString()}</h2>
+                    <div className="flex items-center gap-2 mt-4">
+                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse shadow-[0_0_10px_#4ade80]"></div>
+                        <span className="text-xs font-bold text-slate-300 tracking-wide">TURNO OPERATIVO</span>
                     </div>
                 </div>
+                <div className="p-3 bg-white/10 rounded-2xl text-white backdrop-blur-sm">
+                    <Lock size={24}/>
+                </div>
+            </div>
+            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-600 rounded-full blur-[80px] opacity-20"></div>
+        </div>
 
-                {/* LISTA PRÓXIMOS TURNOS (Ocupa 1 espacio) */}
-                <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm flex flex-col">
-                    <div className="mb-6 flex justify-between items-center">
-                        <h3 className="text-xl font-black text-slate-900">Próximos Turnos</h3>
-                        <Link href="/admin/reservas" className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition">
-                            <ArrowRight size={20}/>
-                        </Link>
+      </div>
+
+      {/* --- GRID PRINCIPAL --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 h-auto lg:h-96">
+         
+         {/* COLUMNA IZQUIERDA: GRÁFICO */}
+         <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col" style={{height: "90%"}}>
+             <h3 className="font-bold text-slate-800 mb-6">Ingresos de la Semana</h3>
+             <div className="flex-1 w-full min-h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                   <BarChart data={stats.grafico}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
+                      <XAxis dataKey="fecha" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} tickFormatter={(val) => `$${val/1000}k`}/>
+                      <Tooltip 
+                        cursor={{fill: '#f8fafc'}} 
+                        contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.1)', padding: '12px'}}
+                        itemStyle={{color: '#0f172a', fontWeight: 'bold'}}
+                      />
+                      <Bar dataKey="total" fill="#cbd5e1" radius={[6, 6, 6, 6]} barSize={40} activeBar={{fill: '#0f172a'}} />
+                   </BarChart>
+                </ResponsiveContainer>
+             </div>
+         </div>
+
+         {/* COLUMNA DERECHA: PRÓXIMOS TURNOS */}
+         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col" style={{height: "90%"}}>
+             <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-slate-800">Próximos Partidos</h3>
+                <Link href="/admin/reservas" className="text-blue-600 hover:bg-blue-50 p-1 rounded-lg transition"><ArrowRight size={18}/></Link>
+             </div>
+             
+             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
+                {proximosTurnos.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm">
+                        <Calendar size={32} className="mb-2 opacity-20"/>
+                        <p>No hay partidos próximos.</p>
                     </div>
-                    
-                    <div className="flex-1 space-y-3 overflow-y-auto max-h-[350px] custom-scrollbar pr-2">
-                        {data.proximos.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-center py-10 text-gray-400">
-                                <Clock size={40} className="mb-2 opacity-20"/>
-                                <p className="text-sm">No hay reservas próximas hoy.</p>
+                ) : (
+                    proximosTurnos.map((turno, i) => (
+                        <div key={i} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl transition border border-transparent hover:border-gray-100 group">
+                            {/* FECHA/HORA */}
+                            <div className="flex flex-col items-center justify-center bg-gray-100 text-gray-500 w-12 h-12 rounded-xl font-bold text-xs group-hover:bg-slate-900 group-hover:text-white transition">
+                                <span>{new Date(turno.fechaInicio).getDate()}</span>
+                                <span className="uppercase text-[9px]">{new Date(turno.fechaInicio).toLocaleDateString('es-AR', {month:'short'})}</span>
                             </div>
-                        ) : (
-                            data.proximos.map((turno) => (
-                                <div key={turno.id} className="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-2xl transition-colors border border-transparent hover:border-slate-100 group">
-                                    {/* HORA y FECHA */}
-                                    <div className="bg-slate-100 text-slate-600 font-bold p-3 rounded-xl text-center min-w-[60px] group-hover:bg-slate-900 group-hover:text-white transition-colors">
-                                        <div className="text-xs uppercase">{new Date(turno.hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
-                                        <div className="text-xs uppercase">{new Date(turno.hora).toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'})}</div>
-                                    </div>
+                            
+                            {/* DETALLES */}
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-[10px] uppercase tracking-wide whitespace-nowrap">
+                                        {new Date(turno.fechaInicio).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                                    </span>
                                     
-                                    {/* INFO */}
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-slate-900 truncate">{turno.cancha}</p>
-                                        <p className="text-xs text-gray-500 font-medium truncate">{turno.cliente}</p>
-                                    </div>
-                                    
-                                    {/* ESTADO PAGO */}
-                                    <div title={turno.estado}>
-                                        {turno.estado === 'Pagado' ? (
-                                            <div className="w-2.5 h-2.5 bg-green-500 rounded-full ring-4 ring-green-100"></div>
-                                        ) : (
-                                            <div className="w-2.5 h-2.5 bg-orange-400 rounded-full animate-pulse ring-4 ring-orange-100"></div>
-                                        )}
-                                    </div>
+                                    {turno.cancha?.nombre && (
+                                        <span className="text-xs font-bold text-gray-400 uppercase truncate">
+                                            {turno.cancha.nombre}
+                                        </span>
+                                    )}
                                 </div>
-                            ))
-                        )}
-                    </div>
-                </div>
+                                <p className="text-sm font-bold text-slate-700 truncate">{turno.clienteNombre || "Cliente Anónimo"}</p>
+                            </div>
+                            
+                            {/* INDICADOR ESTADO */}
+                            <div className={`w-2 h-2 rounded-full ${turno.estado === 'Pagado' ? 'bg-green-400' : 'bg-orange-400'}`}></div>
+                        </div>
+                    ))
+                )}
+             </div>
+         </div>
 
-            </div>
-        </main>
-    );
+      </div>
+
+    </main>
+  );
 }

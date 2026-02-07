@@ -2,9 +2,10 @@
 import { useEffect, useState } from "react";
 import { 
   ArrowLeft, Plus, Users, Utensils, Coffee, 
-  Trash2, DollarSign, CheckCircle, Calculator, Banknote, CreditCard, Wallet 
+  Trash2, DollarSign, CheckCircle, Calculator, CreditCard, Wallet, X, AlertCircle 
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // --- TIPOS DE DATOS ---
 interface Mesa {
@@ -36,18 +37,18 @@ interface ReservaMesa {
   cobradoTransferencia: number;
 }
 
-// Interfaz auxiliar para agrupar visualmente
 interface ConsumoAgrupado {
     nombre: string;
     precioUnitario: number;
     cantidad: number;
     total: number;
-    ids: number[]; // Guardamos los IDs reales para poder borrar uno por uno
+    ids: number[]; 
 }
 
 const CATEGORIAS = ["Bebidas", "Comidas", "General"];
 
 export default function GestionMesasPage() {
+  const router = useRouter();
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<Mesa | null>(null);
   
@@ -59,9 +60,17 @@ export default function GestionMesasPage() {
 
   // 🟢 ESTADOS DE COBRO
   const [pagando, setPagando] = useState(false);
-  const [pagoTransferencia, setPagoTransferencia] = useState(""); // Cuanto paga por MP
-  const [pagaConEfectivo, setPagaConEfectivo] = useState("");   // Billete del cliente
+  const [pagoTransferencia, setPagoTransferencia] = useState(""); 
+  const [pagaConEfectivo, setPagaConEfectivo] = useState("");   
   const [procesandoPago, setProcesandoPago] = useState(false);
+
+  // 🟢 SISTEMA DE NOTIFICACIONES (TOAST)
+  const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
+
+  const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
+      setNotificacion({ tipo, msj });
+      setTimeout(() => setNotificacion(null), 4000);
+  };
 
   // 1. CARGA INICIAL
   useEffect(() => {
@@ -70,17 +79,23 @@ export default function GestionMesasPage() {
   }, []);
 
   const cargarMesas = async () => {
+    const userId = localStorage.getItem("usuarioId");
+    if (!userId) return;
+
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-      const res = await fetch("https://localhost:7123/api/Mesas");
+      const res = await fetch(`https://localhost:7123/api/Mesas?usuarioId=${userId}`);
       if(res.ok) setMesas(await res.json());
     } catch(e) { console.error(e); }
   };
 
   const cargarProductos = async () => {
+    const userId = localStorage.getItem("usuarioId");
+    if (!userId) return;
+
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-      const res = await fetch("https://localhost:7123/api/Productos");
+      const res = await fetch(`https://localhost:7123/api/Productos?usuarioId=${userId}`);
       if(res.ok) setProductos(await res.json());
     } catch(e) { console.error(e); }
   };
@@ -88,10 +103,17 @@ export default function GestionMesasPage() {
   // 2. CREAR MESA
   const crearMesa = async () => {
     if(!nuevaMesaNombre) return;
+    const userId = localStorage.getItem("usuarioId");
+    if (!userId) return alert("Error de sesión. Recarga la página.");
+
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     await fetch("https://localhost:7123/api/Mesas", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: nuevaMesaNombre, estaOcupada: false })
+        body: JSON.stringify({ 
+            nombre: nuevaMesaNombre, 
+            estaOcupada: false,
+            usuarioId: Number(userId) 
+        })
     });
     setNuevaMesaNombre("");
     cargarMesas();
@@ -101,8 +123,10 @@ export default function GestionMesasPage() {
   const borrarMesa = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation(); 
     if (!confirm("¿Seguro que quieres eliminar esta mesa?")) return;
+    const userId = localStorage.getItem("usuarioId");
+
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    const res = await fetch(`https://localhost:7123/api/Mesas/${id}`, { method: "DELETE" });
+    const res = await fetch(`https://localhost:7123/api/Mesas/${id}?usuarioId=${userId}`, { method: "DELETE" });
     if (res.ok) {
         cargarMesas(); 
         if (mesaSeleccionada?.id === id) setMesaSeleccionada(null); 
@@ -123,15 +147,23 @@ export default function GestionMesasPage() {
     }
   };
 
-  // 5. ABRIR MESA
+  // 5. ABRIR MESA (CON NOTIFICACIÓN BONITA)
   const abrirMesa = async () => {
     if (!mesaSeleccionada) return;
+    const userId = localStorage.getItem("usuarioId");
+
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    const res = await fetch(`https://localhost:7123/api/Mesas/${mesaSeleccionada.id}/abrir`, { method: "POST" });
+    const res = await fetch(`https://localhost:7123/api/Mesas/${mesaSeleccionada.id}/abrir?usuarioId=${userId}`, { method: "POST" });
+    
     if (res.ok) {
         cargarMesas(); 
         const data = await res.json();
         clickMesa({ ...mesaSeleccionada, estaOcupada: true, reservaActualId: data.reservaId });
+        mostrarMensaje('exito', "✅ Mesa abierta correctamente");
+    } else {
+        // 🟢 AQUÍ MOSTRAMOS EL MENSAJE DEL BACKEND (CAJA CERRADA) EN EL TOAST
+        const errorData = await res.text();
+        mostrarMensaje('error', errorData); 
     }
   };
 
@@ -139,7 +171,6 @@ export default function GestionMesasPage() {
   const agregarProducto = async (prod: Producto) => {
     if (!reservaActiva || !mesaSeleccionada) return;
     
-    // UI Update instantáneo
     const tempItem = { id: Date.now(), producto: prod.nombre, precio: prod.precio, cantidad: 1 };
     setReservaActiva({ ...reservaActiva, consumos: [...reservaActiva.consumos, tempItem] });
 
@@ -148,35 +179,32 @@ export default function GestionMesasPage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reservaId: reservaActiva.id, producto: prod.nombre, precio: prod.precio, cantidad: 1, jugador: "Cliente Mesa" })
     });
-    // Recarga silenciosa para obtener el ID real
+    
     const res = await fetch(`https://localhost:7123/api/Reservas/${reservaActiva.id}`);
     if(res.ok) setReservaActiva(await res.json());
   };
 
-  // 7. ELIMINAR PRODUCTO (Borra uno de la lista agrupada)
+  // 7. ELIMINAR PRODUCTO
   const eliminarProducto = async (id: number) => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    // UI Update instantáneo
     if (reservaActiva) {
         setReservaActiva({ ...reservaActiva, consumos: reservaActiva.consumos.filter(c => c.id !== id) });
     }
     await fetch(`https://localhost:7123/api/Consumos/${id}`, { method: "DELETE" });
     
-    // Recarga
     if (reservaActiva) {
         const resReserva = await fetch(`https://localhost:7123/api/Reservas/${reservaActiva.id}`);
         if(resReserva.ok) setReservaActiva(await resReserva.json());
     }
   };
 
-  // 🟢 8. LÓGICA DE AGRUPACIÓN (NUEVO) 🟢
-  // Transforma la lista plana de DB en lista agrupada visualmente
+  // 8. LÓGICA DE AGRUPACIÓN
   const consumosAgrupados: ConsumoAgrupado[] = reservaActiva?.consumos.reduce((acc: ConsumoAgrupado[], curr) => {
       const existente = acc.find(i => i.nombre === curr.producto);
       if (existente) {
           existente.cantidad += 1;
           existente.total += curr.precio;
-          existente.ids.push(curr.id); // Guardamos el ID para poder borrarlo luego
+          existente.ids.push(curr.id); 
       } else {
           acc.push({
               nombre: curr.producto,
@@ -189,10 +217,7 @@ export default function GestionMesasPage() {
       return acc;
   }, []) || [];
 
-  // Ordenamos para que lo último agregado salga arriba
-  // (Opcional, si prefieres orden alfabético quita el .reverse() en el render)
-
-  // 🟢 9. LÓGICA DE COBRO (ESTILO CAJERO) 🟢
+  // 9. LÓGICA DE COBRO
   const totalCuenta = reservaActiva?.consumos.reduce((a, b) => a + b.precio, 0) || 0;
 
   const iniciarCobro = () => {
@@ -208,8 +233,10 @@ export default function GestionMesasPage() {
 
   const confirmarCobroFinal = async () => {
     if (!reservaActiva || !mesaSeleccionada) return;
+    const userId = localStorage.getItem("usuarioId");
     
-    // Validación básica
+    if (!userId) return alert("Error de sesión");
+
     const totalCubierto = transferencia + (billeteCliente >= efectivoAPagar ? efectivoAPagar : billeteCliente);
     if (totalCubierto < totalCuenta - 100) { 
         if(!confirm(`⚠️ Faltan $${(totalCuenta - totalCubierto).toLocaleString()}. ¿Cerrar igual?`)) return;
@@ -219,37 +246,59 @@ export default function GestionMesasPage() {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
     try {
-        // Guardamos solo el efectivo real que ingresa (ignorando el vuelto)
-        let efectivoRealAGuardar = billeteCliente >= efectivoAPagar ? efectivoAPagar : billeteCliente;
+        let efectivoRealAGuardar = 0;
+        if (billeteCliente >= efectivoAPagar) {
+            efectivoRealAGuardar = efectivoAPagar;
+        } else {
+            efectivoRealAGuardar = billeteCliente;
+        }
 
-        // PASO 1: Guardamos el cobro en la Reserva (Esto asigna la Caja)
         const res = await fetch(`https://localhost:7123/api/Reservas/cobrar/${reservaActiva.id}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ cobradoEfectivo: efectivoRealAGuardar, cobradoTransferencia: transferencia })
         });
 
         if (res.ok) {
-            // PASO 2: Liberamos la Mesa (Y confirmamos los montos para que no se borren)
-            await fetch(`https://localhost:7123/api/Mesas/${mesaSeleccionada.id}/cerrar`, {
+            const resMesa = await fetch(`https://localhost:7123/api/Mesas/${mesaSeleccionada.id}/cerrar?usuarioId=${userId}`, {
                  method: "POST", headers: { "Content-Type": "application/json" },
-                 // 🟢 AQUÍ ESTABA EL ERROR (ANTES DECÍA 0,0) AHORA MANDA LOS MONTOS REALES
                  body: JSON.stringify({ cobradoEfectivo: efectivoRealAGuardar, cobradoTransferencia: transferencia }) 
             });
-            alert("✅ Mesa cobrada y cerrada correctamente");
-            setMesaSeleccionada(null);
-            cargarMesas();
+
+            if (resMesa.ok) {
+                mostrarMensaje('exito', "✅ Mesa cobrada y cerrada correctamente");
+                setMesaSeleccionada(null);
+                cargarMesas();
+            } else {
+                mostrarMensaje('error', "Error al cerrar la mesa.");
+            }
         } else {
-            alert("Error al procesar el cobro");
+            mostrarMensaje('error', "Error al procesar el cobro.");
         }
-    } catch (error) { console.error(error); alert("Error de conexión"); } 
+    } catch (error) { console.error(error); mostrarMensaje('error', "Error de conexión"); } 
     finally { setProcesandoPago(false); }
   };
 
   const productosFiltrados = productos.filter(p => p.categoria === catActiva);
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6 font-sans flex flex-col md:flex-row gap-6">
+    <main className="min-h-screen bg-gray-100 p-6 font-sans flex flex-col md:flex-row gap-6 relative ml-4">
       
+      {/* 🔔 NOTIFICACIÓN FLOTANTE (TOAST) */}
+      {notificacion && (
+          <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
+              notificacion.tipo === 'error' 
+                ? 'bg-red-50 text-red-800 border-red-200' 
+                : 'bg-green-50 text-green-800 border-green-200'
+          }`}>
+              {notificacion.tipo === 'error' ? <AlertCircle size={24} className="text-red-600"/> : <CheckCircle size={24} className="text-green-600"/>}
+              <div>
+                  <h4 className="font-black text-sm uppercase">{notificacion.tipo === 'error' ? 'Acción Bloqueada' : 'Éxito'}</h4>
+                  <p className="font-medium text-sm">{notificacion.msj}</p>
+              </div>
+              <button onClick={() => setNotificacion(null)} className="ml-4 opacity-50 hover:opacity-100"><X size={18}/></button>
+          </div>
+      )}
+
       {/* IZQUIERDA: MAPA DE MESAS */}
       <div className="md:w-1/3 flex flex-col gap-6">
         <div className="flex items-center gap-4">
@@ -299,7 +348,7 @@ export default function GestionMesasPage() {
                     <div className="w-full md:w-1/2 p-4 flex flex-col bg-white">
                         <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Coffee size={18}/> Consumos</h3>
                         
-                        {/* 🟢 LISTA AGRUPADA (NUEVO DISEÑO) */}
+                        {/* LISTA AGRUPADA */}
                         <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2">
                             {consumosAgrupados.map((item, index) => (
                                 <div key={index} className="group flex justify-between items-center text-sm border-b border-gray-100 pb-2 hover:bg-red-50 transition rounded px-2">
@@ -313,7 +362,6 @@ export default function GestionMesasPage() {
                                     <div className="flex items-center gap-3">
                                         <span className="font-black text-gray-900 text-lg">${item.total.toLocaleString()}</span>
                                         <button 
-                                            // Borramos usando el ÚLTIMO ID de la lista de ese producto
                                             onClick={() => eliminarProducto(item.ids[item.ids.length - 1])}
                                             className="text-gray-300 hover:text-red-600 hover:bg-white p-1 rounded-full transition"
                                             title="Quitar uno"
@@ -326,7 +374,7 @@ export default function GestionMesasPage() {
                             {consumosAgrupados.length === 0 && <p className="text-gray-400 text-center text-sm mt-10">Sin pedidos aún.</p>}
                         </div>
 
-                        {/* 🟢 ZONA DE COBRO (DISEÑO CAJERO) */}
+                        {/* ZONA DE COBRO */}
                         <div className="mt-auto pt-4 border-t border-gray-100">
                             {!pagando ? (
                                 <button onClick={iniciarCobro} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-lg hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2"><DollarSign/> CERRAR Y COBRAR</button>
@@ -337,7 +385,6 @@ export default function GestionMesasPage() {
                                         <button onClick={() => setPagando(false)} className="text-xs font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded">Cancelar</button>
                                     </div>
                                     
-                                    {/* 1. INPUT TRANSFERENCIA */}
                                     <div className="bg-violet-50 p-3 rounded-xl border border-violet-100">
                                         <div className="flex justify-between mb-1"><span className="text-[10px] font-black text-violet-700 uppercase">Transferencia / MP</span><CreditCard size={14} className="text-violet-600"/></div>
                                         <div className="flex items-center gap-1"><span className="text-violet-800 font-bold">$</span>
@@ -345,7 +392,6 @@ export default function GestionMesasPage() {
                                         </div>
                                     </div>
 
-                                    {/* 2. DISPLAY EFECTIVO A COBRAR */}
                                     <div className="bg-green-50 p-3 rounded-xl border border-green-100 flex justify-between items-center">
                                         <div>
                                             <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black text-green-700 uppercase">Efectivo a Cobrar</span><Wallet size={14} className="text-green-600"/></div>
@@ -353,7 +399,6 @@ export default function GestionMesasPage() {
                                         </div>
                                     </div>
 
-                                    {/* 3. INPUT BILLETE + VUELTO */}
                                     <div className="border-2 border-dashed border-gray-200 p-3 rounded-xl bg-white">
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-[10px] font-bold text-gray-400 uppercase">Paga Con (Billete):</span>

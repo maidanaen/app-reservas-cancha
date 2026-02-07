@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Calendar, AlertCircle, CheckCircle, Eye } from "lucide-react";
+import { ArrowLeft, Calendar, Eye } from "lucide-react";
 
 interface CajaCerrada {
     id: number;
@@ -24,9 +24,14 @@ export default function HistorialCajaPage() {
 
     useEffect(() => {
         const cargarHistorial = async () => {
+            // 🟢 1. RECUPERAR ID
+            const userId = localStorage.getItem("usuarioId");
+            if (!userId) return;
+
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
             try {
-                const res = await fetch("https://localhost:7123/api/Cajas/historial");
+                // 🟢 2. ENVIAR ID EN LA URL (Filtrar historial por dueño)
+                const res = await fetch(`https://localhost:7123/api/Cajas/historial?usuarioId=${userId}`);
                 if (res.ok) setHistorial(await res.json());
             } catch (error) { console.error(error); } 
             finally { setCargando(false); }
@@ -59,7 +64,7 @@ export default function HistorialCajaPage() {
                             <th className="p-5 text-right">Real (Arqueo)</th>
                             <th className="p-5 text-center">Dif. Efectivo</th>
                             <th className="p-5 text-center">Dif. Transf.</th>
-                            <th className="p-5 text-center">Ver</th> {/* Columna de Acción */}
+                            <th className="p-5 text-center">Ver</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 text-sm">
@@ -75,8 +80,6 @@ export default function HistorialCajaPage() {
                                 const difEfectivo = caja.montoFinal - caja.totalEfectivo;
                                 const difTransf = caja.montoRealTransferencia - caja.totalTransferencia;
                                 
-                                const esCuadrePerfecto = difEfectivo === 0 && difTransf === 0;
-
                                 return (
                                     <tr key={caja.id} className="hover:bg-blue-50/30 transition group">
                                         <td className="p-5 pl-8 ">
@@ -85,10 +88,10 @@ export default function HistorialCajaPage() {
                                                     <Calendar size={18}/>
                                                 </div>
                                                 <div>
-                                                        <p className="font-bold text-slate-700">{new Date(caja.fechaApertura).toLocaleDateString()}</p>
-                                                        <p className="text-xs text-gray-400">{new Date(caja.fechaApertura).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}hs</p>
+                                                    <p className="font-bold text-slate-700">{new Date(caja.fechaApertura).toLocaleDateString()}</p>
+                                                    <p className="text-xs text-gray-400">{new Date(caja.fechaApertura).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}hs</p>
                                                 </div>
-                                            </div>                                         
+                                            </div>                                             
                                         </td>
                                         <td className="p-5 pl-8">
                                             <div className="flex items-center gap-3">
@@ -132,8 +135,7 @@ export default function HistorialCajaPage() {
                                             </span>
                                         </td>
 
-                                        
-                                        {/* 🟢 BOTÓN DE ACCIÓN: ENLACE A LA PÁGINA DE DETALLE */}
+                                        {/* BOTÓN VER DETALLE */}
                                         <td className="p-5 text-center">
                                             <Link href={`/admin/caja/${caja.id}`}>
                                                 <button className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-slate-900 hover:text-white transition shadow-sm text-gray-400">

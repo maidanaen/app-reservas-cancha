@@ -1,7 +1,11 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Save, Plus, Trash2, DollarSign, Wallet, User, ShoppingBag, Beer, CheckCircle, Calculator, Users, Search } from "lucide-react";
+import { 
+    ArrowLeft, Save, Plus, Trash2, DollarSign, Wallet, User, 
+    ShoppingBag, Beer, CheckCircle, Calculator, Users, Search, 
+    AlertCircle, X // 🟢 Iconos nuevos para notificaciones
+} from "lucide-react";
 
 // --- INTERFACES ---
 interface Consumo {
@@ -29,6 +33,7 @@ interface Producto {
   nombre: string;
   precio: number;
   categoria: string;
+  precioVenta?: number; 
 }
 
 export default function DetalleReservaPage() {
@@ -42,14 +47,23 @@ export default function DetalleReservaPage() {
   const [precioCancha, setPrecioCancha] = useState(0); 
   const [cargando, setCargando] = useState(false);
   
+  const [productosInventario, setProductosInventario] = useState<Producto[]>([]);
+  
   const [cantidadPersonas, setCantidadPersonas] = useState(4); 
   const [nuevoConsumo, setNuevoConsumo] = useState({ producto: "", precio: "", jugador: "" });
 
-  const [productosInventario, setProductosInventario] = useState<Producto[]>([]);
   const [sugerencias, setSugerencias] = useState<Producto[]>([]);
   const [mostrarMenu, setMostrarMenu] = useState(false);
 
-  // 1. CARGA DE DATOS
+  // 🟢 SISTEMA DE NOTIFICACIONES (TOAST)
+  const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
+
+  const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
+      setNotificacion({ tipo, msj });
+      setTimeout(() => setNotificacion(null), 4000);
+  };
+
+  // 1. CARGA DE DATOS DE LA RESERVA
   const cargarDatos = async () => {
     if (!id) return;
 
@@ -74,21 +88,26 @@ export default function DetalleReservaPage() {
 
   useEffect(() => { if (id) cargarDatos(); }, [id]); 
 
-  // 2. CARGAR PRODUCTOS
+  // 2. CARGA DE PRODUCTOS
   useEffect(() => {
-    const cargarProductos = async () => {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        try {
-            const res = await fetch("https://localhost:7123/api/Productos");
-            if (res.ok) {
-                setProductosInventario(await res.json());
-            }
-        } catch (error) { console.error("Error cargando productos", error); }
-    };
-    cargarProductos();
+    const userId = localStorage.getItem("usuarioId");
+    if (!userId) return;
+
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    
+    fetch(`https://localhost:7123/api/Productos?usuarioId=${userId}`)
+      .then(async (res) => {
+          if (res.ok) {
+              const data = await res.json();
+              setProductosInventario(data); 
+          } else {
+              console.error("Error API Productos:", await res.text());
+          }
+      })
+      .catch(err => console.error("Error de red:", err));
   }, []);
 
-  // --- 🟢 GUARDAR PAGOS (ACTUALIZADO: Conecta con la Caja) ---
+  // --- GUARDAR PAGOS ---
   const guardarPagos = async (reservaActualizada?: Reserva) => {
     const dataToSave = reservaActualizada || reserva;
     if (!dataToSave || !id) return;
@@ -96,14 +115,11 @@ export default function DetalleReservaPage() {
     setCargando(true);
     try {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
-        // Preparamos el objeto específico para el endpoint de cobro
         const pagos = {
             cobradoEfectivo: dataToSave.cobradoEfectivo,
             cobradoTransferencia: dataToSave.cobradoTransferencia
         };
 
-        // Usamos el nuevo endpoint POST /cobrar que actualiza la Caja correctamente
         const res = await fetch(`https://localhost:7123/api/Reservas/cobrar/${id}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -111,25 +127,25 @@ export default function DetalleReservaPage() {
         });
 
         if (res.ok) {
-            if (!reservaActualizada) alert("✅ Caja y Pagos actualizados correctamente"); 
-            cargarDatos(); // Recargar para ver reflejados cambios de estado
+            // 🟢 Usamos la notificación bonita en lugar de alert()
+            if (!reservaActualizada) mostrarMensaje('exito', "✅ Caja y Pagos actualizados correctamente"); 
+            cargarDatos();
         } else {
-            alert("Error al actualizar los pagos en caja");
+            mostrarMensaje('error', "Error al actualizar los pagos en caja");
         }
     } catch (error) { 
         console.error(error);
-        alert("Error de conexión al guardar"); 
+        mostrarMensaje('error', "Error de conexión al guardar"); 
     } 
     finally { setCargando(false); }
   };
 
-  // --- 🟢 COBRAR JUGADOR (ACTUALIZADO: Conecta con la Caja) ---
+  // --- COBRAR JUGADOR ---
   const cobrarJugador = async (jugador: string, monto: number, metodo: 'EFECTIVO' | 'TRANSFERENCIA') => {
       if (!reserva || !id) return;
       
-      setCargando(true); // Bloqueamos UI
+      setCargando(true);
 
-      // 1. Calculamos nuevos montos totales
       const nuevosPagos = { 
           cobradoEfectivo: reserva.cobradoEfectivo,
           cobradoTransferencia: reserva.cobradoTransferencia
@@ -141,14 +157,12 @@ export default function DetalleReservaPage() {
       try {
           process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-          // PASO 1: Enviar el dinero a la CAJA usando el nuevo endpoint
           await fetch(`https://localhost:7123/api/Reservas/cobrar/${id}`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(nuevosPagos)
           });
 
-          // PASO 2: Crear el ticket de "PAGO REALIZADO" para el historial
           const etiquetaPago = metodo === 'EFECTIVO' ? "✅ PAGO EFECTIVO" : "✅ PAGO TRANSFERENCIA";
           const consumoData = {
               reservaId: Number(id),
@@ -164,14 +178,15 @@ export default function DetalleReservaPage() {
               body: JSON.stringify(consumoData)
           });
 
-          // PASO 3: Recargar todo
+          // 🟢 Notificación de éxito
+          mostrarMensaje('exito', `Cobro registrado a ${jugador}`);
           await cargarDatos();
 
       } catch (error) {
           console.error(error);
-          alert("Error al procesar el cobro.");
+          mostrarMensaje('error', "Error al procesar el cobro.");
       } finally {
-          setCargando(false); // Liberamos UI
+          setCargando(false);
       }
   };
 
@@ -233,7 +248,7 @@ export default function DetalleReservaPage() {
 
   if (!reserva) return <div className="p-10 text-center text-gray-500">Cargando...</div>;
 
-  // --- CÁLCULOS FINALES Y SEMÁFORO ---
+  // --- CÁLCULOS FINALES ---
   const consumosReales = reserva.consumos.filter(c => !c.producto.startsWith("Alquiler"));
   const totalCantina = consumosReales.reduce((acc, c) => acc + c.precio, 0);
   const totalGeneral = precioCancha + totalCantina;
@@ -250,7 +265,6 @@ export default function DetalleReservaPage() {
       return acc;
   }, {} as Record<string, Consumo[]>);
 
-  // 🟡 LÓGICA DEL SEMÁFORO VISUAL
   const getEstadoCaja = () => {
       if (saldoPendiente > 0) {
           return { 
@@ -275,8 +289,24 @@ export default function DetalleReservaPage() {
   const estado = getEstadoCaja();
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6 font-sans">
+    <main className="max-w-7xl mx-auto p-6 font-sans bg-gray-50 min-h-screen relative">
       
+      {/* 🔔 NOTIFICACIÓN FLOTANTE (TOAST) */}
+      {notificacion && (
+          <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
+              notificacion.tipo === 'error' 
+                ? 'bg-red-50 text-red-800 border-red-200' 
+                : 'bg-green-50 text-green-800 border-green-200'
+          }`}>
+              {notificacion.tipo === 'error' ? <AlertCircle size={24} className="text-red-600"/> : <CheckCircle size={24} className="text-green-600"/>}
+              <div>
+                  <h4 className="font-black text-sm uppercase">{notificacion.tipo === 'error' ? 'Error' : 'Éxito'}</h4>
+                  <p className="font-medium text-sm">{notificacion.msj}</p>
+              </div>
+              <button onClick={() => setNotificacion(null)} className="ml-4 opacity-50 hover:opacity-100"><X size={18}/></button>
+          </div>
+      )}
+
       {/* HEADER */}
       <div className="flex items-center gap-4 mb-6">
         <button onClick={() => router.back()} className="p-2 bg-white rounded-lg border hover:bg-gray-100 transition shadow-sm">
@@ -286,8 +316,6 @@ export default function DetalleReservaPage() {
             <h1 className="text-2xl font-bold text-gray-900">Gestión de Turno #{reserva.id}</h1>
             <p className="text-gray-500 text-sm font-medium">{reserva.clienteNombre} — {new Date(reserva.fechaInicio).toLocaleDateString()}</p>
         </div>
-        
-        {/* 🟡 CARTEL INTELIGENTE (SEMÁFORO) */}
         <div className={`ml-auto px-4 py-2 rounded-lg font-bold text-lg border shadow-sm flex items-center gap-2 ${estado.estilo}`}>
             <span>{estado.icono}</span>
             {estado.texto}
@@ -405,12 +433,13 @@ export default function DetalleReservaPage() {
                                     {sugerencias.map((prod) => (
                                         <li key={prod.id} className="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 flex justify-between items-center text-xs"
                                             onMouseDown={() => {
-                                                setNuevoConsumo({ ...nuevoConsumo, producto: prod.nombre, precio: prod.precio.toString() });
+                                                const precioFinal = prod.precioVenta || prod.precio;
+                                                setNuevoConsumo({ ...nuevoConsumo, producto: prod.nombre, precio: precioFinal.toString() });
                                                 setMostrarMenu(false);
                                             }}
                                         >
                                             <span className="font-medium text-gray-800">{prod.nombre}</span>
-                                            <span className="text-green-600 font-bold">${prod.precio}</span>
+                                            <span className="text-green-600 font-bold">${prod.precioVenta || prod.precio}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -452,7 +481,6 @@ export default function DetalleReservaPage() {
                         const items = cuentasPorJugador[jugador];
                         const subtotal = items.reduce((acc, curr) => acc + curr.precio, 0);
                         
-                        // VERIFICAR PAGO
                         const yaPago = items.some(c => c.producto.startsWith("✅ PAGO"));
 
                         return (

@@ -27,5 +27,6 @@ namespace Infrastructure.Persistencia
         public DbSet<Inscripcion> Inscripciones { get; set; }
         public DbSet<CajaTurno> CajaTurno { get; set; }
         public DbSet<MovimientoCaja> MovimientoCaja { get; set; }
+        public DbSet<LogSistema> LogsSistema { get; set; }
     }
 }

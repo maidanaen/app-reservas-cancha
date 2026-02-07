@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { DollarSign, Lock, Unlock, History, Eye, Banknote, Smartphone, TrendingUp, Calendar, Clock, X, CheckCircle, List, User, ShoppingBag, Utensils, Activity } from "lucide-react";
+import { DollarSign, Lock, Unlock, History, Eye, Banknote, Smartphone, TrendingUp, Calendar, Clock, X, CheckCircle, List, User, ShoppingBag, Utensils, Activity, AlertCircle } from "lucide-react";
 
 // --- INTERFACES ---
 interface Movimiento {
@@ -52,16 +52,31 @@ export default function CajaPage() {
     // Estados Inputs
     const [montoInicial, setMontoInicial] = useState("");
     const [showModalCierre, setShowModalCierre] = useState(false);
+    
+    // 🟢 NUEVO: Modal de Confirmación Final (El "Seguro?" bonito)
+    const [showConfirmacionFinal, setShowConfirmacionFinal] = useState(false);
+
     const [arqueoEfectivo, setArqueoEfectivo] = useState("");
     const [arqueoTransf, setArqueoTransf] = useState("");
 
     // Modal Detalle
     const [movimientoSeleccionado, setMovimientoSeleccionado] = useState<Movimiento | null>(null);
 
+    // 🟢 SISTEMA DE NOTIFICACIONES
+    const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
+
+    const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
+        setNotificacion({ tipo, msj });
+        setTimeout(() => setNotificacion(null), 4000);
+    };
+
     const cargarDatos = async () => {
+        const userId = localStorage.getItem("usuarioId");
+        if (!userId) return;
+
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const resActual = await fetch("https://localhost:7123/api/Cajas/actual");
+            const resActual = await fetch(`https://localhost:7123/api/Cajas/actual?usuarioId=${userId}`);
             if (resActual.ok) {
                 setReporteActual(await resActual.json());
             } else {
@@ -73,33 +88,49 @@ export default function CajaPage() {
     useEffect(() => { cargarDatos(); }, []);
 
     const abrirCaja = async () => {
-        if (!montoInicial) return alert("Ingresa el monto inicial");
+        if (!montoInicial) return mostrarMensaje('error', "⚠️ Ingresa el monto inicial");
+        const userId = localStorage.getItem("usuarioId");
+        if(!userId) return;
+
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        await fetch("https://localhost:7123/api/Cajas/abrir", {
+        await fetch(`https://localhost:7123/api/Cajas/abrir?usuarioId=${userId}`, {
             method: "POST", headers: { "Content-Type": "application/json" }, body: montoInicial
         });
         setMontoInicial("");
         cargarDatos();
+        mostrarMensaje('exito', "✅ Turno abierto correctamente");
     };
 
-    const confirmarCierre = async () => {
+    // 🟢 PASO 1: Validar montos antes de abrir confirmación
+    const validarYConfirmar = () => {
+        if (arqueoEfectivo === "" || arqueoTransf === "") {
+            mostrarMensaje('error', "⚠️ Debes ingresar los montos del arqueo.");
+            return;
+        }
+        // Si todo ok, abrimos el modal "Seguro?"
+        setShowConfirmacionFinal(true);
+    };
+
+    // 🟢 PASO 2: Ejecutar cierre real
+    const cerrarCajaDefinitivo = async () => {
         if (!reporteActual) return;
-        if (arqueoEfectivo === "" || arqueoTransf === "") return alert("Ingresa los montos del arqueo.");
-        if (!confirm("¿Confirmar cierre de turno?")) return;
+        const userId = localStorage.getItem("usuarioId");
         
         const dto = { efectivoReal: Number(arqueoEfectivo), transferenciaReal: Number(arqueoTransf) };
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        const res = await fetch(`https://localhost:7123/api/Cajas/cerrar`, { 
+        const res = await fetch(`https://localhost:7123/api/Cajas/cerrar?usuarioId=${userId}`, { 
             method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(dto)
         });
 
         if(res.ok){
             setShowModalCierre(false);
+            setShowConfirmacionFinal(false); // Cerramos ambos modales
             setArqueoEfectivo(""); setArqueoTransf("");
             cargarDatos();
+            mostrarMensaje('exito', "🔒 Caja cerrada correctamente");
         } else {
-            alert("Error al cerrar la caja");
+            mostrarMensaje('error', "❌ Error al cerrar la caja");
         }
     };
 
@@ -118,6 +149,16 @@ export default function CajaPage() {
     return (
         <main className="max-w-7xl mx-auto p-6 font-sans bg-gray-50 min-h-screen relative">
             
+            {/* 🔔 NOTIFICACIÓN FLOTANTE */}
+            {notificacion && (
+                <div className={`fixed top-6 right-6 z-[60] px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
+                    notificacion.tipo === 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
+                }`}>
+                    {notificacion.tipo === 'error' ? <AlertCircle size={24}/> : <CheckCircle size={24}/>}
+                    <p className="font-bold">{notificacion.msj}</p>
+                </div>
+            )}
+
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-black text-slate-900 flex items-center gap-2">
                     <DollarSign className="text-green-600" size={32}/> Gestión de Caja
@@ -127,10 +168,11 @@ export default function CajaPage() {
                 </Link>
             </div>
 
+            {/* ... TU CONTENIDO ORIGINAL DE CAJA (HEADER, KPIS, MOVIMIENTOS) SE MANTIENE IGUAL ... */}
+            {/* Solo pego la estructura base para que el código funcione completo */}
             <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden mb-10 transition-all">
                 {reporteActual ? (
                     <div className="animate-in fade-in slide-in-from-bottom-4">
-                        {/* HEADER CAJA */}
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
                             <div>
                                 <h2 className="text-2xl font-black text-green-600 flex items-center gap-2 mb-1">
@@ -146,7 +188,7 @@ export default function CajaPage() {
                             </button>
                         </div>
 
-                        {/* KPIS */}
+                        {/* KPIS Y MOVIMIENTOS (IGUAL QUE ANTES) */}
                         <div className="p-8 grid md:grid-cols-3 gap-6 bg-gray-50/50 border-b border-gray-100">
                             <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-xl shadow-slate-200 relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-8 bg-white/5 rounded-full -mr-4 -mt-4"></div>
@@ -191,98 +233,113 @@ export default function CajaPage() {
                 )}
             </div>
 
-            {/* 🟢 SECCIÓN RESTAURADA: DESGLOSE POR ACTIVIDAD */}
+            {/* SECCIÓN DESGLOSE Y LISTA (Mantengo tu código original aquí para no cortar) */}
             {reporteActual && (
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden mb-10">
-                    <div className="p-6 border-b border-gray-100">
-                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <TrendingUp size={20} className="text-slate-900"/> DESGLOSE POR ACTIVIDAD
-                        </h3>
+                <>
+                    {/* DESGLOSE */}
+                    <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden mb-10">
+                        <div className="p-6 border-b border-gray-100">
+                            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <TrendingUp size={20} className="text-slate-900"/> DESGLOSE POR ACTIVIDAD
+                            </h3>
+                        </div>
+                        <div className="p-6">
+                            <div className="grid grid-cols-4 text-xs font-bold text-gray-400 uppercase mb-4 px-4">
+                                <div>Concepto</div>
+                                <div className="text-right">Efectivo</div>
+                                <div className="text-right">Transferencia</div>
+                                <div className="text-right text-slate-800">Subtotal</div>
+                            </div>
+                            <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
+                                <span className="font-bold text-slate-700 flex items-center gap-2">Alquiler de Canchas</span>
+                                <span className="text-right font-medium text-green-600">+ ${resumen.detalle.canchas.efectivo.toLocaleString()}</span>
+                                <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.canchas.transferencia.toLocaleString()}</span>
+                                <span className="text-right font-black text-slate-900">${(resumen.detalle.canchas.efectivo + resumen.detalle.canchas.transferencia).toLocaleString()}</span>
+                            </div>
+                            <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
+                                <span className="font-bold text-slate-700">Restaurante (Mesas)</span>
+                                <span className="text-right font-medium text-green-600">+ ${resumen.detalle.mesas.efectivo.toLocaleString()}</span>
+                                <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.mesas.transferencia.toLocaleString()}</span>
+                                <span className="text-right font-black text-slate-900">${(resumen.detalle.mesas.efectivo + resumen.detalle.mesas.transferencia).toLocaleString()}</span>
+                            </div>
+                            <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
+                                <span className="font-bold text-slate-700">Cantina Express</span>
+                                <span className="text-right font-medium text-green-600">+ ${resumen.detalle.barra.efectivo.toLocaleString()}</span>
+                                <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.barra.transferencia.toLocaleString()}</span>
+                                <span className="text-right font-black text-slate-900">${(resumen.detalle.barra.efectivo + resumen.detalle.barra.transferencia).toLocaleString()}</span>
+                            </div>
+                            <div className="grid grid-cols-4 text-sm py-3 px-4 bg-yellow-50/50 rounded-lg mt-2 border border-yellow-100">
+                                <span className="font-bold text-yellow-700 flex items-center gap-2">● Fondo Inicial (Cambio)</span>
+                                <span className="text-right font-bold text-yellow-700">$ {caja.montoInicial.toLocaleString()}</span>
+                                <span className="text-right text-gray-300">-</span>
+                                <span className="text-right font-black text-yellow-800">$ {caja.montoInicial.toLocaleString()}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="p-6">
-                        {/* Encabezados */}
-                        <div className="grid grid-cols-4 text-xs font-bold text-gray-400 uppercase mb-4 px-4">
-                            <div>Concepto</div>
-                            <div className="text-right">Efectivo</div>
-                            <div className="text-right">Transferencia</div>
-                            <div className="text-right text-slate-800">Subtotal</div>
-                        </div>
 
-                        {/* Fila Canchas */}
-                        <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
-                            <span className="font-bold text-slate-700 flex items-center gap-2">Alquiler de Canchas</span>
-                            <span className="text-right font-medium text-green-600">+ ${resumen.detalle.canchas.efectivo.toLocaleString()}</span>
-                            <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.canchas.transferencia.toLocaleString()}</span>
-                            <span className="text-right font-black text-slate-900">${(resumen.detalle.canchas.efectivo + resumen.detalle.canchas.transferencia).toLocaleString()}</span>
+                    {/* LISTA MOVIMIENTOS */}
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2"><List size={24} className="text-gray-400"/> Movimientos del Turno</h3>
+                        <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-500 border-b border-gray-100">
+                                    <tr>
+                                        <th className="p-5 pl-8">Hora</th>
+                                        <th className="p-5">Concepto</th>
+                                        <th className="p-5">Detalle / Cliente</th>
+                                        <th className="p-5 text-center">Método</th>
+                                        <th className="p-5 text-right">Monto</th>
+                                        <th className="p-5 text-center">Ticket</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50 text-sm">
+                                    {movimientos.length === 0 ? (
+                                        <tr><td colSpan={6} className="p-10 text-center text-gray-400">No hay movimientos.</td></tr>
+                                    ) : (
+                                        movimientos.map((m: Movimiento) => (
+                                            <tr key={m.id} className="hover:bg-blue-50/30 transition group">
+                                                <td className="p-4 pl-8 font-mono text-gray-500">{new Date(m.hora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                                <td className="p-4 font-bold text-slate-700 flex items-center gap-2">{getIconoConcepto(m.concepto)}{m.concepto}</td>
+                                                <td className="p-4 text-gray-600 font-medium">{m.detalle}</td>
+                                                <td className="p-4 text-center">
+                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide border ${m.metodo.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-100' : 'bg-violet-50 text-violet-700 border-violet-100'}`}>{m.metodo}</span>
+                                                </td>
+                                                <td className="p-4 text-right font-black text-slate-900">${m.monto.toLocaleString()}</td>
+                                                <td className="p-4 text-center"><button onClick={() => setMovimientoSeleccionado(m)} className="text-gray-300 hover:text-blue-600 transition"><Eye size={18}/></button></td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
+                    </div>
+                </>
+            )}
 
-                        {/* Fila Restaurante */}
-                        <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
-                            <span className="font-bold text-slate-700">Restaurante (Mesas)</span>
-                            <span className="text-right font-medium text-green-600">+ ${resumen.detalle.mesas.efectivo.toLocaleString()}</span>
-                            <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.mesas.transferencia.toLocaleString()}</span>
-                            <span className="text-right font-black text-slate-900">${(resumen.detalle.mesas.efectivo + resumen.detalle.mesas.transferencia).toLocaleString()}</span>
+            {/* 🛑 MODAL DE CONFIRMACIÓN FINAL (BONITO) */}
+            {showConfirmacionFinal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center transform transition-all scale-100">
+                        <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                            <Lock size={32}/>
                         </div>
-
-                        {/* Fila Cantina */}
-                        <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
-                            <span className="font-bold text-slate-700">Cantina Express</span>
-                            <span className="text-right font-medium text-green-600">+ ${resumen.detalle.barra.efectivo.toLocaleString()}</span>
-                            <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.barra.transferencia.toLocaleString()}</span>
-                            <span className="text-right font-black text-slate-900">${(resumen.detalle.barra.efectivo + resumen.detalle.barra.transferencia).toLocaleString()}</span>
-                        </div>
-
-                        {/* Fila Fondo Inicial */}
-                        <div className="grid grid-cols-4 text-sm py-3 px-4 bg-yellow-50/50 rounded-lg mt-2 border border-yellow-100">
-                            <span className="font-bold text-yellow-700 flex items-center gap-2">● Fondo Inicial (Cambio)</span>
-                            <span className="text-right font-bold text-yellow-700">$ {caja.montoInicial.toLocaleString()}</span>
-                            <span className="text-right text-gray-300">-</span>
-                            <span className="text-right font-black text-yellow-800">$ {caja.montoInicial.toLocaleString()}</span>
+                        <h3 className="text-xl font-black text-slate-900 mb-2">¿Cerrar Turno?</h3>
+                        <p className="text-gray-500 mb-6 text-sm">
+                            Una vez cerrado, no podrás agregar más ventas a este turno. Se generará el reporte final.
+                        </p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setShowConfirmacionFinal(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-gray-100 rounded-xl transition">
+                                Volver
+                            </button>
+                            <button onClick={cerrarCajaDefinitivo} className="flex-1 py-3 text-white font-bold bg-red-600 hover:bg-red-700 rounded-xl shadow-lg transition">
+                                Sí, Cerrar
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* LISTA MOVIMIENTOS */}
-            {reporteActual && (
-                <div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2"><List size={24} className="text-gray-400"/> Movimientos del Turno</h3>
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-500 border-b border-gray-100">
-                                <tr>
-                                    <th className="p-5 pl-8">Hora</th>
-                                    <th className="p-5">Concepto</th>
-                                    <th className="p-5">Detalle / Cliente</th>
-                                    <th className="p-5 text-center">Método</th>
-                                    <th className="p-5 text-right">Monto</th>
-                                    <th className="p-5 text-center">Ticket</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50 text-sm">
-                                {movimientos.length === 0 ? (
-                                    <tr><td colSpan={6} className="p-10 text-center text-gray-400">No hay movimientos.</td></tr>
-                                ) : (
-                                    movimientos.map((m: Movimiento) => (
-                                        <tr key={m.id} className="hover:bg-blue-50/30 transition group">
-                                            <td className="p-4 pl-8 font-mono text-gray-500">{new Date(m.hora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                                            <td className="p-4 font-bold text-slate-700 flex items-center gap-2">{getIconoConcepto(m.concepto)}{m.concepto}</td>
-                                            <td className="p-4 text-gray-600 font-medium">{m.detalle}</td>
-                                            <td className="p-4 text-center">
-                                                <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide border ${m.metodo.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-100' : 'bg-violet-50 text-violet-700 border-violet-100'}`}>{m.metodo}</span>
-                                            </td>
-                                            <td className="p-4 text-right font-black text-slate-900">${m.monto.toLocaleString()}</td>
-                                            <td className="p-4 text-center"><button onClick={() => setMovimientoSeleccionado(m)} className="text-gray-300 hover:text-blue-600 transition"><Eye size={18}/></button></td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL CIERRE */}
+            {/* MODAL ARQUEO DE CAJA */}
             {showModalCierre && reporteActual && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
                     <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95">
@@ -305,13 +362,14 @@ export default function CajaPage() {
                         </div>
                         <div className="p-6 bg-gray-50 border-t border-gray-100 flex gap-4">
                             <button onClick={() => setShowModalCierre(false)} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-200 transition">Cancelar</button>
-                            <button onClick={confirmarCierre} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition flex justify-center items-center gap-2"><CheckCircle size={18}/> FINALIZAR TURNO</button>
+                            {/* 🟢 EL BOTÓN AHORA LLAMA A VALIDAR Y CONFIRMAR, NO CIERRA DIRECTO */}
+                            <button onClick={validarYConfirmar} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition flex justify-center items-center gap-2"><CheckCircle size={18}/> FINALIZAR TURNO</button>
                         </div>
                     </div>
                 </div>
             )}
 
-           {/* --- 🟢 MODAL DETALLE INTELIGENTE --- */}
+           {/* --- MODAL DETALLE INTELIGENTE (MANTUVE TU CÓDIGO) --- */}
             {movimientoSeleccionado && (
                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setMovimientoSeleccionado(null)}>
                     <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
@@ -346,7 +404,7 @@ export default function CajaPage() {
                                 </div>
                             </div>
 
-                           {/* 🟢 LISTA DE ITEMS (AGRUPADA Y LIMPIA) */}
+                           {/* LISTA DE ITEMS */}
                             {movimientoSeleccionado.items && movimientoSeleccionado.items.length > 0 && (
                                 <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                                     <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1 border-b border-gray-100 pb-2">
@@ -355,29 +413,14 @@ export default function CajaPage() {
                                     
                                     <div className="space-y-2">
                                         {(() => {
-                                            // 1. Separar Alquileres
                                             const esAlquiler = (nombre: string) => nombre.toLowerCase().includes('alquiler') || nombre.toLowerCase().includes('pista') || nombre.toLowerCase().includes('luz');
                                             const totalAlquiler = movimientoSeleccionado.items.filter(i => esAlquiler(i.producto)).reduce((acc, i) => acc + i.precio, 0);
-
-                                            // 2. Agrupar Productos
                                             const itemsRaw = movimientoSeleccionado.items.filter(i => !esAlquiler(i.producto) && i.precio > 0);
-                                            
-                                            // 🧠 MAGIA DE AGRUPACIÓN (Soporta Cantina y Restaurante)
                                             const itemsAgrupados = itemsRaw.reduce((acc: any[], curr) => {
                                                 const existing = acc.find((i: any) => i.producto === curr.producto);
-                                                
                                                 const cantidadReal = curr.cantidad || 1; 
-
-                                                if (existing) {
-                                                    existing.cantidad += cantidadReal;
-                                                    existing.total += curr.precio;
-                                                } else {
-                                                    acc.push({
-                                                        producto: curr.producto,
-                                                        cantidad: cantidadReal,
-                                                        total: curr.precio
-                                                    });
-                                                }
+                                                if (existing) { existing.cantidad += cantidadReal; existing.total += curr.precio; } 
+                                                else { acc.push({ producto: curr.producto, cantidad: cantidadReal, total: curr.precio }); }
                                                 return acc;
                                             }, []);
 
@@ -392,13 +435,11 @@ export default function CajaPage() {
                                                             <div className="font-mono font-bold text-slate-900 whitespace-nowrap">${totalAlquiler.toLocaleString()}</div>
                                                         </div>
                                                     )}
-
                                                     {itemsAgrupados.map((item, index) => (
                                                         <div key={index} className="flex justify-between items-start py-1 hover:bg-gray-50 rounded px-1 transition-colors group">
                                                             <div className="flex items-start gap-2 text-slate-600 font-medium pr-4 group-hover:text-slate-900 transition-colors">
                                                                 <span className="text-[10px] mt-[3px] text-gray-300">●</span>
                                                                 <span className="leading-tight">
-                                                                    {/* BADGE AZUL SI ES MAS DE 1 */}
                                                                     {item.cantidad > 1 && <span className="text-blue-600 font-bold mr-1">{item.cantidad}x</span>}
                                                                     {item.producto}
                                                                 </span>

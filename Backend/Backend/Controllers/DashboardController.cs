@@ -17,105 +17,77 @@ namespace Backend.Controllers
         }
 
         [HttpGet("resumen")]
-        public async Task<ActionResult<object>> GetResumen()
+        public async Task<ActionResult> GetResumen(int usuarioId)
         {
-            var ahora = DateTime.Now;
+            // 1. BUSCAR CAJA ABIERTA (El contenedor de la jornada actual)
+            var cajaAbierta = await _context.Cajas
+                .Where(c => c.UsuarioId == usuarioId && c.FechaCierre == null)
+                .OrderByDescending(c => c.FechaApertura)
+                .FirstOrDefaultAsync();
 
-            // 🔥 LÓGICA DE DÍA OPERATIVO:
-            // Si son antes de las 6:00 AM, seguimos considerando que es "ayer"
-            // (Ajusta el '6' si alguna vez abres antes de esa hora)
-            var horaCorte = 6;
+            decimal ventasJornada = 0;
+            
+            decimal cajaTotal = 0;
 
-            DateTime inicioDiaOperativo;
-            if (ahora.Hour < horaCorte)
+            // 🟢 SI HAY TURNO ABIERTO: Calculamos todo en base a ESA caja
+            if (cajaAbierta != null)
             {
-                // Si son las 2 AM del domingo, el día operativo empezó el sábado a las 6 AM
-                inicioDiaOperativo = DateTime.Today.AddDays(-1).AddHours(horaCorte);
+                // a. Sumamos todas las reservas vinculadas a esta caja (sin importar si fueron ayer u hoy)
+                var reservasDelTurno = _context.Reservas
+                    .Where(r => r.CajaId == cajaAbierta.Id && r.Estado != "Cancelado");
+
+                ventasJornada = await reservasDelTurno
+                    .SumAsync(r => r.CobradoEfectivo + r.CobradoTransferencia);
+
+                
+
+                // c. Caja Actual = Monto Inicial + Ventas del Turno
+                cajaTotal = cajaAbierta.MontoInicial + ventasJornada;
             }
             else
             {
-                // Si son las 10 AM del domingo, el día operativo empezó hoy a las 6 AM
-                inicioDiaOperativo = DateTime.Today.AddHours(horaCorte);
+                // 🔴 SI NO HAY TURNO ABIERTO: Mostramos 0 o datos del día calendario (opcional)
+                // Por seguridad operativa, mejor mostrar 0 para obligar a abrir caja.
+                ventasJornada = 0;
+               
+                cajaTotal = 0;
             }
 
-            var finDiaOperativo = inicioDiaOperativo.AddDays(1); // Termina mañana a las 6 AM
+            //2- Queremos saber la ocupación REAL de la cancha hoy, hayan pagado o no.
+            var hoy = DateTime.Today;
+            var manana = hoy.AddDays(1);
 
-            // 1. KPI: Ingresos de la JORNADA (Usamos el rango de fechas operativo)
-            var ventasJornada = await _context.Reservas
-                .Where(r => r.FechaInicio >= inicioDiaOperativo && r.FechaInicio < finDiaOperativo)
-                .ToListAsync();
+            int turnosJornada = await _context.Reservas
+                .Where(r => r.UsuarioId == usuarioId
+                            && r.FechaInicio >= hoy
+                            && r.FechaInicio < manana
+                            && r.Tipo == "Cancha"
+                            && r.Estado != "Cancelado")
+                .CountAsync();
 
-            decimal totalJornada = ventasJornada.Sum(r => r.CobradoEfectivo + r.CobradoTransferencia);
-
-            // Contamos partidos de esta jornada (incluso los de la madrugada)
-            int partidosJornada = ventasJornada.Count(r => r.CanchaId != null || r.Tipo == "Cancha");
-
-            // 2. KPI: Caja Abierta (Esto sigue igual, es el dinero físico actual)
-            var cajaAbierta = await _context.Cajas
-                .OrderByDescending(c => c.FechaApertura)
-                .FirstOrDefaultAsync(c => c.FechaCierre == null);
-
-            decimal totalCaja = 0;
-            if (cajaAbierta != null)
-            {
-                var movsCaja = await _context.Reservas
-                    .Where(r => r.CajaId == cajaAbierta.Id)
-                    .SumAsync(r => r.CobradoEfectivo + r.CobradoTransferencia);
-
-                totalCaja = cajaAbierta.MontoInicial + movsCaja;
-            }
-
-            // 3. GRÁFICO: Ajustado a Días Operativos (Últimos 7 días)
-            // Para el gráfico es un poco más complejo hacerlo exacto por SQL, 
-            // pero para simplificar visualmente usaremos la fecha de inicio ajustada.
-            var hace7dias = inicioDiaOperativo.AddDays(-6);
-
-            var ventasSemana = await _context.Reservas
-                .Where(r => r.FechaInicio >= hace7dias) // Traemos todo lo de la semana
-                .Select(r => new { r.FechaInicio, Total = r.CobradoEfectivo + r.CobradoTransferencia })
-                .ToListAsync();
-
-            var graficoSemanal = Enumerable.Range(0, 7)
-                .Select(i => hace7dias.AddDays(i))
-                .Select(diaInicio => new
+            // 3. GRÁFICO (Este sí lo dejamos por fecha calendario para ver historial semanal)
+            var hace7Dias = DateTime.Today.AddDays(-6);
+            var graficoData = await _context.Reservas
+                .Where(r => r.UsuarioId == usuarioId
+                            && r.FechaInicio >= hace7Dias
+                            && r.Estado != "Cancelado")
+                .GroupBy(r => r.FechaInicio.Date)
+                .Select(g => new
                 {
-                    Fecha = diaInicio.ToString("dd/MM"),
-                    Dia = diaInicio.ToString("ddd", new System.Globalization.CultureInfo("es-ES")),
-                    // Sumamos todo lo que ocurrió en las 24hs desde ese inicio de día operativo
-                    Monto = ventasSemana
-                        .Where(v => v.FechaInicio >= diaInicio && v.FechaInicio < diaInicio.AddDays(1))
-                        .Sum(v => v.Total)
+                    Fecha = g.Key,
+                    Total = g.Sum(x => x.CobradoEfectivo + x.CobradoTransferencia)
                 })
-                .ToList();
-
-            // 4. LISTA: Próximos 5 Turnos (Desde AHORA real en adelante)
-            var proximosTurnos = await _context.Reservas
-                .Include(r => r.Cancha)
-                .Where(r => r.FechaInicio > ahora && (r.CanchaId != null || r.Tipo == "Cancha"))
-                .OrderBy(r => r.FechaInicio)
-                .Take(5)
-                .Select(r => new
-                {
-                    r.Id,
-                    Hora = r.FechaInicio,
-                    Cancha = r.Cancha != null ? r.Cancha.Nombre : "Pista Padel",
-                    Cliente = r.ClienteNombre,
-                    Estado = r.Estado
-                })
+                .OrderBy(x => x.Fecha)
                 .ToListAsync();
 
             return Ok(new
             {
-                Kpis = new
-                {
-                    IngresosHoy = totalJornada, // Ahora refleja tu "Día Operativo"
-                    PartidosJugados = partidosJornada,
-                    TotalEnCaja = totalCaja,
-                    HayCajaAbierta = cajaAbierta != null
-                },
-                Grafico = graficoSemanal,
-                Proximos = proximosTurnos
+                ventasDiarias = ventasJornada, // Dinero en caja hoy
+                turnosHoy = turnosJornada, //Ocupación de canchas hoy (Pagado + Pendiente)
+                cajaActual = cajaTotal, // Saldo total físico
+                grafico = graficoData
             });
         }
     }
+    
 }

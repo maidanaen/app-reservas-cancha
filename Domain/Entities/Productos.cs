@@ -15,7 +15,7 @@ namespace Backend.Domain.Entities
 
         // Categorías: "Bebidas", "Comidas", "Accesorios", "General"
         public string Categoria { get; set; } = "General";
-
+        public int UsuarioId { get; set; }
         public bool Activo { get; set; } = true; // Para borrar sin perder historial
     }
 }

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Trophy, CalendarDays, Newspaper, X, Clock, Image as ImageIcon } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 interface Noticia {
   id: number;
@@ -15,11 +16,25 @@ export default function TorneosPage() {
   const [cargando, setCargando] = useState(true);
   const [noticiaSeleccionada, setNoticiaSeleccionada] = useState<Noticia | null>(null);
 
+  // 🟢 2. Obtenemos los parámetros de la URL
+  const searchParams = useSearchParams();
+  // Si la URL es /torneos?clubId=4, esto vale "4". Si no, vale "0" (Feed Global).
+  const clubId = searchParams.get("clubId") || "0"; 
+
   useEffect(() => {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    // Asegúrate de que el puerto (7123) sea el correcto
-    fetch("https://localhost:7123/api/Noticias")
-      .then(res => res.json())
+    // Nota: process.env no suele funcionar dentro del navegador (useEffect), 
+    // pero si lo tienes configurado en Next.js ignora este comentario.
+    // process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; 
+
+    setCargando(true);
+
+    // 🟢 3. FETCH AL NUEVO ENDPOINT PÚBLICO
+    // Usamos /api/Noticias/publicas y le pasamos el ID (0 o el del club)
+    fetch(`https://localhost:7123/api/Noticias/publicas?usuarioId=${clubId}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Error en la respuesta del servidor");
+        return res.json();
+      })
       .then(data => {
         setNoticias(data);
         setCargando(false);
@@ -28,8 +43,8 @@ export default function TorneosPage() {
         console.error(err);
         setCargando(false);
       });
-  }, []);
 
+  }, [clubId]);
   return (
     <main className="max-w-5xl mx-auto p-6 min-h-screen font-sans relative">
       

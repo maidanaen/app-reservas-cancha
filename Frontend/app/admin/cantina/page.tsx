@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { 
-    Search, ShoppingCart, Trash2, CreditCard, Banknote, History, 
-    Package, X, Plus, Tag, Pencil, DollarSign, Calculator, Wallet 
+    Search, ShoppingCart, Trash2, CreditCard, 
+    Package, X, Plus, Tag, Pencil, DollarSign, Calculator, Wallet, AlertTriangle 
 } from "lucide-react";
 
 // --- INTERFACES ---
@@ -36,6 +36,7 @@ export default function CantinaPage() {
     const [categoriaActiva, setCategoriaActiva] = useState("Todas");
     
     // Estados de Caja
+    const [cajaAbierta, setCajaAbierta] = useState(false); // 🟢 Nuevo estado para saber si está abierta
     const [totalEfectivo, setTotalEfectivo] = useState(0);
     const [totalTransferencia, setTotalTransferencia] = useState(0);
     const [historialVentas, setHistorialVentas] = useState<VentaHistorial[]>([]);
@@ -45,31 +46,52 @@ export default function CantinaPage() {
     const [idEdicion, setIdEdicion] = useState<number | null>(null);
     const [formProd, setFormProd] = useState({ nombre: "", precio: "", categoria: "Bebidas" });
     
-    // 🟢 ESTADOS DE COBRO (ESTILO CAJERO)
+    // Estados de Cobro
     const [modoCobro, setModoCobro] = useState(false);
-    const [pagoTransferencia, setPagoTransferencia] = useState(""); // Input de Transferencia
-    const [pagaConEfectivo, setPagaConEfectivo] = useState("");   // Billete del cliente
+    const [pagoTransferencia, setPagoTransferencia] = useState(""); 
+    const [pagaConEfectivo, setPagaConEfectivo] = useState("");   
     const [procesando, setProcesando] = useState(false);
 
-    // --- CARGA INICIAL ---
+    // --- CARGA INICIAL ROBUSTA (La solución al error rojo) ---
     const cargarTodo = async () => {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        try {
-            const resProd = await fetch("https://localhost:7123/api/Productos");
-            if (resProd.ok) setProductos(await resProd.json());
-            setCargandoProductos(false);
+        const userId = localStorage.getItem("usuarioId");
+        if (!userId) return;
 
-            const resCaja = await fetch("https://localhost:7123/api/Cajas/actual");
-            if (resCaja.ok) {
-                const data = await resCaja.json();
-                setTotalEfectivo(data.resumen.detalle.barra.efectivo);
-                setTotalTransferencia(data.resumen.detalle.barra.transferencia);
-                const ventasCantina = data.movimientos
-                    .filter((m: any) => m.concepto === "Cantina Express" || m.concepto === "Mostrador")
-                    .slice(0, 5);
-                setHistorialVentas(ventasCantina);
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+        
+        // 1. CARGAMOS PRODUCTOS (Bloque independiente)
+        try {
+            const resProd = await fetch(`https://localhost:7123/api/Productos?usuarioId=${userId}`);
+            if (resProd.ok) {
+                setProductos(await resProd.json());
             }
-        } catch (error) { console.error("Error cargando datos:", error); }
+        } catch (error) {
+            console.error("Error cargando productos:", error);
+        } finally {
+            setCargandoProductos(false);
+        }
+
+        // 2. CARGAMOS CAJA (Bloque independiente)
+        try {
+            const resCaja = await fetch(`https://localhost:7123/api/Cajas/actual?usuarioId=${userId}`);
+            
+            if (resCaja.ok) {
+                // ✅ SI HAY CAJA ABIERTA
+                const data = await resCaja.json();
+                setCajaAbierta(true);
+                setTotalEfectivo(data.resumen?.detalle?.barra?.efectivo || 0);
+                setTotalTransferencia(data.resumen?.detalle?.barra?.transferencia || 0);
+            } else {
+                // 🔴 SI DA 404 (CAJA CERRADA) -> ES NORMAL
+                setCajaAbierta(false);
+                setTotalEfectivo(0);
+                setTotalTransferencia(0);
+            }
+        } catch (error) {
+            // Si hay error de red, asumimos cerrada para no romper nada
+            console.log("Caja cerrada o inalcanzable.");
+            setCajaAbierta(false);
+        }
     };
 
     useEffect(() => { cargarTodo(); }, []);
@@ -87,60 +109,67 @@ export default function CantinaPage() {
         setCarrito(prev => prev.filter(item => item.id !== id));
     };
 
-    // 🟢 LÓGICA DE AGRUPACIÓN VISUAL (Igual que en Mesas)
-    // Aunque el carrito ya agrupa por lógica de estado, esto asegura el orden correcto.
     const totalCarrito = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
 
-    // --- 🟢 LÓGICA DE COBRO (CON VUELTO) ---
-    
+    // --- LÓGICA DE COBRO ---
     const iniciarCobro = () => {
         setModoCobro(true);
         setPagoTransferencia("0");
         setPagaConEfectivo("");
     };
 
-    // Cálculos Reactivos
     const transferencia = Number(pagoTransferencia);
     const efectivoAPagar = Math.max(0, totalCarrito - transferencia);
     const billeteCliente = Number(pagaConEfectivo);
     const vuelto = billeteCliente - efectivoAPagar;
 
     const confirmarCobro = async () => {
-        if (carrito.length === 0) return;
+        const userId = localStorage.getItem("usuarioId");
+        if (carrito.length === 0 || !userId) return;
         
-        // Validación
+        // 🟢 VALIDACIÓN DE CAJA: Si está cerrada, avisamos.
+        if (!cajaAbierta) {
+            alert("⚠️ ¡Atención! La caja está CERRADA. Debes abrirla en la sección 'Caja' para poder cobrar.");
+            return;
+        }
+
         const totalCubierto = transferencia + (billeteCliente >= efectivoAPagar ? efectivoAPagar : billeteCliente);
-        if (totalCubierto < totalCarrito - 100) {
+        if (totalCubierto < totalCarrito - 1) {
              if(!confirm(`⚠️ Faltan $${(totalCarrito - totalCubierto).toLocaleString()}. ¿Cobrar igual?`)) return;
         }
 
         setProcesando(true);
 
-        // 🧠 LÓGICA DE PROTECCIÓN: Guardar solo lo que corresponde
         let efectivoRealAGuardar = 0;
         if (billeteCliente >= efectivoAPagar) {
-            efectivoRealAGuardar = efectivoAPagar; // Pagó justo o con cambio
+            efectivoRealAGuardar = efectivoAPagar; 
         } else {
-            efectivoRealAGuardar = billeteCliente; // Pagó de menos
+            efectivoRealAGuardar = billeteCliente;
         }
 
         const ventaDto = {
             items: carrito.map(i => ({ producto: i.nombre, precio: i.precio * i.cantidad, cantidad: i.cantidad })),
             metodoPago: "Mixto", 
             cobradoEfectivo: efectivoRealAGuardar,
-            cobradoTransferencia: transferencia
+            cobradoTransferencia: transferencia,
+            usuarioId: Number(userId)
         };
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
             const res = await fetch("https://localhost:7123/api/Reservas/venta-express", {
-                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(ventaDto)
+                method: "POST", 
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify(ventaDto)
             });
             if (res.ok) {
                 setCarrito([]);
                 setModoCobro(false);
-                await cargarTodo();
-            } else { alert("Error al procesar venta."); }
+                await cargarTodo(); 
+            } else { 
+                const text = await res.text();
+                alert("Error al procesar venta: " + text);
+            }
         } catch (error) { console.error(error); } 
         finally { setProcesando(false); }
     };
@@ -151,24 +180,49 @@ export default function CantinaPage() {
     
     const eliminarProducto = async () => {
         if (!idEdicion) return;
+        const userId = localStorage.getItem("usuarioId");
+
         if (confirm("⚠️ ¿Eliminar de Base de Datos?")) {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
             try {
-                await fetch(`https://localhost:7123/api/Productos/${idEdicion}`, { method: "DELETE" });
-                cargarTodo(); setShowModalProducto(false);
+                await fetch(`https://localhost:7123/api/Productos/${idEdicion}?usuarioId=${userId}`, { 
+                    method: "DELETE" 
+                });
+                cargarTodo(); 
+                setShowModalProducto(false);
             } catch (error) { alert("Error al eliminar"); }
         }
     };
 
     const guardarProducto = async () => {
-        if (!formProd.nombre || !formProd.precio) return alert("Completa los datos");
-        const productoData = { id: idEdicion || 0, nombre: formProd.nombre, precio: Number(formProd.precio), categoria: formProd.categoria, activo: true };
+        const userId = localStorage.getItem("usuarioId");
+        if (!formProd.nombre || !formProd.precio || !userId) return alert("Completa los datos");
+
+        const productoData = { 
+            id: idEdicion || 0, 
+            nombre: formProd.nombre, 
+            precio: Number(formProd.precio), 
+            categoria: formProd.categoria, 
+            activo: true,
+            usuarioId: Number(userId)
+        };
+
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const url = idEdicion ? `https://localhost:7123/api/Productos/${idEdicion}` : "https://localhost:7123/api/Productos";
+            const url = idEdicion 
+                ? `https://localhost:7123/api/Productos/${idEdicion}` 
+                : "https://localhost:7123/api/Productos";
+            
             const method = idEdicion ? "PUT" : "POST";
-            await fetch(url, { method, headers: {"Content-Type":"application/json"}, body: JSON.stringify(productoData) });
-            cargarTodo(); setShowModalProducto(false);
+            
+            await fetch(url, { 
+                method, 
+                headers: {"Content-Type":"application/json"}, 
+                body: JSON.stringify(productoData) 
+            });
+            
+            cargarTodo(); 
+            setShowModalProducto(false);
         } catch (error) { alert("Error al guardar"); }
     };
 
@@ -176,7 +230,7 @@ export default function CantinaPage() {
     const categorias = ["Todas", "Bebidas", "Comidas", "Accesorios", "General"];
 
     return (
-        <div className="flex h-[calc(100vh-theme(spacing.24))] gap-6 font-sans relative">
+        <div className="flex h-[calc(100vh-theme(spacing.24))] gap-6 font-sans relative m-4">
             
             {/* IZQUIERDA: CATÁLOGO */}
             <div className="flex-1 flex flex-col gap-6">
@@ -184,11 +238,20 @@ export default function CantinaPage() {
                 <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
                     <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2"><Package className="text-blue-600"/> Cantina Express</h1>
                     <div className="flex items-center gap-6">
-                        <div className="flex gap-4">
-                            <div className="flex flex-col text-right"><span className="text-[10px] font-bold text-green-600 uppercase">Efectivo</span><span className="text-xl font-black text-slate-900">${totalEfectivo.toLocaleString()}</span></div>
-                            <div className="w-px bg-gray-200"></div>
-                            <div className="flex flex-col text-right"><span className="text-[10px] font-bold text-violet-600 uppercase">Transfer</span><span className="text-xl font-black text-slate-900">${totalTransferencia.toLocaleString()}</span></div>
-                        </div>
+                        {/* 🟡 AVISO VISUAL DEL ESTADO DE CAJA */}
+                        {cajaAbierta ? (
+                            <div className="flex gap-4">
+                                <div className="flex flex-col text-right"><span className="text-[10px] font-bold text-green-600 uppercase">Efectivo</span><span className="text-xl font-black text-slate-900">${totalEfectivo.toLocaleString()}</span></div>
+                                <div className="w-px bg-gray-200"></div>
+                                <div className="flex flex-col text-right"><span className="text-[10px] font-bold text-violet-600 uppercase">Transfer</span><span className="text-xl font-black text-slate-900">${totalTransferencia.toLocaleString()}</span></div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg border border-orange-200">
+                                <AlertTriangle size={16}/>
+                                <span className="text-xs font-bold uppercase">Caja Cerrada</span>
+                            </div>
+                        )}
+                        
                         <button onClick={abrirModalNuevo} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-800 transition shadow-lg shadow-slate-200"><Plus size={16}/> <span className="hidden md:inline">Nuevo Producto</span></button>
                     </div>
                 </div>
@@ -239,10 +302,9 @@ export default function CantinaPage() {
                     )}
                 </div>
 
-                {/* 🟢 ZONA DE COBRO (DISEÑO CAJERO) */}
+                {/* ZONA DE COBRO */}
                 <div className="p-6 bg-white border-t border-gray-200 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-10">
                     {!modoCobro ? (
-                        // MODO 1: RESUMEN Y BOTÓN COBRAR
                         <div className="animate-in fade-in slide-in-from-bottom-4">
                              <div className="flex justify-between items-end mb-4"><span className="text-sm font-bold text-gray-400">Total a Pagar</span><span className="text-3xl font-black text-slate-900">${totalCarrito.toLocaleString()}</span></div>
                              <button disabled={carrito.length === 0} onClick={iniciarCobro} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -250,14 +312,12 @@ export default function CantinaPage() {
                              </button>
                         </div>
                     ) : (
-                        // MODO 2: CALCULADORA DE VUELTO
                         <div className="animate-in fade-in slide-in-from-bottom-4 space-y-4">
                             <div className="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
                                 <h3 className="font-bold text-slate-800 flex items-center gap-2"><Calculator size={18}/> Cerrar Venta</h3>
                                 <button onClick={() => setModoCobro(false)} className="text-xs font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded">Cancelar</button>
                             </div>
                             
-                            {/* 1. INPUT TRANSFERENCIA */}
                             <div className="bg-violet-50 p-3 rounded-xl border border-violet-100">
                                 <div className="flex justify-between mb-1"><span className="text-[10px] font-black text-violet-700 uppercase">Transferencia / MP</span><CreditCard size={14} className="text-violet-600"/></div>
                                 <div className="flex items-center gap-1"><span className="text-violet-800 font-bold">$</span>
@@ -265,7 +325,6 @@ export default function CantinaPage() {
                                 </div>
                             </div>
 
-                            {/* 2. EFECTIVO A COBRAR (AUTO) */}
                             <div className="bg-green-50 p-3 rounded-xl border border-green-100 flex justify-between items-center">
                                 <div>
                                     <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black text-green-700 uppercase">Efectivo a Cobrar</span><Wallet size={14} className="text-green-600"/></div>
@@ -273,7 +332,6 @@ export default function CantinaPage() {
                                 </div>
                             </div>
 
-                            {/* 3. PAGA CON / VUELTO */}
                             <div className="border-2 border-dashed border-gray-200 p-3 rounded-xl">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Paga Con (Billete):</span>

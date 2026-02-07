@@ -17,50 +17,80 @@ namespace Backend.Controllers
             _context = context;
         }
 
-        // 1. ABRIR CAJA
+        // 1. ABRIR CAJA (✅ Validado Multi-Cliente)
         [HttpPost("abrir")]
-        public async Task<ActionResult<Caja>> AbrirCaja([FromBody] decimal montoInicial)
+        public async Task<ActionResult<Caja>> AbrirCaja([FromQuery] int usuarioId, [FromBody] decimal montoInicial)
         {
-            var cajaAbierta = await _context.Cajas.FirstOrDefaultAsync(c => c.FechaCierre == null);
-            if (cajaAbierta != null) return BadRequest("¡Ya hay una caja abierta!");
+            if (usuarioId == 0) return BadRequest("Se requiere el ID del usuario.");
 
-            var nuevaCaja = new Caja { FechaApertura = DateTime.Now, MontoInicial = montoInicial };
+            var cajaAbierta = await _context.Cajas
+                .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId && c.FechaCierre == null);
+
+            if (cajaAbierta != null) return BadRequest("¡Ya tienes una caja abierta!");
+
+            var nuevaCaja = new Caja
+            {
+                FechaApertura = DateTime.Now,
+                MontoInicial = montoInicial,
+                UsuarioId = usuarioId // 🔒 ASIGNAMOS DUEÑO
+            };
+
             _context.Cajas.Add(nuevaCaja);
             await _context.SaveChangesAsync();
             return Ok(nuevaCaja);
         }
 
-        // 2. OBTENER RESUMEN ACTUAL
+        // 2. OBTENER RESUMEN ACTUAL (✅ Validado Multi-Cliente)
         [HttpGet("actual")]
-        public async Task<ActionResult<object>> GetCajaActual()
+        public async Task<ActionResult<object>> GetCajaActual([FromQuery] int usuarioId)
         {
-            var caja = await _context.Cajas.FirstOrDefaultAsync(c => c.FechaCierre == null);
-            if (caja == null) return NotFound("No hay caja abierta.");
+            if (usuarioId == 0) return BadRequest("Se requiere el ID del usuario.");
+
+            var caja = await _context.Cajas
+                .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId && c.FechaCierre == null);
+
+            if (caja == null) return NotFound("No hay caja abierta para este usuario.");
+
             return await GenerarReporteCaja(caja);
         }
 
-        // 3. HISTORIAL
+        // 3. HISTORIAL (✅ Validado Multi-Cliente)
         [HttpGet("historial")]
-        public async Task<ActionResult<IEnumerable<Caja>>> GetHistorial()
+        public async Task<ActionResult<IEnumerable<Caja>>> GetHistorial([FromQuery] int usuarioId)
         {
-            return await _context.Cajas.Where(c => c.FechaCierre != null)
-                .OrderByDescending(c => c.FechaCierre).Take(30).ToListAsync();
+            if (usuarioId == 0) return BadRequest("Se requiere el ID del usuario.");
+
+            return await _context.Cajas
+                .Where(c => c.UsuarioId == usuarioId && c.FechaCierre != null)
+                .OrderByDescending(c => c.FechaCierre)
+                .Take(30)
+                .ToListAsync();
         }
 
-        // 4. DETALLE HISTORIAL
+        // 4. DETALLE HISTORIAL (✅ Validado Multi-Cliente)
         [HttpGet("{id}")]
-        public async Task<ActionResult<object>> GetDetalleCaja(int id)
+        public async Task<ActionResult<object>> GetDetalleCaja(int id, [FromQuery] int usuarioId)
         {
+            if (usuarioId == 0) return BadRequest("Se requiere el ID del usuario.");
+
             var caja = await _context.Cajas.FindAsync(id);
             if (caja == null) return NotFound();
+
+            // 🔒 SEGURIDAD: Si la caja no es tuya, no la ves.
+            if (caja.UsuarioId != usuarioId) return Unauthorized("No tienes permiso para ver esta caja.");
+
             return await GenerarReporteCaja(caja);
         }
 
-        // 5. CERRAR CAJA
+        // 5. CERRAR CAJA (✅ Validado Multi-Cliente)
         [HttpPost("cerrar")]
-        public async Task<IActionResult> CerrarCaja([FromBody] ArqueoCierreDto arqueo)
+        public async Task<IActionResult> CerrarCaja([FromQuery] int usuarioId, [FromBody] ArqueoCierreDto arqueo)
         {
-            var caja = await _context.Cajas.FirstOrDefaultAsync(c => c.FechaCierre == null);
+            if (usuarioId == 0) return BadRequest("Se requiere el ID del usuario.");
+
+            var caja = await _context.Cajas
+                .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId && c.FechaCierre == null);
+
             if (caja == null) return BadRequest("No hay caja abierta.");
 
             var reporte = await GenerarReporteCaja(caja);
@@ -68,7 +98,6 @@ namespace Backend.Controllers
 
             caja.TotalEfectivo = r.Resumen.TotalEfectivo;
             caja.TotalTransferencia = r.Resumen.TotalTransferencia;
-            // Si arqueo es null, asumimos 0 para no romper
             caja.MontoFinal = arqueo?.EfectivoReal ?? 0;
             caja.MontoRealTransferencia = arqueo?.TransferenciaReal ?? 0;
             caja.FechaCierre = DateTime.Now;
@@ -78,22 +107,17 @@ namespace Backend.Controllers
         }
 
         // =======================================================
-        // 🪄 LÓGICA DE REPORTE (CORREGIDA) ✅
+        // 🪄 LÓGICA DE REPORTE (NO TOCAR - YA FUNCIONA BIEN)
         // =======================================================
         private async Task<dynamic> GenerarReporteCaja(Caja caja)
         {
-            // 1. TRAEMOS TODO LO QUE TENGA EL ID DE ESTA CAJA
+            // Traemos las reservas vinculadas a esta caja específica
             var movimientos = await _context.Reservas
                 .Include(r => r.Consumos)
-                .Where(r => r.CajaId == caja.Id)
+                .Where(r => r.CajaId == caja.Id) // Esto ya filtra indirectamente por usuario porque la caja es del usuario
                 .ToListAsync();
 
-            // ❌ ELIMINAMOS O COMENTAMOS ESTAS LÍNEAS ❌
-            // El error era aquí: Si la reserva es para el mes que viene, la ocultaba.
-            // if (caja.FechaCierre != null)
-            //    movimientos = movimientos.Where(r => r.FechaInicio <= caja.FechaCierre).ToList();
-
-            // 2. CLASIFICACIÓN
+            // CLASIFICACIÓN
             var mesas = movimientos.Where(r => r.Tipo == "Mesa" || r.MesaId != null).ToList();
             var idsMesas = mesas.Select(m => m.Id).ToHashSet();
 
@@ -108,7 +132,7 @@ namespace Backend.Controllers
                 !idsBarra.Contains(r.Id)
             ).ToList();
 
-            // 3. SUMAS
+            // SUMAS
             decimal canchasEfvo = canchas.Sum(r => r.CobradoEfectivo);
             decimal canchasTransf = canchas.Sum(r => r.CobradoTransferencia);
 
@@ -118,7 +142,7 @@ namespace Backend.Controllers
             decimal barraEfvo = barra.Sum(r => r.CobradoEfectivo);
             decimal barraTransf = barra.Sum(r => r.CobradoTransferencia);
 
-            // 4. LISTA VISUAL
+            // LISTA VISUAL
             var listaVisual = new List<object>();
 
             void AddMov(List<Reserva> lista, string conceptoDefault)
@@ -135,14 +159,7 @@ namespace Backend.Controllers
                             Detalle = item.ClienteNombre,
                             Metodo = (item.CobradoEfectivo > 0 && item.CobradoTransferencia > 0) ? "Mixto" : (item.CobradoTransferencia > 0 ? "Transferencia" : "Efectivo"),
                             Monto = item.CobradoEfectivo + item.CobradoTransferencia,
-
-                            // Cantidad incluida para el frontend
-                            Items = item.Consumos.Select(c => new {
-                                c.Producto,
-                                c.Precio,
-                                Cantidad = c.Cantidad
-                            }).ToList(),
-
+                            Items = item.Consumos.Select(c => new { c.Producto, c.Precio, c.Cantidad }).ToList(),
                             Desglose = new { Efectivo = item.CobradoEfectivo, Transferencia = item.CobradoTransferencia },
                             Tipo = "Ingreso"
                         });

@@ -13,5 +13,6 @@ namespace Domain.Entities
         public string Cuerpo { get; set; } = string.Empty;
         public DateTime FechaPublicacion { get; set; } = DateTime.Now;
         public string? ImagenUrl { get; set; }
+        public int UsuarioId { get; set; }
     }
 }

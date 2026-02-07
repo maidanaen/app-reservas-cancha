@@ -1,100 +1,164 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { MapPin, ArrowRight, AlertTriangle, Lock } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation"; 
+import { MapPin, ArrowRight, Zap, Star, Clock } from "lucide-react";
 
+// --- INTERFAZ (Datos del endpoint público nuevo) ---
 interface Cancha {
   id: number;
   nombre: string;
-  deporte: string;
-  precioPorHora: number;
-  techada: boolean;
-  imgUrl: string;
-  activa: boolean; // 🟢 Importante recibir esto
+  horaApertura: number;
+  horaCierre: number;
 }
 
-export default function ReservarPage() {
-  const [canchas, setCanchas] = useState<Cancha[]>([]);
+interface Club {
+  clubId: number;        
+  nombreClub: string;    
+  direccion: string;
+  canchas: Cancha[];     
+  logoUrl?: string; 
+  fotoUrl?: string;
+}
 
+function ListaDeClubes() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const userIdParam = searchParams.get("userId"); 
+
+  const [clubes, setClubes] = useState<Club[]>([]);
+  const [cargando, setCargando] = useState(true);
+
+  // 1. CARGA DE DATOS + REDIRECCIÓN AUTOMÁTICA
   useEffect(() => {
-    // Traemos todas las canchas (activas y pausadas)
-    fetch("https://localhost:7123/api/Canchas")
-      .then((res) => res.json())
-      .then((data) => setCanchas(data))
-      .catch((err) => console.error(err));
-  }, []);
+    const cargarDatos = async () => {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      try {
+        // 🟢 Usamos el endpoint NUEVO (Trae fotos y horarios para el diseño lindo)
+        const res = await fetch("https://localhost:7123/api/Publico/sedes");
+        if (res.ok) {
+          const data = await res.json();
+          setClubes(data);
+
+          // 🟢 MAGIA: Si viene del Home con un ID, saltamos directo a TU página de [id]
+          if (userIdParam) {
+            const clubExiste = data.find((c: Club) => c.clubId === Number(userIdParam));
+            if (clubExiste) {
+               // Redirige a tu archivo frontend/app/reservar/[id]/page.tsx
+               router.push(`/reservar/${userIdParam}`);
+               return; 
+            }
+          }
+        }
+      } catch (err) { console.error(err); } 
+      finally { setCargando(false); }
+    };
+    cargarDatos();
+  }, [userIdParam, router]);
+
+  // 🕒 Lógica de Estado (Abierto/Cerrado) para el diseño visual
+  const obtenerEstadoClub = (canchas: Cancha[]) => {
+    if (!canchas || canchas.length === 0) return { texto: "SIN DATOS", color: "bg-gray-400" };
+    const horaActual = new Date().getHours(); 
+    const estaAbierto = canchas.some((c) => {
+        const apertura = c.horaApertura; 
+        const cierre = c.horaCierre;     
+        if (cierre < apertura) return horaActual >= apertura || horaActual < cierre;
+        else return horaActual >= apertura && horaActual < cierre;
+    });
+    return estaAbierto 
+        ? { texto: "ABIERTO", color: "bg-green-500" } 
+        : { texto: "CERRADO", color: "bg-red-500" };
+  };
+
+  // Si estamos redirigiendo, mostramos spinner
+  if (userIdParam && cargando) return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-slate-500 gap-4">
+          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="font-bold animate-pulse">Entrando al club...</p>
+      </div>
+  );
 
   return (
-    <main className="max-w-5xl mx-auto p-6 min-h-screen">
-      <h1 className="text-3xl font-black text-slate-900 mb-2">Canchas Disponibles</h1>
-      <p className="text-gray-500 mb-8">Selecciona tu cancha preferida para ver horarios.</p>
+    <div className="max-w-6xl mx-auto p-6  min-h-screen font-sans">
+        
+        <div className="mb-5 text-center md:text-left">
 
-      <div className="space-y-6">
-        {canchas.map((c) => (
-          <div 
-            key={c.id} 
-            className={`relative bg-white rounded-3xl p-4 flex flex-col md:flex-row gap-6 shadow-sm border border-gray-100 transition-all 
-            ${!c.activa ? "opacity-75 bg-gray-50 grayscale" : "hover:shadow-lg hover:border-blue-200"}`}
-          >
-            {/* IMAGEN */}
-            <div className="w-full md:w-48 h-32 relative shrink-0">
-              <img 
-                src={c.imgUrl} 
-                alt={c.nombre} 
-                className="w-full h-full object-cover rounded-2xl"
-              />
-              {!c.activa && (
-                <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] flex items-center justify-center rounded-2xl">
-                    <Lock className="text-white drop-shadow-md" size={32}/>
-                </div>
-              )}
+            <h1 className="text-4xl font-black text-slate-900 mb-2 tracking-tight">Complejos Deportivos</h1>
+            <p className="text-slate-500 font-medium">Selecciona el club para ver la grilla de turnos.</p>
+        </div>
+
+        {cargando ? (
+             <div className="text-center py-20 text-gray-400 font-medium animate-pulse">Cargando clubes disponibles...</div>
+        ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {clubes.map((club) => {
+                    
+                    const estado = obtenerEstadoClub(club.canchas);
+                    const tienePortada = club.fotoUrl && club.fotoUrl.trim() !== "";
+                    const imagenPortada = tienePortada ? club.fotoUrl : "https://deportes.cba.gov.ar/wp-content/uploads/2022/11/padel-e.jpg"; 
+                    const logoUrl = (club.logoUrl && club.logoUrl !== "") ? club.logoUrl : `https://ui-avatars.com/api/?name=${club.nombreClub}&background=0f172a&color=fff&bold=true`;
+
+                    return (
+                        <Link 
+                            key={club.clubId} 
+                            // 🟢 AQUÍ CONECTAMOS CON TU ARCHIVO [id]/page.tsx
+                            href={`/reservar/${club.clubId}`}
+                            className="group relative bg-white rounded-3xl p-3 flex flex-col gap-4 shadow-sm border border-slate-100 transition-all hover:shadow-2xl hover:-translate-y-1 cursor-pointer"
+                        >
+                            {/* IMAGEN DE PORTADA */}
+                            <div className="w-full h-48 relative shrink-0 rounded-2xl overflow-hidden bg-slate-900">
+                                <img 
+                                    src={imagenPortada} 
+                                    alt={club.nombreClub} 
+                                    className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition duration-700 ease-in-out"
+                                />
+                                <div className={`absolute top-3 left-3 ${estado.color} text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm z-10 flex items-center gap-1 backdrop-blur-md bg-opacity-90`}>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                                    {estado.texto}
+                                </div>
+                            </div>
+
+                            {/* INFO */}
+                            <div className="px-3 pb-3 flex flex-col flex-1">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900 mb-1 group-hover:text-orange-600 transition-colors line-clamp-1">
+                                            {club.nombreClub}
+                                        </h3>
+                                        <div className="flex items-center gap-1 text-slate-400 text-xs font-bold uppercase">
+                                            <MapPin size={12}/> Corrientes Capital
+                                        </div>
+                                    </div>
+                                    {/* LOGO FLOTANTE */}
+                                    <img src={logoUrl} className="w-12 h-12 rounded-full border-2 border-white shadow-md object-cover bg-white -mt-10 relative z-20"/>
+                                </div>
+
+                                <div className="mt-auto pt-4 border-t border-slate-50 flex justify-between items-center">
+                                    <span className="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded flex items-center gap-1">
+                                        <Zap size={12} className="fill-slate-400"/> {club.canchas.length} Canchas
+                                    </span>
+                                    <span className="inline-flex items-center text-sm font-bold text-slate-900 group-hover:text-orange-600 transition gap-1">
+                                        Ver Turnos <ArrowRight size={16}/>
+                                    </span>
+                                </div>
+                            </div>
+                        </Link>
+                    );
+                })}
             </div>
+        )}
+    </div>
+  );
+}
 
-            {/* INFO */}
-            <div className="flex-1 flex flex-col justify-center">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-xl font-black text-slate-900 mb-2">{c.nombre}</h3>
-                  <div className="flex gap-2 mb-3">
-                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-bold uppercase">{c.deporte}</span>
-                    {c.techada ? (
-                       <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-lg font-bold uppercase">Techada 🏠</span>
-                    ) : (
-                       <span className="text-[10px] bg-green-50 text-green-600 px-2 py-1 rounded-lg font-bold uppercase">Descubierta☀️</span>
-                    )}
-                  </div>
-                </div>
-                
-                {/* PRECIO */}
-                <div className="text-right">
-                    <span className={`font-mono font-bold text-lg ${!c.activa ? 'text-gray-400 decoration-slate-400 line-through' : 'text-green-600'}`}>
-                        ${c.precioPorHora.toLocaleString()}
-                    </span>
-                </div>
-              </div>
-
-              {/* BOTÓN DE ACCIÓN */}
-              <div className="mt-2">
-                {c.activa ? (
-                    // 🟢 SI ESTÁ ACTIVA: Link normal
-                    <Link 
-                        href={`/reservar/${c.id}`} 
-                        className="inline-flex items-center text-sm font-bold text-blue-600 hover:text-blue-800 transition gap-1"
-                    >
-                        Ver disponibilidad <ArrowRight size={16}/>
-                    </Link>
-                ) : (
-                    // 🔴 SI ESTÁ PAUSADA: Botón falso y aviso
-                    <div className="flex items-center gap-2 text-orange-600 bg-orange-50 px-3 py-2 rounded-lg w-fit">
-                        <AlertTriangle size={16}/>
-                        <span className="text-xs font-bold uppercase">En Mantenimiento - No disponible</span>
-                    </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </main>
+// 🟢 EXPORTACIÓN PRINCIPAL (Necesaria para Next.js con useSearchParams)
+export default function ReservarPage() {
+  return (
+    <div className="bg-slate-50 min-h-screen pt-0"> 
+      <Suspense fallback={<div className="p-10 text-center">Cargando...</div>}>
+        <ListaDeClubes />
+      </Suspense>
+    </div>
   );
 }

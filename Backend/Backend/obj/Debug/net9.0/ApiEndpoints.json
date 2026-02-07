@@ -1,6 +1,32 @@
 [
   {
     "ContainingType": "Backend.Controllers.AuthController",
+    "Method": "GetClubesPublicos",
+    "RelativePath": "api/Auth/clubes-publicos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.AuthController",
+    "Method": "GetEstadoUsuario",
+    "RelativePath": "api/Auth/estado/{userName}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userName",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.AuthController",
     "Method": "Login",
     "RelativePath": "api/Auth/login",
     "HttpMethod": "POST",
@@ -43,6 +69,11 @@
         "Name": "id",
         "Type": "System.Int32",
         "IsRequired": true
+      },
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -55,6 +86,11 @@
     "IsController": true,
     "Order": 0,
     "Parameters": [
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
       {
         "Name": "montoInicial",
         "Type": "System.Decimal",
@@ -80,7 +116,13 @@
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
     "ReturnTypes": []
   },
   {
@@ -91,6 +133,11 @@
     "IsController": true,
     "Order": 0,
     "Parameters": [
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
       {
         "Name": "arqueo",
         "Type": "Backend.Controllers.ArqueoCierreDto",
@@ -106,7 +153,13 @@
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
     "ReturnTypes": [
       {
         "Type": "System.Collections.Generic.IEnumerable\u00601[[Domain.Entities.Caja, Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
@@ -126,7 +179,13 @@
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
     "ReturnTypes": [
       {
         "Type": "System.Collections.Generic.List\u00601[[Domain.Entities.Cancha, Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
@@ -324,7 +383,13 @@
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
     "ReturnTypes": []
   },
   {
@@ -334,7 +399,13 @@
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
     "ReturnTypes": [
       {
         "Type": "System.Collections.Generic.IEnumerable\u00601[[Backend.Domain.Entities.Mesa, Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
@@ -385,6 +456,11 @@
         "Name": "id",
         "Type": "System.Int32",
         "IsRequired": true
+      },
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -403,8 +479,8 @@
         "IsRequired": true
       },
       {
-        "Name": "mozo",
-        "Type": "System.String",
+        "Name": "usuarioId",
+        "Type": "System.Int32",
         "IsRequired": false
       }
     ],
@@ -424,9 +500,9 @@
         "IsRequired": true
       },
       {
-        "Name": "pago",
-        "Type": "Backend.Controllers.CierreMesaDto",
-        "IsRequired": true
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -438,7 +514,13 @@
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
     "ReturnTypes": [
       {
         "Type": "System.Collections.Generic.IEnumerable\u00601[[Domain.Entities.Noticia, Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
@@ -473,6 +555,11 @@
         "Name": "Imagen",
         "Type": "Microsoft.AspNetCore.Http.IFormFile",
         "IsRequired": false
+      },
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": [
@@ -489,27 +576,6 @@
   },
   {
     "ContainingType": "Backend.Controllers.NoticiasController",
-    "Method": "PutNoticia",
-    "RelativePath": "api/Noticias/{id}",
-    "HttpMethod": "PUT",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      },
-      {
-        "Name": "noticia",
-        "Type": "Domain.Entities.Noticia",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "Backend.Controllers.NoticiasController",
     "Method": "DeleteNoticia",
     "RelativePath": "api/Noticias/{id}",
     "HttpMethod": "DELETE",
@@ -520,9 +586,40 @@
         "Name": "id",
         "Type": "System.Int32",
         "IsRequired": true
+      },
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.NoticiasController",
+    "Method": "GetNoticiasPublicas",
+    "RelativePath": "api/Noticias/publicas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Domain.Entities.Noticia, Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "Backend.Controllers.PagosController",
@@ -673,7 +770,13 @@
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
     "ReturnTypes": [
       {
         "Type": "System.Collections.Generic.IEnumerable\u00601[[Backend.Domain.Entities.Producto, Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
@@ -745,8 +848,23 @@
         "Name": "id",
         "Type": "System.Int32",
         "IsRequired": true
+      },
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
       }
     ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.PublicoController",
+    "Method": "GetSedesConCanchas",
+    "RelativePath": "api/Publico/sedes",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
     "ReturnTypes": []
   },
   {
@@ -757,6 +875,11 @@
     "IsController": true,
     "Order": 0,
     "Parameters": [
+      {
+        "Name": "usuarioId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
       {
         "Name": "fecha",
         "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
@@ -866,6 +989,32 @@
   },
   {
     "ContainingType": "Backend.Controllers.ReservasController",
+    "Method": "BuscarPorTelefono",
+    "RelativePath": "api/Reservas/buscar/{telefono}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "telefono",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[System.Object, System.Private.CoreLib, Version=9.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "Backend.Controllers.ReservasController",
     "Method": "VerTurnos",
     "RelativePath": "api/Reservas/cancha/{canchaId}",
     "HttpMethod": "GET",
@@ -944,6 +1093,38 @@
   },
   {
     "ContainingType": "Backend.Controllers.ReservasController",
+    "Method": "CrearReservaFija",
+    "RelativePath": "api/Reservas/fija",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "Backend.Controllers.ReservaFijaDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.ReservasController",
+    "Method": "CancelarGrupo",
+    "RelativePath": "api/Reservas/grupo/{grupoId}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "grupoId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.ReservasController",
     "Method": "GetHorariosOcupados",
     "RelativePath": "api/Reservas/ocupadas",
     "HttpMethod": "GET",
@@ -975,15 +1156,140 @@
   },
   {
     "ContainingType": "Backend.Controllers.ReservasController",
-    "Method": "NuevaVentaCantina",
+    "Method": "VentaExpress",
     "RelativePath": "api/Reservas/venta-express",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "venta",
-        "Type": "Backend.Controllers.VentaCantinaDto",
+        "Name": "dto",
+        "Type": "Backend.Controllers.ReservaDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "Domain.Entities.Reserva",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "Backend.Controllers.SuperAdminController",
+    "Method": "GetClientes",
+    "RelativePath": "api/SuperAdmin/clientes",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.SuperAdminController",
+    "Method": "DeshacerPago",
+    "RelativePath": "api/SuperAdmin/deshacer-pago/{id}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.SuperAdminController",
+    "Method": "EditarUsuario",
+    "RelativePath": "api/SuperAdmin/editar/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "Backend.Controllers.EditUserRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.SuperAdminController",
+    "Method": "EliminarUsuario",
+    "RelativePath": "api/SuperAdmin/eliminar/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.SuperAdminController",
+    "Method": "GetLogs",
+    "RelativePath": "api/SuperAdmin/logs",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.SuperAdminController",
+    "Method": "GetMetricasGlobales",
+    "RelativePath": "api/SuperAdmin/metricas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.SuperAdminController",
+    "Method": "RegistrarPago",
+    "RelativePath": "api/SuperAdmin/registrar-pago/{id}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Backend.Controllers.SuperAdminController",
+    "Method": "ToggleEstado",
+    "RelativePath": "api/SuperAdmin/toggle-estado/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
         "IsRequired": true
       }
     ],

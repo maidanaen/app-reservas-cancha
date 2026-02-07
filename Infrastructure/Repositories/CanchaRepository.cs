@@ -8,6 +8,7 @@ using Domain.Interfaces;
 using Infrastructure.Persistencia;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace Infrastructure.Repositories
 {
     public class CanchaRepository : ICanchaRepository
@@ -35,10 +36,22 @@ namespace Infrastructure.Repositories
             await _context.SaveChangesAsync();
             return cancha;
         }
-    
+
         //  Actualizar
         public async Task UpdateAsync(Cancha cancha)
         {
+            // 1. Buscamos si ya hay una versión de esta cancha en la memoria local
+            var local = _context.Set<Cancha>()
+                .Local
+                .FirstOrDefault(entry => entry.Id.Equals(cancha.Id));
+
+            // 2. Si existe, la "desconectamos" para evitar el conflicto de IDs
+            if (local != null)
+            {
+                _context.Entry(local).State = EntityState.Detached;
+            }
+
+            // 3. Ahora sí, adjuntamos la nueva versión y guardamos
             _context.Canchas.Update(cancha);
             await _context.SaveChangesAsync();
         }

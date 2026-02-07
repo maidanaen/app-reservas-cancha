@@ -7,7 +7,7 @@ interface Noticia {
   titulo: string;
   cuerpo: string;
   fechaPublicacion: string;
-  imagenUrl?: string; // <--- Agregado para soportar imagenes
+  imagenUrl?: string; 
 }
 
 export default function AdminNoticiasPage() {
@@ -23,9 +23,14 @@ export default function AdminNoticiasPage() {
 
   // 1. Cargar noticias
   const cargarNoticias = async () => {
+    // 🟢 1. RECUPERAR ID (Llave maestra)
+    const userId = localStorage.getItem("usuarioId");
+    if (!userId) return;
+
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-        const res = await fetch("https://localhost:7123/api/Noticias");
+        // 🟢 2. ENVIAR ID EN LA URL (Filtro por dueño)
+        const res = await fetch(`https://localhost:7123/api/Noticias?usuarioId=${userId}`);
         if (res.ok) setNoticias(await res.json());
     } catch (error) { console.error("Error al cargar", error); }
   };
@@ -37,35 +42,46 @@ export default function AdminNoticiasPage() {
     e.preventDefault();
     if (!titulo.trim() || !cuerpo.trim()) return;
 
+    // 🟢 RECUPERAMOS ID
+    const userId = localStorage.getItem("usuarioId");
+    if (!userId) return alert("Sesión expirada");
+
     setCargando(true);
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
     try {
         // Usamos FormData para poder enviar archivos y texto
         const formData = new FormData();
-        formData.append("Titulo", titulo); // Importante: Mayúsculas como en el DTO del Backend
+        formData.append("Titulo", titulo); 
         formData.append("Cuerpo", cuerpo);
         
-        // Solo adjuntamos imagen si el usuario seleccionó una
+        // 🟢 3. IMPORTANTE: Agregamos el usuarioId al FormData
+        formData.append("UsuarioId", userId);
+
         if (archivo) {
             formData.append("Imagen", archivo);
         }
 
         if (idEditar) {
             // MODO EDICIÓN (PUT)
-            // Nota: Por ahora editamos solo texto. Si quisieras editar imagen también,
-            // el backend necesitaría un PUT [FromForm] igual que el POST.
-            // Aquí usamos el endpoint JSON original para actualizar textos.
+            // Nota: Si tu backend soporta editar imagen, deberías usar PUT con FormData.
+            // Por ahora mantenemos JSON para texto como tenías, pero agregando usuarioId.
             await fetch(`https://localhost:7123/api/Noticias/${idEditar}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: idEditar, titulo, cuerpo, fechaPublicacion: new Date().toISOString() })
+                body: JSON.stringify({ 
+                    id: idEditar, 
+                    titulo, 
+                    cuerpo, 
+                    fechaPublicacion: new Date().toISOString(),
+                    usuarioId: Number(userId) // 🟢 Validamos propiedad al editar
+                })
             });
-            alert("✅ Noticia actualizada (solo texto)");
+            alert("✅ Noticia actualizada");
         } else {
             // MODO CREACIÓN (POST con Imagen)
-            // No ponemos 'Content-Type', el navegador lo pone automático al ver FormData
-            await fetch("https://localhost:7123/api/Noticias", {
+            // Enviamos el FormData que ya incluye el UsuarioId dentro
+            await fetch(`https://localhost:7123/api/Noticias?usuarioId=${userId}`, {
                 method: "POST",
                 body: formData 
             });
@@ -86,26 +102,29 @@ export default function AdminNoticiasPage() {
   const limpiarFormulario = () => {
       setTitulo("");
       setCuerpo("");
-      setArchivo(null); // Limpiamos el archivo del estado
+      setArchivo(null); 
       setIdEditar(null);
-      // Truco: Para limpiar el input file visualmente, el componente se renderiza de nuevo
-      // al cambiar el estado 'archivo' a null.
   };
 
-  // Cargar datos en el formulario para editar
   const iniciarEdicion = (n: Noticia) => {
       setTitulo(n.titulo);
       setCuerpo(n.cuerpo);
       setIdEditar(n.id);
-      setArchivo(null); // Al editar, reseteamos la subida de archivo nueva
+      setArchivo(null); 
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const borrarNoticia = async (id: number) => {
     if (!confirm("¿Seguro que quieres borrar esta noticia?")) return;
+    
+    // 🟢 4. RECUPERAR ID PARA BORRADO SEGURO
+    const userId = localStorage.getItem("usuarioId");
+    if (!userId) return;
+
     try {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        await fetch(`https://localhost:7123/api/Noticias/${id}`, { method: "DELETE" });
+        // Enviamos ID en la URL para que el backend valide que es NUESTRA noticia
+        await fetch(`https://localhost:7123/api/Noticias/${id}?usuarioId=${userId}`, { method: "DELETE" });
         cargarNoticias();
     } catch (error) { alert("Error al borrar"); }
   };
@@ -157,7 +176,7 @@ export default function AdminNoticiasPage() {
                         <p className="text-xs text-gray-400 mt-1 text-right">Puedes usar emojis 🎾🔥🏆</p>
                     </div>
 
-                    {/* === INPUT DE IMAGEN (Aquí está la magia) === */}
+                    {/* === INPUT DE IMAGEN === */}
                     {!idEditar && (
                         <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition cursor-pointer relative group">
                             <input 
@@ -177,11 +196,11 @@ export default function AdminNoticiasPage() {
                                 </span>
                             </div>
                             
-                            {/* Botón para quitar foto seleccionada */}
+                            {/* Botón para quitar foto */}
                             {archivo && (
                                 <button 
                                     type="button"
-                                    onClick={(e) => { e.stopPropagation(); setArchivo(null); }} // Detenemos propagación para que no abra el file dialog
+                                    onClick={(e) => { e.stopPropagation(); setArchivo(null); }} 
                                     className="absolute top-2 right-2 p-1 bg-red-100 text-red-500 rounded-full hover:bg-red-200 z-10"
                                     title="Quitar imagen"
                                 >
