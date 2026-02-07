@@ -1,39 +1,33 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useEffect, useState, Suspense } from "react"; // 👈 Importamos Suspense
 import { Trophy, CalendarDays, Newspaper, X, Clock, Image as ImageIcon } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { API_URL } from '@/utils/config';
+import { API_URL } from '@/utils/config'; // (O la ruta correcta a tu config)
 
-export const dynamic = "force-dynamic";
-
+// Definimos la interfaz
 interface Noticia {
   id: number;
   titulo: string;
   cuerpo: string;
   fechaPublicacion: string;
-  imagenUrl?: string; // <--- Agregamos esto para leer la foto
+  imagenUrl?: string;
 }
 
-export default function TorneosPage() {
- 
+// ------------------------------------------------------------------
+// 1️⃣ COMPONENTE INTERNO: Aquí va TODA tu lógica original
+// ------------------------------------------------------------------
+function ContenidoTorneos() {
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [cargando, setCargando] = useState(true);
   const [noticiaSeleccionada, setNoticiaSeleccionada] = useState<Noticia | null>(null);
 
-  // 🟢 2. Obtenemos los parámetros de la URL
   const searchParams = useSearchParams();
-  // Si la URL es /torneos?clubId=4, esto vale "4". Si no, vale "0" (Feed Global).
   const clubId = searchParams.get("clubId") || "0"; 
 
   useEffect(() => {
-    // Nota: process.env no suele funcionar dentro del navegador (useEffect), 
-    // pero si lo tienes configurado en Next.js ignora este comentario.
-    // process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; 
-
     setCargando(true);
-
-    // 🟢 3. FETCH AL NUEVO ENDPOINT PÚBLICO
-    // Usamos /api/Noticias/publicas y le pasamos el ID (0 o el del club)
+    
     fetch(`${API_URL}/api/Noticias/publicas?usuarioId=${clubId}`)
       .then(res => {
         if (!res.ok) throw new Error("Error en la respuesta del servidor");
@@ -47,10 +41,10 @@ export default function TorneosPage() {
         console.error(err);
         setCargando(false);
       });
-
   }, [clubId]);
+
   return (
-    <main className="max-w-5xl mx-auto p-6 min-h-screen font-sans relative">
+    <div className="max-w-5xl mx-auto p-6 min-h-screen font-sans relative">
       
       {/* Encabezado */}
       <div className="flex items-center gap-4 mb-10 border-b pb-6 border-gray-100">
@@ -84,7 +78,6 @@ export default function TorneosPage() {
                 
                 {/* LÓGICA VISUAL: ¿Tiene foto? */}
                 {noticia.imagenUrl ? (
-                    // OPCIÓN A: CON FOTO (Imagen a la izquierda/arriba)
                     <div className="w-full md:w-1/3 h-64 md:h-auto relative overflow-hidden bg-gray-100 cursor-pointer" onClick={() => setNoticiaSeleccionada(noticia)}>
                         <img 
                             src={noticia.imagenUrl} 
@@ -96,7 +89,6 @@ export default function TorneosPage() {
                         </div>
                     </div>
                 ) : (
-                    // OPCIÓN B: SIN FOTO (Diseño de fecha original)
                     <div className="bg-slate-900 text-white p-6 flex flex-col justify-center items-center md:min-w-[140px] relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
                         <span className="text-4xl font-black tracking-tighter">
@@ -141,9 +133,7 @@ export default function TorneosPage() {
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
                 
-                {/* Cabecera / Imagen del Modal */}
                 {noticiaSeleccionada.imagenUrl ? (
-                    // Si hay imagen, la ponemos gigante arriba
                     <div className="w-full h-64 md:h-80 bg-gray-100 relative shrink-0">
                         <img 
                             src={noticiaSeleccionada.imagenUrl} 
@@ -156,10 +146,8 @@ export default function TorneosPage() {
                         >
                             <X size={24} />
                         </button>
-                        {/* Gradiente para que el título se lea si decidimos ponerlo encima (opcional) */}
                     </div>
                 ) : (
-                    // Si no hay imagen, cabecera oscura simple
                     <div className="bg-slate-900 p-6 flex justify-between items-center shrink-0">
                         <span className="text-slate-400 font-bold">Novedades</span>
                         <button 
@@ -171,10 +159,8 @@ export default function TorneosPage() {
                     </div>
                 )}
 
-                {/* Contenido del Modal */}
                 <div className="flex-1 overflow-y-auto bg-white">
                     <div className="p-8">
-                        {/* Fecha */}
                         <div className="flex items-center gap-2 mb-4">
                             <span className="px-3 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-xs font-bold uppercase tracking-wider">
                                 {new Date(noticiaSeleccionada.fechaPublicacion).toLocaleDateString()}
@@ -202,7 +188,23 @@ export default function TorneosPage() {
             </div>
         </div>
       )}
+    </div>
+  );
+}
 
-    </main>
+// ------------------------------------------------------------------
+// 2️⃣ COMPONENTE PRINCIPAL: Envuelve al interno en Suspense
+// ------------------------------------------------------------------
+export default function TorneosPage() {
+  return (
+    // Esto es lo que pide Vercel: una "frontera de suspensión"
+    // para manejar los parámetros de URL de forma segura.
+    <Suspense fallback={
+        <div className="flex flex-col items-center justify-center min-h-screen">
+            <p className="text-gray-400 animate-pulse">Cargando sección...</p>
+        </div>
+    }>
+        <ContenidoTorneos />
+    </Suspense>
   );
 }
