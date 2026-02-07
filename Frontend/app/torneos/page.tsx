@@ -4,6 +4,8 @@ import { Trophy, CalendarDays, Newspaper, X, Clock, Image as ImageIcon } from "l
 import { useSearchParams } from "next/navigation";
 import { API_URL } from '@/utils/config';
 
+export const dynamic = "force-dynamic";
+
 interface Noticia {
   id: number;
   titulo: string;
@@ -13,6 +15,7 @@ interface Noticia {
 }
 
 export default function TorneosPage() {
+ 
   const [noticias, setNoticias] = useState<Noticia[]>([]);
   const [cargando, setCargando] = useState(true);
   const [noticiaSeleccionada, setNoticiaSeleccionada] = useState<Noticia | null>(null);
