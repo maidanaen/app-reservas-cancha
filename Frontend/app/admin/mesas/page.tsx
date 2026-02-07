@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { API_URL } from '@/utils/config';
 
 // --- TIPOS DE DATOS ---
 interface Mesa {
@@ -84,7 +85,7 @@ export default function GestionMesasPage() {
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-      const res = await fetch(`https://localhost:7123/api/Mesas?usuarioId=${userId}`);
+      const res = await fetch(`${API_URL}/api/Mesas?usuarioId=${userId}`);
       if(res.ok) setMesas(await res.json());
     } catch(e) { console.error(e); }
   };
@@ -95,7 +96,7 @@ export default function GestionMesasPage() {
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-      const res = await fetch(`https://localhost:7123/api/Productos?usuarioId=${userId}`);
+      const res = await fetch(`${API_URL}/api/Productos?usuarioId=${userId}`);
       if(res.ok) setProductos(await res.json());
     } catch(e) { console.error(e); }
   };
@@ -107,7 +108,7 @@ export default function GestionMesasPage() {
     if (!userId) return alert("Error de sesión. Recarga la página.");
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    await fetch("https://localhost:7123/api/Mesas", {
+    await fetch(`${API_URL}/api/Mesas`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
             nombre: nuevaMesaNombre, 
@@ -126,7 +127,7 @@ export default function GestionMesasPage() {
     const userId = localStorage.getItem("usuarioId");
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    const res = await fetch(`https://localhost:7123/api/Mesas/${id}?usuarioId=${userId}`, { method: "DELETE" });
+    const res = await fetch(`${API_URL}/api/Mesas/${id}?usuarioId=${userId}`, { method: "DELETE" });
     if (res.ok) {
         cargarMesas(); 
         if (mesaSeleccionada?.id === id) setMesaSeleccionada(null); 
@@ -140,7 +141,7 @@ export default function GestionMesasPage() {
     
     if (mesa.estaOcupada && mesa.reservaActualId) {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        const res = await fetch(`https://localhost:7123/api/Reservas/${mesa.reservaActualId}`);
+        const res = await fetch(`${API_URL}/api/Reservas/${mesa.reservaActualId}`);
         if(res.ok) setReservaActiva(await res.json());
     } else {
         setReservaActiva(null);
@@ -153,7 +154,7 @@ export default function GestionMesasPage() {
     const userId = localStorage.getItem("usuarioId");
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    const res = await fetch(`https://localhost:7123/api/Mesas/${mesaSeleccionada.id}/abrir?usuarioId=${userId}`, { method: "POST" });
+    const res = await fetch(`${API_URL}/api/Mesas/${mesaSeleccionada.id}/abrir?usuarioId=${userId}`, { method: "POST" });
     
     if (res.ok) {
         cargarMesas(); 
@@ -175,12 +176,12 @@ export default function GestionMesasPage() {
     setReservaActiva({ ...reservaActiva, consumos: [...reservaActiva.consumos, tempItem] });
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    await fetch(`https://localhost:7123/api/Consumos`, {
+    await fetch(`${API_URL}/api/Consumos`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reservaId: reservaActiva.id, producto: prod.nombre, precio: prod.precio, cantidad: 1, jugador: "Cliente Mesa" })
     });
     
-    const res = await fetch(`https://localhost:7123/api/Reservas/${reservaActiva.id}`);
+    const res = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`);
     if(res.ok) setReservaActiva(await res.json());
   };
 
@@ -190,10 +191,10 @@ export default function GestionMesasPage() {
     if (reservaActiva) {
         setReservaActiva({ ...reservaActiva, consumos: reservaActiva.consumos.filter(c => c.id !== id) });
     }
-    await fetch(`https://localhost:7123/api/Consumos/${id}`, { method: "DELETE" });
+    await fetch(`${API_URL}/api/Consumos/${id}`, { method: "DELETE" });
     
     if (reservaActiva) {
-        const resReserva = await fetch(`https://localhost:7123/api/Reservas/${reservaActiva.id}`);
+        const resReserva = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`);
         if(resReserva.ok) setReservaActiva(await resReserva.json());
     }
   };
@@ -253,13 +254,13 @@ export default function GestionMesasPage() {
             efectivoRealAGuardar = billeteCliente;
         }
 
-        const res = await fetch(`https://localhost:7123/api/Reservas/cobrar/${reservaActiva.id}`, {
+        const res = await fetch(`${API_URL}/api/Reservas/cobrar/${reservaActiva.id}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ cobradoEfectivo: efectivoRealAGuardar, cobradoTransferencia: transferencia })
         });
 
         if (res.ok) {
-            const resMesa = await fetch(`https://localhost:7123/api/Mesas/${mesaSeleccionada.id}/cerrar?usuarioId=${userId}`, {
+            const resMesa = await fetch(`${API_URL}/api/Mesas/${mesaSeleccionada.id}/cerrar?usuarioId=${userId}`, {
                  method: "POST", headers: { "Content-Type": "application/json" },
                  body: JSON.stringify({ cobradoEfectivo: efectivoRealAGuardar, cobradoTransferencia: transferencia }) 
             });

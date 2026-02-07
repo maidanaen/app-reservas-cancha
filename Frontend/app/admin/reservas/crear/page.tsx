@@ -6,6 +6,7 @@ import {
     Hourglass, Smartphone, Repeat, CalendarDays, AlertCircle, X 
 } from "lucide-react";
 import Link from "next/link";
+import { API_URL } from '@/utils/config';
 
 interface Cancha {
   id: number;
@@ -72,7 +73,7 @@ export default function CrearReservaAdmin() {
         return;
     }
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    fetch(`https://localhost:7123/api/Canchas?usuarioId=${userId}`)
+    fetch(`${API_URL}/api/Canchas?usuarioId=${userId}`)
       .then(res => res.ok ? res.json() : [])
       .then(data => setCanchas(data))
       .catch(err => console.error(err));
@@ -82,7 +83,7 @@ export default function CrearReservaAdmin() {
   useEffect(() => {
     if (form.canchaId && form.fecha) {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        fetch(`https://localhost:7123/api/Reservas/cancha/${form.canchaId}?fecha=${form.fecha}`)
+        fetch(`${API_URL}/api/Reservas/cancha/${form.canchaId}?fecha=${form.fecha}`)
             .then(res => res.json())
             .then((data: any[]) => {
                 const ocupados = data.map(r => ({
@@ -205,7 +206,7 @@ export default function CrearReservaAdmin() {
                 precioPorTurno: 0
             };
 
-            const res = await fetch("https://localhost:7123/api/Reservas/fija", {
+            const res = await fetch(`${API_URL}/api/Reservas/fija`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(bodyFijo)
             });
@@ -236,7 +237,7 @@ export default function CrearReservaAdmin() {
                 metodoPago: form.metodoPago
             };
 
-            const res = await fetch("https://localhost:7123/api/Reservas", {
+            const res = await fetch(`${API_URL}/api/Reservas`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(nuevaReserva)
             });

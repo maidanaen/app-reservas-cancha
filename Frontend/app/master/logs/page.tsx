@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Terminal, RefreshCw, AlertTriangle, CheckCircle, Info, ShieldAlert } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 interface Log {
   id: number;
@@ -19,7 +20,7 @@ export default function LogsPage() {
     setCargando(true);
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-      const res = await fetch("https://localhost:7123/api/SuperAdmin/logs");
+      const res = await fetch(`${API_URL}/api/SuperAdmin/logs`);
       if (res.ok) {
         setLogs(await res.json());
       }

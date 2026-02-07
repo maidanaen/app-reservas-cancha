@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation"; 
+import { API_URL } from '@/utils/config';
 
 interface Cancha {
   id: number;
@@ -49,7 +50,7 @@ export default function ReservasPage() {
 
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       try {
-        const res = await fetch(`https://localhost:7123/api/Canchas?usuarioId=${userId}`);
+        const res = await fetch(`${API_URL}/api/Canchas?usuarioId=${userId}`);
         
         if (res.ok) {
           const data = await res.json();
@@ -70,7 +71,7 @@ export default function ReservasPage() {
     setCargando(true);
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-      const res = await fetch(`https://localhost:7123/api/Reservas/cancha/${canchaId}?fecha=${fecha}`);
+      const res = await fetch(`${API_URL}/api/Reservas/cancha/${canchaId}?fecha=${fecha}`);
       if (res.ok) {
         const data = await res.json();
         
@@ -88,7 +89,7 @@ export default function ReservasPage() {
     if (!confirm("¿Seguro que quieres cancelar este turno?")) return;
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-      const res = await fetch(`https://localhost:7123/api/Reservas/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/api/Reservas/${id}`, { method: "DELETE" });
       if (res.ok) buscarReservas();
     } catch (error) { alert("Error de conexión."); }
   };

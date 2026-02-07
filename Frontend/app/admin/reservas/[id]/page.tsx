@@ -6,6 +6,7 @@ import {
     ShoppingBag, Beer, CheckCircle, Calculator, Users, Search, 
     AlertCircle, X // 🟢 Iconos nuevos para notificaciones
 } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 // --- INTERFACES ---
 interface Consumo {
@@ -69,7 +70,7 @@ export default function DetalleReservaPage() {
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-      const res = await fetch(`https://localhost:7123/api/Reservas/${id}`);
+      const res = await fetch(`${API_URL}/api/Reservas/${id}`);
       if (!res.ok) throw new Error("Error al buscar la reserva");
       
       const dataReserva = await res.json();
@@ -79,7 +80,7 @@ export default function DetalleReservaPage() {
       const fin = new Date(dataReserva.fechaFin).getTime();
       const duracionHoras = (fin - inicio) / 3600000;
       
-      const resCancha = await fetch(`https://localhost:7123/api/Canchas/${dataReserva.canchaId}`);
+      const resCancha = await fetch(`${API_URL}/api/Canchas/${dataReserva.canchaId}`);
       const dataCancha = await resCancha.json();
       setPrecioCancha(Math.round(duracionHoras * dataCancha.precioPorHora));
 
@@ -95,7 +96,7 @@ export default function DetalleReservaPage() {
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     
-    fetch(`https://localhost:7123/api/Productos?usuarioId=${userId}`)
+    fetch(`${API_URL}/api/Productos?usuarioId=${userId}`)
       .then(async (res) => {
           if (res.ok) {
               const data = await res.json();
@@ -120,7 +121,7 @@ export default function DetalleReservaPage() {
             cobradoTransferencia: dataToSave.cobradoTransferencia
         };
 
-        const res = await fetch(`https://localhost:7123/api/Reservas/cobrar/${id}`, {
+        const res = await fetch(`${API_URL}/api/Reservas/cobrar/${id}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(pagos)
@@ -157,7 +158,7 @@ export default function DetalleReservaPage() {
       try {
           process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-          await fetch(`https://localhost:7123/api/Reservas/cobrar/${id}`, {
+          await fetch(`${API_URL}/api/Reservas/cobrar/${id}`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(nuevosPagos)
@@ -172,7 +173,7 @@ export default function DetalleReservaPage() {
               jugador: jugador 
           };
 
-          await fetch(`https://localhost:7123/api/Consumos`, {
+          await fetch(`${API_URL}/api/Consumos`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(consumoData)
@@ -205,7 +206,7 @@ export default function DetalleReservaPage() {
 
       try {
           process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-          const res = await fetch(`https://localhost:7123/api/Consumos`, {
+          const res = await fetch(`${API_URL}/api/Consumos`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(consumoData)
@@ -237,7 +238,7 @@ export default function DetalleReservaPage() {
   const borrarConsumo = async (consumoId: number) => {
     if(!confirm("¿Eliminar este ítem?")) return;
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    await fetch(`https://localhost:7123/api/Consumos/${consumoId}`, { method: "DELETE" });
+    await fetch(`${API_URL}/api/Consumos/${consumoId}`, { method: "DELETE" });
     cargarDatos();
   };
 

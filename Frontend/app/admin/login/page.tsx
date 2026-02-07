@@ -2,7 +2,7 @@
 import { useState } from "react";
 // import { useRouter } from "next/navigation"; // 👈 YA NO LO NECESITAMOS PARA REDIRIGIR
 import { Lock, User, AlertCircle, ArrowRight } from "lucide-react"; 
-
+import { API_URL } from '@/utils/config';
 export default function LoginPage() {
   const [email, setEmail] = useState(""); 
   const [password, setPassword] = useState("");
@@ -19,7 +19,7 @@ export default function LoginPage() {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     
     try {
-      const res = await fetch("https://localhost:7123/api/Auth/login", {
+      const res = await fetch(`${API_URL}/api/Auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

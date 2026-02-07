@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DollarSign, Lock, Unlock, History, Eye, Banknote, Smartphone, TrendingUp, Calendar, Clock, X, CheckCircle, List, User, ShoppingBag, Utensils, Activity, AlertCircle } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 // --- INTERFACES ---
 interface Movimiento {
@@ -76,7 +77,8 @@ export default function CajaPage() {
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const resActual = await fetch(`https://localhost:7123/api/Cajas/actual?usuarioId=${userId}`);
+            const resActual = await fetch(`${API_URL}/api/Cajas/actual?usuarioId=${userId}`);
+            
             if (resActual.ok) {
                 setReporteActual(await resActual.json());
             } else {
@@ -119,7 +121,7 @@ export default function CajaPage() {
         const dto = { efectivoReal: Number(arqueoEfectivo), transferenciaReal: Number(arqueoTransf) };
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        const res = await fetch(`https://localhost:7123/api/Cajas/cerrar?usuarioId=${userId}`, { 
+        const res = await fetch(`${API_URL}/api/Cajas/cerrar?usuarioId=${userId}`, {
             method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(dto)
         });
 

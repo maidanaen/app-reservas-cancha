@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Save, CalendarPlus, CheckCircle, Smartphone, DollarSign, X, Repeat, AlertCircle } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 interface Props {
   onClose: () => void;
@@ -56,7 +57,7 @@ export default function ModalNuevoTurno({ onClose, onSuccess, userId }: Props) {
   useEffect(() => {
     if(!userId) return;
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    fetch(`https://localhost:7123/api/Canchas?usuarioId=${userId}`)
+    fetch(`${API_URL}/api/Canchas?usuarioId=${userId}`)
       .then(res => res.json())
       .then(data => {
           setCanchas(data);
@@ -69,7 +70,7 @@ export default function ModalNuevoTurno({ onClose, onSuccess, userId }: Props) {
   useEffect(() => {
     if (form.canchaId && form.fecha) {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        fetch(`https://localhost:7123/api/Reservas/cancha/${form.canchaId}?fecha=${form.fecha}`)
+        fetch(`${API_URL}/api/Reservas/cancha/${form.canchaId}?fecha=${form.fecha}`)
             .then(res => res.json())
             .then((data: any[]) => {
                 const ocupados = data.map(r => ({
@@ -176,7 +177,7 @@ export default function ModalNuevoTurno({ onClose, onSuccess, userId }: Props) {
                 diasSemana: diasSeleccionados
             };
 
-            const res = await fetch("https://localhost:7123/api/Reservas/fija", {
+            const res = await fetch(`${API_URL}/api/Reservas/fija`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(bodyFijo)
             });
@@ -200,7 +201,7 @@ export default function ModalNuevoTurno({ onClose, onSuccess, userId }: Props) {
                 metodoPago: form.metodoPago
             };
             
-            const res = await fetch("https://localhost:7123/api/Reservas", {
+            const res = await fetch(`${API_URL}/api/Reservas`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(bodySimple)
             });

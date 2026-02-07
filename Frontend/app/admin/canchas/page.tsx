@@ -6,6 +6,7 @@ import {
     PauseCircle, PlayCircle, AlertCircle, MapPin, Sun, Warehouse, 
     Calendar, AlertTriangle
 } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 // --- INTERFACES ---
 interface Cancha {
@@ -84,7 +85,7 @@ export default function GestionCanchasPage() {
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const res = await fetch(`https://localhost:7123/api/Canchas?usuarioId=${userId}`);
+            const res = await fetch(`${API_URL}/api/Canchas?usuarioId=${userId}`);
             if (res.ok) {
                 setCanchas(await res.json());
             }
@@ -94,7 +95,7 @@ export default function GestionCanchasPage() {
     const cargarSalas = async () => {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const res = await fetch("https://localhost:7123/api/Partidos?todo=true"); 
+            const res = await fetch(`${API_URL}/api/Partidos?todo=true`);
             if (res.ok) {
                 const data = await res.json();
                 const partidosMapeados = data.map((p: any) => ({
@@ -126,7 +127,7 @@ export default function GestionCanchasPage() {
         }
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        const url = isEditingCancha ? `https://localhost:7123/api/Canchas/${canchaForm.id}` : "https://localhost:7123/api/Canchas";
+        const url = isEditingCancha ? `${API_URL}/api/Canchas/${canchaForm.id}` : `${API_URL}/api/Canchas`;
         const method = isEditingCancha ? "PUT" : "POST";
 
         const canchaParaGuardar = {
@@ -161,7 +162,7 @@ export default function GestionCanchasPage() {
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            await fetch(`https://localhost:7123/api/Canchas/${canchaAEliminar.id}?usuarioId=${userId}`, { method: "DELETE" });
+            await fetch(`${API_URL}/api/Canchas/${canchaAEliminar.id}?usuarioId=${userId}`, { method: "DELETE" });
             mostrarMensaje('exito', "Cancha eliminada correctamente");
             cargarCanchas();
         } catch (error) { mostrarMensaje('error', "Error al eliminar"); } 
@@ -183,7 +184,7 @@ export default function GestionCanchasPage() {
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const res = await fetch(`https://localhost:7123/api/Canchas/${canchaAEditarEstado.id}`, {
+            const res = await fetch(`${API_URL}/api/Canchas/${canchaAEditarEstado.id}`, {
                 method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(canchaActualizada)
             });
             if (res.ok) { cargarCanchas(); mostrarMensaje('exito', nuevoEstado ? "Cancha Habilitada" : "Cancha Pausada"); }
@@ -219,7 +220,7 @@ export default function GestionCanchasPage() {
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const res = await fetch(`https://localhost:7123/api/Partidos/${salaForm.id}`, {
+            const res = await fetch(`${API_URL}/api/Partidos/${salaForm.id}`, {
                 method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(partidoBackend)
             });
             if (res.ok) { setShowModalSala(false); cargarSalas(); mostrarMensaje('exito', "Partido actualizado"); }
@@ -236,7 +237,7 @@ export default function GestionCanchasPage() {
         if (!salaAEliminar) return;
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            await fetch(`https://localhost:7123/api/Partidos/admin/${salaAEliminar.id}`, { method: "DELETE" });
+            await fetch(`${API_URL}/api/Partidos/admin/${salaAEliminar.id}`, { method: "DELETE" });
             mostrarMensaje('exito', "Partido público eliminado");
             cargarSalas();
         } catch (error) { mostrarMensaje('error', "Error al eliminar"); }

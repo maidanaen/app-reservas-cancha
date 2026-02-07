@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Trophy, CalendarDays, Newspaper, X, Clock, Image as ImageIcon } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { API_URL } from '@/utils/config';
 
 interface Noticia {
   id: number;
@@ -30,7 +31,7 @@ export default function TorneosPage() {
 
     // 🟢 3. FETCH AL NUEVO ENDPOINT PÚBLICO
     // Usamos /api/Noticias/publicas y le pasamos el ID (0 o el del club)
-    fetch(`https://localhost:7123/api/Noticias/publicas?usuarioId=${clubId}`)
+    fetch(`${API_URL}/api/Noticias/publicas?usuarioId=${clubId}`)
       .then(res => {
         if (!res.ok) throw new Error("Error en la respuesta del servidor");
         return res.json();

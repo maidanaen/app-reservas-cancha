@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation"; 
 import { MapPin, ArrowRight, Zap, Star, Clock } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 // --- INTERFAZ (Datos del endpoint público nuevo) ---
 interface Cancha {
@@ -35,7 +36,7 @@ function ListaDeClubes() {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       try {
         // 🟢 Usamos el endpoint NUEVO (Trae fotos y horarios para el diseño lindo)
-        const res = await fetch("https://localhost:7123/api/Publico/sedes");
+        const res = await fetch(`${API_URL}/api/Publico/sedes`);
         if (res.ok) {
           const data = await res.json();
           setClubes(data);

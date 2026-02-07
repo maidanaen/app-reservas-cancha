@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Users, Plus, UserPlus, Calendar, Trash2, MessageCircle, CheckCircle, MapPin, Trophy, AlertCircle, X } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 interface Inscripcion {
     id: number;
@@ -58,11 +59,11 @@ export default function PartidosPage() {
   const cargarDatos = async () => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-        const resPartidos = await fetch("https://localhost:7123/api/Partidos");
+        const resPartidos = await fetch(`${API_URL}/api/Partidos`);
         if (resPartidos.ok) setPartidos(await resPartidos.json());
 
         // Cargar Sedes (Clubes y Canchas)
-        const resSedes = await fetch("https://localhost:7123/api/Publico/sedes");
+        const resSedes = await fetch(`${API_URL}/api/Publico/sedes`);
         if (resSedes.ok) setSedes(await resSedes.json());
 
     } catch (error) { console.error(error); }
@@ -105,7 +106,7 @@ export default function PartidosPage() {
         lugar: lugarFinal      
     };
 
-    await fetch("https://localhost:7123/api/Partidos", {
+    await fetch(`${API_URL}/api/Partidos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nuevoPartido)
@@ -127,7 +128,7 @@ export default function PartidosPage() {
       const nombreConTelefono = `${miNombre} 📱${miContacto}`;
 
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      const res = await fetch("https://localhost:7123/api/Partidos/inscribirse", {
+      const res = await fetch(`${API_URL}/api/Partidos/inscribirse`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -154,7 +155,7 @@ export default function PartidosPage() {
       if (!claveIngresada) return;
 
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      const res = await fetch(`https://localhost:7123/api/Partidos/borrar/${id}?clave=${claveIngresada}`, { 
+      const res = await fetch(`${API_URL}/api/Partidos/borrar/${id}?clave=${claveIngresada}`, { 
           method: "DELETE" 
       });
 

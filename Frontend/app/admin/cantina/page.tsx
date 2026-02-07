@@ -4,6 +4,7 @@ import {
     Search, ShoppingCart, Trash2, CreditCard, 
     Package, X, Plus, Tag, Pencil, DollarSign, Calculator, Wallet, AlertTriangle 
 } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 // --- INTERFACES ---
 interface Producto {
@@ -51,6 +52,7 @@ export default function CantinaPage() {
     const [pagoTransferencia, setPagoTransferencia] = useState(""); 
     const [pagaConEfectivo, setPagaConEfectivo] = useState("");   
     const [procesando, setProcesando] = useState(false);
+    
 
     // --- CARGA INICIAL ROBUSTA (La solución al error rojo) ---
     const cargarTodo = async () => {
@@ -61,7 +63,7 @@ export default function CantinaPage() {
         
         // 1. CARGAMOS PRODUCTOS (Bloque independiente)
         try {
-            const resProd = await fetch(`https://localhost:7123/api/Productos?usuarioId=${userId}`);
+            const resProd = await fetch(`${API_URL}/api/Productos?usuarioId=${userId}`);
             if (resProd.ok) {
                 setProductos(await resProd.json());
             }
@@ -73,7 +75,7 @@ export default function CantinaPage() {
 
         // 2. CARGAMOS CAJA (Bloque independiente)
         try {
-            const resCaja = await fetch(`https://localhost:7123/api/Cajas/actual?usuarioId=${userId}`);
+            const resCaja = await fetch(`${API_URL}/api/Cajas/actual?usuarioId=${userId}`);
             
             if (resCaja.ok) {
                 // ✅ SI HAY CAJA ABIERTA
@@ -157,7 +159,7 @@ export default function CantinaPage() {
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const res = await fetch("https://localhost:7123/api/Reservas/venta-express", {
+            const res = await fetch(`${API_URL}/api/Reservas/venta-express`, {
                 method: "POST", 
                 headers: { "Content-Type": "application/json" }, 
                 body: JSON.stringify(ventaDto)
@@ -185,7 +187,7 @@ export default function CantinaPage() {
         if (confirm("⚠️ ¿Eliminar de Base de Datos?")) {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
             try {
-                await fetch(`https://localhost:7123/api/Productos/${idEdicion}?usuarioId=${userId}`, { 
+                await fetch(`${API_URL}/api/Productos/${idEdicion}?usuarioId=${userId}`, { 
                     method: "DELETE" 
                 });
                 cargarTodo(); 
@@ -210,8 +212,8 @@ export default function CantinaPage() {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
             const url = idEdicion 
-                ? `https://localhost:7123/api/Productos/${idEdicion}` 
-                : "https://localhost:7123/api/Productos";
+                ? `${API_URL}/api/Productos/${idEdicion}` 
+                : `${API_URL}/api/Productos`;
             
             const method = idEdicion ? "PUT" : "POST";
             

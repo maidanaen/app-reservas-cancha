@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Shield, Zap, Info, Lock, AlertTriangle, ArrowLeft, SunMoon, Umbrella, Warehouse } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 interface Cancha {
   id: number;
@@ -25,7 +26,7 @@ export default function ClubProfilePage() {
     if (!clubId) return;
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    fetch(`https://localhost:7123/api/Canchas?usuarioId=${clubId}`)
+    fetch(`${API_URL}/api/Canchas?usuarioId=${clubId}`)
       .then((res) => res.json())
       .then((data) => {
         // 🟢 CAMBIO: Ya no filtramos, guardamos TODAS (activas e inactivas)

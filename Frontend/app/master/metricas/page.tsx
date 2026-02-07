@@ -5,6 +5,7 @@ import { Activity, Users, DollarSign, Server, TrendingUp, RefreshCw } from "luci
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
 } from 'recharts';
+import { API_URL } from '@/utils/config';
 
 interface MetricasData {
   clubesActivos: number;
@@ -25,14 +26,14 @@ export default function MetricasPage() {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
       // 1. Cargar Métricas Generales (KPIs)
-      const resMetricas = await fetch("https://localhost:7123/api/SuperAdmin/metricas");
+      const resMetricas = await fetch(`${API_URL}/api/SuperAdmin/metricas`);
       if (resMetricas.ok) {
         const resultado = await resMetricas.json();
         setData(resultado);
       }
 
       // 2. Cargar Clientes para el Gráfico
-      const resClientes = await fetch("https://localhost:7123/api/SuperAdmin/clientes");
+      const resClientes = await fetch(`${API_URL}/api/SuperAdmin/clientes`);
       if (resClientes.ok) {
         const clientes = await resClientes.json();
         

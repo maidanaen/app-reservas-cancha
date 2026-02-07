@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
-
+import { API_URL } from '@/utils/config';
 interface CajaCerrada {
     id: number;
     fechaApertura: string;
@@ -31,7 +31,7 @@ export default function HistorialCajaPage() {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
             try {
                 // 🟢 2. ENVIAR ID EN LA URL (Filtrar historial por dueño)
-                const res = await fetch(`https://localhost:7123/api/Cajas/historial?usuarioId=${userId}`);
+                const res = await fetch(`${API_URL}/api/Cajas/historial?usuarioId=${userId}`);
                 if (res.ok) setHistorial(await res.json());
             } catch (error) { console.error(error); } 
             finally { setCargando(false); }

@@ -13,6 +13,7 @@ import {
   Warehouse
 } from "lucide-react";
 import Link from "next/link";
+import { API_URL } from '@/utils/config';
 
 interface Cancha {
   id: number;
@@ -67,7 +68,7 @@ export default function ReservarPage() {
   // 1. Cargar Cancha
   useEffect(() => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    fetch(`https://localhost:7123/api/Canchas/${id}`)
+    fetch(`${API_URL}/api/Canchas/${id}`)
       .then((res) => res.json())
       .then((data) => setCancha(data))
       .catch((err) => console.error(err));
@@ -77,7 +78,7 @@ export default function ReservarPage() {
   useEffect(() => {
     if (id && fechaSeleccionada) {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        fetch(`https://localhost:7123/api/Reservas/ocupadas?canchaId=${id}&fecha=${fechaSeleccionada}`)
+        fetch(`${API_URL}/api/Reservas/ocupadas?canchaId=${id}&fecha=${fechaSeleccionada}`)
             .then((res) => res.json())
             .then((data: string[]) => {
                 setHorariosOcupados(data); // Guardamos directamente ["14:00", "15:00"]
@@ -161,7 +162,7 @@ export default function ReservarPage() {
 
     try {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      const res = await fetch("https://localhost:7123/api/Reservas", {
+      const res = await fetch(`${API_URL}/api/Reservas`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nuevaReserva),
@@ -177,7 +178,7 @@ export default function ReservarPage() {
       } else {
         alert("❌ Ups, el horario ya no está disponible.");
         // Recargar disponibilidad usando el nuevo endpoint
-        const resRefresh = await fetch(`https://localhost:7123/api/Reservas/ocupadas?canchaId=${id}&fecha=${fechaSeleccionada}`);
+        const resRefresh = await fetch(`${API_URL}/api/Reservas/ocupadas?canchaId=${id}&fecha=${fechaSeleccionada}`);
         const dataRefresh = await resRefresh.json();
         setHorariosOcupados(dataRefresh);
         setPaso(1);

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, Trash2, Save, Tag } from "lucide-react";
 import Link from "next/link";
+import { API_URL } from '@/utils/config';
 
 interface Producto {
   id: number;
@@ -21,7 +22,7 @@ export default function GestionProductosPage() {
   const cargarProductos = async () => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-        const res = await fetch("https://localhost:7123/api/Productos");
+        const res = await fetch(`${API_URL}/api/Productos`);
         if(res.ok) setProductos(await res.json());
     } catch (e) { console.error(e); }
   };
@@ -31,7 +32,7 @@ export default function GestionProductosPage() {
     if (!nuevo.nombre || !nuevo.precio) return;
     
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    await fetch("https://localhost:7123/api/Productos", {
+    await fetch(`${API_URL}/api/Productos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...nuevo, precio: Number(nuevo.precio) })
@@ -43,7 +44,7 @@ export default function GestionProductosPage() {
   const borrar = async (id: number) => {
       if(!confirm("¿Borrar producto?")) return;
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      await fetch(`https://localhost:7123/api/Productos/${id}`, { method: "DELETE" });
+      await fetch(`${API_URL}/api/Productos/${id}`, { method: "DELETE" });
       cargarProductos();
   };
 

@@ -5,6 +5,7 @@ import {
   Search, MapPin, ArrowRight, Star, 
   Trophy, Filter, Zap, Users
 } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 interface Cancha {
   id: number;
@@ -33,7 +34,7 @@ export default function HomePage() {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       try {
         // 🟢 USAMOS EL ENDPOINT NUEVO QUE TRAE HORARIOS
-        const res = await fetch("https://localhost:7123/api/Publico/sedes");
+        const res = await fetch(`${API_URL}/api/Publico/sedes`);
         if (res.ok) {
           const data = await res.json();
           setClubes(data);

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Printer, Unlock, Lock, Banknote, Smartphone, Calendar, Activity, Utensils, ShoppingBag, List, X, TrendingUp } from "lucide-react";
-
+import { API_URL } from '@/utils/config';
 // --- INTERFACES ---
 interface DetalleMetodos {
     efectivo: number;
@@ -69,7 +69,7 @@ export default function DetalleCajaPage() {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
             try {
                 // 🟢 2. ENVIAR ID EN URL (Para verificar que la caja es mía)
-                const res = await fetch(`https://localhost:7123/api/Cajas/${id}?usuarioId=${userId}`);
+                const res = await fetch(`${API_URL}/api/Cajas/${id}?usuarioId=${userId}`);
                 
                 if (res.ok) {
                     setReporte(await res.json());

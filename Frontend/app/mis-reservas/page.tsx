@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Calendar, Clock, MapPin, Search, Phone, ArrowRight, Frown } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 interface Reserva {
   id: number;
@@ -31,7 +32,7 @@ export default function MisReservasPage() {
 
     try {
         // 🟢 CONEXIÓN REAL A TU API
-        const res = await fetch(`https://localhost:7123/api/Reservas/buscar/${telefono.trim()}`);
+        const res = await fetch(`${API_URL}/api/Reservas/buscar/${telefono.trim()}`);
         
         if (res.ok) {
             const data = await res.json();

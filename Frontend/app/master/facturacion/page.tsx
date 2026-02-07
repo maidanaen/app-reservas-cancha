@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { CreditCard, CheckCircle, Clock, AlertCircle, DollarSign, Download, Search, RefreshCw } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 interface Cliente {
   id: number;
@@ -32,7 +33,7 @@ export default function FacturacionPage() {
   const cargarClientes = async () => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-      const res = await fetch("https://localhost:7123/api/SuperAdmin/clientes");
+      const res = await fetch(`${API_URL}/api/SuperAdmin/clientes`);
       if (res.ok) {
         const data = await res.json();
         setClientes(data);
@@ -51,7 +52,7 @@ export default function FacturacionPage() {
     
     try {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        const res = await fetch(`https://localhost:7123/api/SuperAdmin/${endpoint}/${id}`, {
+        const res = await fetch(`${API_URL}/api/SuperAdmin/${endpoint}/${id}`, {
             method: 'POST'
         });
 

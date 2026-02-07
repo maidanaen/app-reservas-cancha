@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Megaphone, Send, Pencil, Eye, X, Save, Image as ImageIcon } from "lucide-react";
+import { API_URL } from '@/utils/config';
 
 interface Noticia {
   id: number;
@@ -30,7 +31,7 @@ export default function AdminNoticiasPage() {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
         // 🟢 2. ENVIAR ID EN LA URL (Filtro por dueño)
-        const res = await fetch(`https://localhost:7123/api/Noticias?usuarioId=${userId}`);
+        const res = await fetch(`${API_URL}/api/Noticias?usuarioId=${userId}`);
         if (res.ok) setNoticias(await res.json());
     } catch (error) { console.error("Error al cargar", error); }
   };
@@ -66,7 +67,7 @@ export default function AdminNoticiasPage() {
             // MODO EDICIÓN (PUT)
             // Nota: Si tu backend soporta editar imagen, deberías usar PUT con FormData.
             // Por ahora mantenemos JSON para texto como tenías, pero agregando usuarioId.
-            await fetch(`https://localhost:7123/api/Noticias/${idEditar}`, {
+            await fetch(`${API_URL}/api/Noticias/${idEditar}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
@@ -81,7 +82,7 @@ export default function AdminNoticiasPage() {
         } else {
             // MODO CREACIÓN (POST con Imagen)
             // Enviamos el FormData que ya incluye el UsuarioId dentro
-            await fetch(`https://localhost:7123/api/Noticias?usuarioId=${userId}`, {
+            await fetch(`${API_URL}/api/Noticias?usuarioId=${userId}`, {
                 method: "POST",
                 body: formData 
             });
@@ -124,7 +125,7 @@ export default function AdminNoticiasPage() {
     try {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         // Enviamos ID en la URL para que el backend valide que es NUESTRA noticia
-        await fetch(`https://localhost:7123/api/Noticias/${id}?usuarioId=${userId}`, { method: "DELETE" });
+        await fetch(`${API_URL}/api/Noticias/${id}?usuarioId=${userId}`, { method: "DELETE" });
         cargarNoticias();
     } catch (error) { alert("Error al borrar"); }
   };

@@ -8,6 +8,8 @@ import {
   DollarSign, Users, TrendingUp, AlertTriangle, Calendar, 
   ArrowRight, Lock 
 } from "lucide-react";
+import { API_URL } from '@/utils/config';
+
 
 export default function AdminDashboard() {
   const [nombreNegocio, setNombreNegocio] = useState("Panel Principal");
@@ -38,7 +40,8 @@ export default function AdminDashboard() {
       
       // 1. CARGAR ESTADÍSTICAS (KPIs y Gráfico)
       try {
-        const resStats = await fetch(`https://localhost:7123/api/Dashboard/resumen?usuarioId=${userId}`);
+        
+        const resStats = await fetch(`${API_URL}/api/Dashboard/resumen?usuarioId=${userId}`);
         if (resStats.ok) {
           const data = await resStats.json();
           setStats(prev => ({
@@ -56,7 +59,7 @@ export default function AdminDashboard() {
 
       // 2. CARGAR PRÓXIMOS TURNOS (Independiente)
       try {
-        const resReservas = await fetch(`https://localhost:7123/api/Reservas?usuarioId=${userId}`);
+        const resReservas = await fetch(`${API_URL}/api/Reservas?usuarioId=${userId}`);
         if (resReservas.ok) {
             const todasLasReservas = await resReservas.json();
             const ahora = new Date(); 

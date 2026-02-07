@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 // Importamos la acción de cerrar sesión (asegúrate de tenerla en actions.ts)
 import { logoutMaster } from "../../actions"; 
+import { API_URL } from '@/utils/config';
 
 interface Cliente {
     id: number;
@@ -38,7 +39,7 @@ export default function SuperAdminPanel() {
     const cargarClientes = async () => { 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; 
         try { 
-            const res = await fetch("https://localhost:7123/api/SuperAdmin/clientes"); 
+            const res = await fetch(`${API_URL}/api/SuperAdmin/clientes`); 
             if (res.ok) setClientes(await res.json()); 
         } catch (e) { console.error(e); } 
     };
@@ -46,7 +47,7 @@ export default function SuperAdminPanel() {
     const crearCliente = async (e: React.FormEvent) => { 
         e.preventDefault(); 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; 
-        await fetch("https://localhost:7123/api/Auth/register", { 
+        await fetch(`${API_URL}/api/Auth/register`, { 
             method: "POST", 
             headers: { "Content-Type": "application/json" }, 
             body: JSON.stringify({ username: newUser, password: newPass, nombreNegocio: newBusiness }) 
@@ -56,14 +57,14 @@ export default function SuperAdminPanel() {
 
     const toggleBloqueo = async (id: number, nombre: string, estadoActual: boolean) => { 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; 
-        await fetch(`https://localhost:7123/api/SuperAdmin/toggle-estado/${id}`, { method: "PUT" }); 
+        await fetch(`${API_URL}/api/SuperAdmin/toggle-estado/${id}`, { method: "PUT" });
         cargarClientes(); 
     };
 
     const eliminarCliente = async (id: number, nombre: string) => { 
         if(!confirm(`⚠️ PELIGRO:\n¿Estás seguro de eliminar a "${nombre}"?`)) return; 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; 
-        const res = await fetch(`https://localhost:7123/api/SuperAdmin/eliminar/${id}`, { method: "DELETE" }); 
+        const res = await fetch(`${API_URL}/api/SuperAdmin/eliminar/${id}`, { method: "DELETE" }); 
         if(res.ok) { alert("Eliminado 🗑️"); cargarClientes(); } 
     };
 
@@ -71,7 +72,7 @@ export default function SuperAdminPanel() {
         if(!editingClient) return; 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; 
         
-        const res = await fetch(`https://localhost:7123/api/SuperAdmin/editar/${editingClient.id}`, { 
+        const res = await fetch(`${API_URL}/api/SuperAdmin/editar/${editingClient.id}`, { 
             method: "PUT", 
             headers: { "Content-Type": "application/json" }, 
             body: JSON.stringify({ 
