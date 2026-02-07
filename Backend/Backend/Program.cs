@@ -1,10 +1,10 @@
-using Domain.Interfaces;
+Ôªøusing Domain.Interfaces;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Backend.Services;
 using System.Text.Json.Serialization;
 using Infrastructure.Persistencia;
-// using Swashbuckle.AspNetCore.SwaggerGen; // No es estrictamente necesario aquÌ si no configuras opciones avanzadas
+// using Swashbuckle.AspNetCore.SwaggerGen; // No es estrictamente necesario aqu√≠ si no configuras opciones avanzadas
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,35 +17,49 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("PermitirFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // La direcciÛn de tu Next.js
+        policy.WithOrigins("http://localhost:3000") // La direcci√≥n de tu Next.js
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
 
-// 1. Agregar configuraciÛn de Swagger
+// 1. Agregar configuraci√≥n de Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ConfiguraciÛn de la Base de Datos
+// Configuraci√≥n de la Base de Datos
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// InyecciÛn de Dependencias (Repositorios)
+// Inyecci√≥n de Dependencias (Repositorios)
 builder.Services.AddScoped<ICanchaRepository, CanchaRepository>();
 builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
 builder.Services.AddScoped<MercadoPagoService>();
-var app = builder.Build();
 
-// 2. Activar Swagger UI (AQUÕ ESTABA EL ERROR)
-if (app.Environment.IsDevelopment())
+var app = builder.Build();
+// --- üü¢ BLOQUE NUEVO: Auto-Migraci√≥n y Swagger en Producci√≥n ---
+
+// 1. Aplicar migraciones autom√°ticamente al iniciar
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();   // Genera el JSON
-    app.UseSwaggerUI(); // <--- ESTA FALTABA: Genera la interfaz gr·fica
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        context.Database.Migrate(); // ¬°Esto crea las tablas en Railway!
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Ocurri√≥ un error al migrar la base de datos.");
+    }
 }
 
-// 3. He borrado el bloque de "app.MapOpenApi();" para que no estorbe.
+// 2. Activar Swagger siempre (incluso en producci√≥n)
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseHttpsRedirection();
 // (Activar la regla):
