@@ -1,4 +1,27 @@
 @tailwind base;
 @tailwind components;
-@tailwind utilities; 
+@tailwind utilities;
 
+@layer base {
+  :root {
+    --background: 0 0% 100%; /* Blanco puro */
+    --foreground: 222.2 84% 4.9%; /* Texto oscuro casi negro */
+    
+    /* Variables para bordes y inputs */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+ 
+  /* Si tenías configuración .dark, al borrarla aquí desaparece el problema */
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-white text-slate-900; /* Forzamos fondo blanco y texto oscuro */
+  }
+}
