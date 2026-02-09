@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation"; 
 import { Calendar, Users, Trophy, User, Menu, DollarSign, Coffee, LayoutDashboard, LogOut, Package , Megaphone, UtensilsCrossed,Store} from "lucide-react";
 import { useState } from "react";
-import { ThemeToggle } from "./ThemeToggle";
+
 
 export default function Navbar() {
   const pathname = usePathname();

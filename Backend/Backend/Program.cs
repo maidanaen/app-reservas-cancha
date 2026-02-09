@@ -4,43 +4,39 @@ using Microsoft.EntityFrameworkCore;
 using Backend.Services;
 using System.Text.Json.Serialization;
 using Infrastructure.Persistencia;
-// using Swashbuckle.AspNetCore.SwaggerGen; // No es estrictamente necesario aquí si no configuras opciones avanzadas
 
 var builder = WebApplication.CreateBuilder(args);
-// 1. Configurar CORS para permitir que Vercel acceda
+
+// ==================================================================
+// 1. CONFIGURACIÓN DE CORS (Permitir acceso a Vercel)
+// ==================================================================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("PermitirVercel", policy =>
     {
-        policy.AllowAnyOrigin() // Permitimos acceso desde cualquier lugar (para evitar problemas)
+        policy.AllowAnyOrigin()  // Permitimos todo para evitar bloqueos
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
 });
 
-// Add services to the container.
-builder.Services.AddControllers();
+// ==================================================================
+// 2. CONTROLADORES Y JSON
+// ==================================================================
 builder.Services.AddControllers().AddJsonOptions(x =>
     x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-// (Permiso para el Frontend):
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("PermitirFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:3000") // La dirección de tu Next.js
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
 
-// 1. Agregar configuración de Swagger
+// 3. Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configuración de la Base de Datos
+// ==================================================================
+// 4. BASE DE DATOS (Conexión Inteligente para Railway)
+// ==================================================================
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
                        ?? builder.Configuration.GetConnectionString("DefaultConnection");
-// Detectar si es una URL de Railway (empieza con postgres://) y traducirla
+
+// Detectar si es una URL de Railway (tiene "://") y traducirla
 if (!string.IsNullOrEmpty(connectionString) && connectionString.Contains("://"))
 {
     try
@@ -66,16 +62,19 @@ if (!string.IsNullOrEmpty(connectionString) && connectionString.Contains("://"))
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Inyección de Dependencias (Repositorios)
+// ==================================================================
+// 5. INYECCIÓN DE DEPENDENCIAS
+// ==================================================================
 builder.Services.AddScoped<ICanchaRepository, CanchaRepository>();
 builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+// Asegúrate de que MercadoPagoService tenga su propia config si la necesita
 builder.Services.AddScoped<MercadoPagoService>();
 
 var app = builder.Build();
-// --- 🟢 BLOQUE NUEVO: Auto-Migración y Swagger en Producción ---
 
-// 1. Aplicar migraciones automáticamente al iniciar
-// --- INICIO DEL BLOQUE DE AUTO-MIGRACIÓN ---
+// ==================================================================
+// 6. AUTO-MIGRACIÓN (Crear tablas al iniciar)
+// ==================================================================
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -84,24 +83,31 @@ using (var scope = app.Services.CreateScope())
         var context = services.GetRequiredService<AppDbContext>();
         // Esto ejecuta "update-database" automáticamente en la nube
         context.Database.Migrate();
-        Console.WriteLine("¡Migraciones aplicadas exitosamente!");
+        Console.WriteLine("✅ ¡Migraciones aplicadas exitosamente!");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Error aplicando migraciones: {ex.Message}");
+        Console.WriteLine($"❌ Error aplicando migraciones: {ex.Message}");
     }
 }
-// 2. Activar Swagger siempre (incluso en producción)
-app.UseSwagger();
-app.UseSwaggerUI();
 
+// ==================================================================
+// 7. PIPELINE (Orden de ejecución)
+// ==================================================================
+
+app.UseSwagger();
+app.UseSwaggerUI(); // Swagger visible siempre
 
 app.UseHttpsRedirection();
-// (Activar la regla):
+
+// ¡IMPORTANTE! Usar la política "PermitirVercel" que definimos arriba
 app.UseCors("PermitirVercel");
 
 app.UseAuthorization();
 app.UseStaticFiles();
+
 app.MapControllers();
 
-app.Run();
+// Arrancar en el puerto que diga Railway o el 8080 por defecto
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+app.Run($"http://0.0.0.0:{port}");
