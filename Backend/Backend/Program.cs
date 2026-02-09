@@ -39,6 +39,29 @@ builder.Services.AddSwaggerGen();
 
 // Configuración de la Base de Datos
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// Detectar si es una URL de Railway (empieza con postgres://) y traducirla
+if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgres://"))
+{
+    try
+    {
+        var databaseUri = new Uri(connectionString);
+        var userInfo = databaseUri.UserInfo.Split(':');
+
+        // Reconstruimos la cadena al formato que le gusta a .NET
+        connectionString = $"Host={databaseUri.Host};" +
+                           $"Port={databaseUri.Port};" +
+                           $"Username={userInfo[0]};" +
+                           $"Password={userInfo[1]};" +
+                           $"Database={databaseUri.LocalPath.TrimStart('/')};" +
+                           "Ssl Mode=Require;Trust Server Certificate=true"; // Importante para la nube
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error parseando la URL de conexión: {ex.Message}");
+    }
+}
+
+// Conectar usando la cadena (ya sea la original o la traducida)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
