@@ -3,23 +3,20 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   
-  // Imprimir en consola para verificar que se ejecuta (Solo en desarrollo)
-  console.log("🔒 Middleware verificando:", request.nextUrl.pathname);
-
   // 1. Detectar si intenta entrar al área Master
   if (request.nextUrl.pathname.startsWith("/master")) {
     
-    // Si ya está en el login, lo dejamos pasar
+    // Si ya está en el login, lo dejamos pasar para evitar bucles infinitos
     if (request.nextUrl.pathname === "/master/login") {
       return NextResponse.next();
     }
 
-    // 2. Verificar cookie
+    // 2. Verificar cookie de sesión
     const tienePermiso = request.cookies.get("nexus_master_session");
 
-    // 3. Si NO tiene permiso, redirigir
+    // 3. Si NO tiene permiso, redirigir al login
     if (!tienePermiso) {
-      console.log("⛔ Acceso denegado. Redirigiendo al login...");
+      // Construimos la URL absoluta para el redirect
       return NextResponse.redirect(new URL("/master/login", request.url));
     }
   }
@@ -28,9 +25,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Matcher actualizado para cubrir todas las subrutas
+  // Matcher para que se ejecute solo en rutas que empiecen con /master
   matcher: ["/master/:path*"],
 };
-
-//clave momentane 
-//   const MY_SECRET_KEY = "NEXUS-MASTER-2026";   
