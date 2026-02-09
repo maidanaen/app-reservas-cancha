@@ -74,21 +74,22 @@ var app = builder.Build();
 // --- 🟢 BLOQUE NUEVO: Auto-Migración y Swagger en Producción ---
 
 // 1. Aplicar migraciones automáticamente al iniciar
+// --- INICIO DEL BLOQUE DE AUTO-MIGRACIÓN ---
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
-        context.Database.Migrate(); // ¡Esto crea las tablas en Railway!
+        // Esto ejecuta "update-database" automáticamente en la nube
+        context.Database.Migrate();
+        Console.WriteLine("¡Migraciones aplicadas exitosamente!");
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Ocurrió un error al migrar la base de datos.");
+        Console.WriteLine($"Error aplicando migraciones: {ex.Message}");
     }
 }
-
 // 2. Activar Swagger siempre (incluso en producción)
 app.UseSwagger();
 app.UseSwaggerUI();
