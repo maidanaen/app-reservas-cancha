@@ -34,7 +34,7 @@ namespace Backend.Controllers
                 Password = request.Password, // NOTA: Idealmente esto se encripta, por ahora texto plano para aprender
                 NombreNegocio = request.nombreNegocio ?? "Negocio Sin Nombre", // Guardamos el nombre del club
                 Activo = true,             // Nace activo
-                FechaAlta = DateTime.Now
+                FechaAlta = DateTime.UtcNow
             };
 
             _context.Usuarios.Add(nuevoUsuario);
