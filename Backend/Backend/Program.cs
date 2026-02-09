@@ -38,22 +38,23 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Configuración de la Base de Datos
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+                       ?? builder.Configuration.GetConnectionString("DefaultConnection");
 // Detectar si es una URL de Railway (empieza con postgres://) y traducirla
-if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgres://"))
+if (!string.IsNullOrEmpty(connectionString) && connectionString.Contains("://"))
 {
     try
     {
         var databaseUri = new Uri(connectionString);
         var userInfo = databaseUri.UserInfo.Split(':');
 
-        // Reconstruimos la cadena al formato que le gusta a .NET
+        // Reconstruimos la cadena al formato que le gusta a .NET (Npgsql)
         connectionString = $"Host={databaseUri.Host};" +
                            $"Port={databaseUri.Port};" +
                            $"Username={userInfo[0]};" +
                            $"Password={userInfo[1]};" +
                            $"Database={databaseUri.LocalPath.TrimStart('/')};" +
-                           "Ssl Mode=Require;Trust Server Certificate=true"; // Importante para la nube
+                           "Ssl Mode=Require;Trust Server Certificate=true";
     }
     catch (Exception ex)
     {
