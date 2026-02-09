@@ -95,7 +95,7 @@ export default function CajaPage() {
         if(!userId) return;
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        await fetch(`https://localhost:7123/api/Cajas/abrir?usuarioId=${userId}`, {
+        await fetch(`${API_URL}/api/Cajas/abrir?usuarioId=${userId}`, {
             method: "POST", headers: { "Content-Type": "application/json" }, body: montoInicial
         });
         setMontoInicial("");
