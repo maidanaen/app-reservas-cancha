@@ -30,7 +30,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-slate-200;
   }
   body {
     /* ESTO ES LA CLAVE: Fondo blanco y texto oscuro por defecto */
