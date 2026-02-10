@@ -137,8 +137,7 @@
               "RelativeToolTip": "Backend\\appsettings.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAABfAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-02-07T15:06:46.284Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-07T15:06:46.284Z"
             },
             {
               "$type": "Document",
@@ -148,7 +147,7 @@
               "RelativeDocumentMoniker": "Backend\\Program.cs",
               "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Program.cs",
               "RelativeToolTip": "Backend\\Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAABDAAAAAAAAAA==",
+              "ViewState": "AgIAAEgAAAAAAAAAAAAAABAAAAAjAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-02-09T19:59:59.809Z",
               "EditorCaption": ""
