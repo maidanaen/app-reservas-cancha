@@ -14,6 +14,8 @@ interface Cancha {
   horaApertura: number;
   horaCierre: number;
 }
+     
+
 
 interface Club {
   clubId: number;        // 🟢 Ojo: El endpoint nuevo usa 'clubId', no 'id'
