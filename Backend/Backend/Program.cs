@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ==================================================================
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("PermitirVercel", policy =>
+    options.AddPolicy("PermitirTodo", policy =>
     {
         policy.AllowAnyOrigin()  // Permitimos todo para evitar bloqueos
               .AllowAnyMethod()
