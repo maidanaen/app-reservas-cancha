@@ -48,6 +48,12 @@ namespace Backend.Controllers
         [HttpGet("ocupadas")]
         public async Task<ActionResult<IEnumerable<string>>> GetHorariosOcupados(int canchaId, DateTime fecha)
         {
+            // ✅ CORRECCIÓN: Forzamos que la fecha que llega se trate como UTC
+            if (fecha.Kind == DateTimeKind.Unspecified || fecha.Kind == DateTimeKind.Local)
+            {
+                fecha = DateTime.SpecifyKind(fecha, DateTimeKind.Utc);
+            }
+
             var reservas = await _repository.GetByCanchaYFechaAsync(canchaId, fecha);
             var horariosBloqueados = new List<string>();
 
@@ -56,6 +62,7 @@ namespace Backend.Controllers
                 var tiempoActual = reserva.FechaInicio;
                 while (tiempoActual < reserva.FechaFin)
                 {
+                    // Comparamos solo la parte de la fecha (.Date)
                     if (tiempoActual.Date == fecha.Date)
                     {
                         horariosBloqueados.Add(tiempoActual.ToString("HH:mm"));
@@ -70,11 +77,19 @@ namespace Backend.Controllers
         [HttpGet("cancha/{canchaId}")]
         public async Task<ActionResult<List<Reserva>>> VerTurnos(int canchaId, [FromQuery] DateTime? fecha)
         {
-            var fechaFiltro = fecha ?? DateTime.Now;
+            // ✅ CORRECCIÓN: Usar UtcNow en lugar de Now
+            var fechaFiltro = fecha ?? DateTime.UtcNow;
+
+            // Asegurar UTC si viene por parámetro
+            if (fechaFiltro.Kind == DateTimeKind.Local || fechaFiltro.Kind == DateTimeKind.Unspecified)
+            {
+                fechaFiltro = DateTime.SpecifyKind(fechaFiltro, DateTimeKind.Utc);
+            }
+
             var turnos = await _repository.GetByCanchaYFechaAsync(canchaId, fechaFiltro);
             return Ok(turnos);
         }
-        
+
         [HttpGet("cliente/{telefono}")]
         public async Task<ActionResult<IEnumerable<Reserva>>> GetReservasPorCliente(string telefono)
         {
@@ -231,8 +246,8 @@ namespace Backend.Controllers
 
                 var nuevaReserva = new Reserva
                 {
-                    FechaInicio = DateTime.Now,
-                    FechaFin = DateTime.Now.AddMinutes(5),
+                    FechaInicio = DateTime.UtcNow,
+                    FechaFin = DateTime.UtcNow.AddMinutes(5),
 
                     ClienteNombre = "Venta Cantina",
                     ClienteTelefono = "-",
@@ -302,7 +317,7 @@ namespace Backend.Controllers
             var telLimpio = telefono.Trim();
 
             // 🟢 FECHA DE HOY (A las 00:00:00)
-            var hoy = DateTime.Today;
+            var hoy = DateTime.UtcNow.Date;
 
             var reservas = await _context.Reservas
                 .Include(r => r.Cancha)
