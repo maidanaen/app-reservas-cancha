@@ -5,6 +5,8 @@ using Backend.Services;
 using System.Text.Json.Serialization;
 using Infrastructure.Persistencia;
 
+
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 // ==================================================================
@@ -101,7 +103,7 @@ app.UseSwaggerUI(); // Swagger visible siempre
 app.UseHttpsRedirection();
 
 // ¡IMPORTANTE! Usar la política "PermitirVercel" que definimos arriba
-app.UseCors("PermitirVercel");
+app.UseCors("PermitirTodo");
 
 app.UseAuthorization();
 app.UseStaticFiles();
