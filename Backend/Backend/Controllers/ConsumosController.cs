@@ -27,7 +27,7 @@ namespace Backend.Controllers
             return CreatedAtAction("GetConsumo", new { id = consumo.Id }, consumo);
         }
 
-        // --- 🟢 NUEVO: Endpoint Inteligente para Pagar un Ítem individual ---
+        //  Endpoint Inteligente para Pagar un Ítem individual
         // PUT: api/Consumos/5/pagar
         [HttpPut("{id}/pagar")]
         public async Task<IActionResult> PagarConsumo(int id, [FromBody] string metodo)
@@ -57,7 +57,7 @@ namespace Backend.Controllers
             return Ok(new { mensaje = "Pago registrado correctamente", metodo = metodo });
         }
 
-        // --- 🔴 MODIFICADO: Borrado Inteligente (Resta dinero si hace falta) ---
+        
         // DELETE: api/Consumos/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteConsumo(int id)

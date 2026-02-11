@@ -16,8 +16,9 @@ namespace Backend.Controllers
         {
             _context = context;
         }
-
-        // 1. ABRIR CAJA (✅ Validado Multi-Cliente)
+        
+        //MULTICLIENTE
+        // 1. ABRIR CAJA 
         [HttpPost("abrir")]
         public async Task<ActionResult<Caja>> AbrirCaja([FromQuery] int usuarioId, [FromBody] decimal montoInicial)
         {
@@ -32,7 +33,7 @@ namespace Backend.Controllers
             {
                 FechaApertura = DateTime.Now,
                 MontoInicial = montoInicial,
-                UsuarioId = usuarioId // 🔒 ASIGNAMOS DUEÑO
+                UsuarioId = usuarioId // ASIGNAMOS DUEÑO
             };
 
             _context.Cajas.Add(nuevaCaja);
@@ -40,7 +41,7 @@ namespace Backend.Controllers
             return Ok(nuevaCaja);
         }
 
-        // 2. OBTENER RESUMEN ACTUAL (✅ Validado Multi-Cliente)
+        // 2. OBTENER RESUMEN ACTUAL 
         [HttpGet("actual")]
         public async Task<ActionResult<object>> GetCajaActual([FromQuery] int usuarioId)
         {
@@ -54,7 +55,7 @@ namespace Backend.Controllers
             return await GenerarReporteCaja(caja);
         }
 
-        // 3. HISTORIAL (✅ Validado Multi-Cliente)
+        // 3. HISTORIAL
         [HttpGet("historial")]
         public async Task<ActionResult<IEnumerable<Caja>>> GetHistorial([FromQuery] int usuarioId)
         {
@@ -67,7 +68,7 @@ namespace Backend.Controllers
                 .ToListAsync();
         }
 
-        // 4. DETALLE HISTORIAL (✅ Validado Multi-Cliente)
+        // 4. DETALLE HISTORIAL 
         [HttpGet("{id}")]
         public async Task<ActionResult<object>> GetDetalleCaja(int id, [FromQuery] int usuarioId)
         {
@@ -76,13 +77,13 @@ namespace Backend.Controllers
             var caja = await _context.Cajas.FindAsync(id);
             if (caja == null) return NotFound();
 
-            // 🔒 SEGURIDAD: Si la caja no es tuya, no la ves.
+            //  SEGURIDAD: Si la caja no es tuya, no la ves.
             if (caja.UsuarioId != usuarioId) return Unauthorized("No tienes permiso para ver esta caja.");
 
             return await GenerarReporteCaja(caja);
         }
 
-        // 5. CERRAR CAJA (✅ Validado Multi-Cliente)
+        // 5. CERRAR CAJA 
         [HttpPost("cerrar")]
         public async Task<IActionResult> CerrarCaja([FromQuery] int usuarioId, [FromBody] ArqueoCierreDto arqueo)
         {
@@ -106,9 +107,9 @@ namespace Backend.Controllers
             return Ok(new { mensaje = "Caja cerrada correctamente", caja });
         }
 
-        // =======================================================
-        // 🪄 LÓGICA DE REPORTE (NO TOCAR - YA FUNCIONA BIEN)
-        // =======================================================
+      
+        //🪄 LÓGICA DE REPORTE
+    
         private async Task<dynamic> GenerarReporteCaja(Caja caja)
         {
             // Traemos las reservas vinculadas a esta caja específica

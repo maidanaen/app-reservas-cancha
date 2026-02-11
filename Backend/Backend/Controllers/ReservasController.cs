@@ -200,11 +200,16 @@ namespace Backend.Controllers
             var reserva = await _repository.GetByIdAsync(id);
             if (reserva == null) return NotFound("Reserva no encontrada");
 
-            // 1. Guardamos el dinero
+            // 🟢 1. Calculamos la DIFERENCIA (Lo que entra nuevo a la caja)
+            // Si antes había pagado 100 y ahora paga 150, a la caja solo entran 50.
+            decimal diferenciaEfectivo = cobro.CobradoEfectivo - reserva.CobradoEfectivo;
+            decimal diferenciaTransferencia = cobro.CobradoTransferencia - reserva.CobradoTransferencia;
+
+            // 2. Actualizamos la reserva con los nuevos totales
             reserva.CobradoEfectivo = cobro.CobradoEfectivo;
             reserva.CobradoTransferencia = cobro.CobradoTransferencia;
 
-            // 2. Calculamos total y estado
+            // 3. Calculamos total y estado
             decimal totalPagado = cobro.CobradoEfectivo + cobro.CobradoTransferencia;
 
             if (totalPagado > 0)
@@ -218,16 +223,23 @@ namespace Backend.Controllers
                 else
                     reserva.MetodoPago = "Efectivo";
 
-                // 🟢 3. MAGIA: VINCULAR A CAJA ABIERTA 🪄
-                var cajaAbierta = await _context.Cajas.FirstOrDefaultAsync(c => c.FechaCierre == null);
+                // 🟢 4.VINCULAR A CAJA ABIERTA (DEL DUEÑO CORRECTO) 
+                // Buscamos SOLO la caja del usuario dueño de la reserva
+                var cajaAbierta = await _context.Cajas
+                    .FirstOrDefaultAsync(c => c.UsuarioId == reserva.UsuarioId && c.FechaCierre == null);
+
                 if (cajaAbierta != null)
                 {
                     reserva.CajaId = cajaAbierta.Id;
+
+                    // 🟢 5. SUMAMOS LA DIFERENCIA A LA CAJA (Impacto real)
+                    if (diferenciaEfectivo > 0) cajaAbierta.TotalEfectivo += diferenciaEfectivo;
+                    if (diferenciaTransferencia > 0) cajaAbierta.TotalTransferencia += diferenciaTransferencia;
                 }
             }
 
-            // 4. Guardamos
-            await _repository.UpdateAsync(reserva);
+            // 6. Guardamos todo junto (Reserva + Caja)
+            await _context.SaveChangesAsync(); // Usamos el contexto directo para guardar ambos cambios
 
             return Ok(new { mensaje = "Caja actualizada correctamente" });
         }

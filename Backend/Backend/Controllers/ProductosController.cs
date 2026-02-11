@@ -23,7 +23,7 @@ namespace Backend.Controllers
             if (usuarioId == 0) return BadRequest("Falta usuarioId");
 
             return await _context.Productos
-                .Where(p => p.Activo && p.UsuarioId == usuarioId) // 🔒 SOLO SUS PRODUCTOS
+                .Where(p => p.Activo && p.UsuarioId == usuarioId) //  SOLO SUS PRODUCTOS
                 .ToListAsync();
         }
 

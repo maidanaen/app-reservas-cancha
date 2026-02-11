@@ -35,73 +35,74 @@ namespace Backend.Controllers
             return Ok(mesa);
         }
 
-        // 🟢 1. ABRIR MESA (MÉTODO NUEVO Y MEJORADO)
+        // 🟢 1. ABRIR MESA 
         [HttpPost("{id}/abrir")]
         public async Task<IActionResult> AbrirMesa(int id, [FromQuery] int usuarioId)
         {
-            // A. Buscamos la mesa
             var mesa = await _context.Mesas.FirstOrDefaultAsync(m => m.Id == id && m.UsuarioId == usuarioId);
             if (mesa == null) return NotFound("Mesa no encontrada.");
-
             if (mesa.EstaOcupada) return BadRequest("Esta mesa ya está ocupada.");
 
-            // B. 🔥 VALIDACIÓN DE CAJA (AQUÍ ESTÁ LA MAGIA) 🔥
-            // Buscamos si hay una caja abierta para este usuario
+            //  VALIDACIÓN DE CAJA DEL USUARIO CORRECTO 
             var cajaAbierta = await _context.Cajas
                 .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId && c.FechaCierre == null);
 
             if (cajaAbierta == null)
-            {
-                // En lugar de 404, devolvemos 400 con un mensaje claro para el humano
                 return BadRequest("⚠️ CAJA CERRADA: No puedes abrir mesas sin abrir la Caja primero.");
-            }
 
-            // C. Creamos el pedido (Reserva)
             var nuevaReserva = new Reserva
             {
                 UsuarioId = usuarioId,
                 MesaId = id,
-                CajaId = cajaAbierta.Id, // Asignamos la caja abierta
-                FechaInicio = DateTime.Now,
-                // FechaFin se queda null hasta cerrar
+                CajaId = cajaAbierta.Id, // Vinculamos ID Caja
+                FechaInicio = DateTime.UtcNow, // Usa UTC siempre
                 Estado = "Pendiente",
-                Tipo = "Mesa", // Marcamos que es de restaurante
-                ClienteNombre = $"Mesa {mesa.Nombre}", // Nombre por defecto
+                Tipo = "Mesa",
+                ClienteNombre = $"Mesa {mesa.Nombre}",
                 CobradoEfectivo = 0,
                 CobradoTransferencia = 0
             };
 
             _context.Reservas.Add(nuevaReserva);
-            await _context.SaveChangesAsync(); // Guardamos para generar el ID
+            await _context.SaveChangesAsync();
 
-            // D. Actualizamos la Mesa visualmente
             mesa.EstaOcupada = true;
             mesa.ReservaActualId = nuevaReserva.Id;
-
             await _context.SaveChangesAsync();
 
             return Ok(new { mensaje = "Mesa abierta correctamente", reservaId = nuevaReserva.Id });
         }
 
-        // 🟢 2. CERRAR MESA (Liberar y cobrar)
+        // 🟢 2. CERRAR MESA (Liberar y cobrar REALMENTE)
         [HttpPost("{id}/cerrar")]
-        public async Task<IActionResult> CerrarMesa(int id, [FromQuery] int usuarioId)
+        public async Task<IActionResult> CerrarMesa(int id, [FromQuery] int usuarioId, [FromBody] PagoMesaDto pago)
         {
+            // Nota: Necesitas crear la clase PagoMesaDto abajo o usar un dynamic
             var mesa = await _context.Mesas.FirstOrDefaultAsync(m => m.Id == id && m.UsuarioId == usuarioId);
             if (mesa == null) return NotFound("Mesa no encontrada.");
 
             // Buscamos el pedido activo
             var pedidoAbierto = await _context.Reservas
-                .Where(r => r.MesaId == id && r.UsuarioId == usuarioId && r.Estado != "Pagado" && r.Estado != "Cancelado")
-                .OrderByDescending(r => r.FechaInicio)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(r => r.Id == mesa.ReservaActualId);
 
             if (pedidoAbierto != null)
             {
-                // Aquí podrías validar si el saldo es 0 antes de cerrar, 
-                // pero por ahora simplemente lo marcamos como pagado/cerrado.
+                // 1. Actualizamos montos en la Reserva
+                pedidoAbierto.CobradoEfectivo = pago.CobradoEfectivo;
+                pedidoAbierto.CobradoTransferencia = pago.CobradoTransferencia;
                 pedidoAbierto.Estado = "Pagado";
-                pedidoAbierto.FechaFin = DateTime.Now;
+                pedidoAbierto.FechaFin = DateTime.UtcNow;
+
+                // 2. BUSCAMOS LA CAJA DEL DUEÑO PARA SUMARLE LA PLATA
+                var cajaAbierta = await _context.Cajas
+                    .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId && c.FechaCierre == null);
+
+                if (cajaAbierta != null)
+                {
+                    pedidoAbierto.CajaId = cajaAbierta.Id; // Aseguramos vínculo
+                    cajaAbierta.TotalEfectivo += pago.CobradoEfectivo;
+                    cajaAbierta.TotalTransferencia += pago.CobradoTransferencia;
+                }
             }
 
             // Liberamos la mesa
@@ -109,8 +110,7 @@ namespace Backend.Controllers
             mesa.ReservaActualId = null;
 
             await _context.SaveChangesAsync();
-
-            return Ok(new { mensaje = "Mesa liberada correctamente" });
+            return Ok(new { mensaje = "Mesa cobrada y liberada correctamente" });
         }
 
         // DELETE: api/Mesas/5
@@ -125,5 +125,12 @@ namespace Backend.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
+    }
+
+    // DTO necesario para recibir los montos
+    public class PagoMesaDto
+    {
+        public decimal CobradoEfectivo { get; set; }
+        public decimal CobradoTransferencia { get; set; }
     }
 }

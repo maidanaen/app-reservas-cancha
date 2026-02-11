@@ -29,7 +29,7 @@ namespace Backend.Controllers
             
             decimal cajaTotal = 0;
 
-            // 🟢 SI HAY TURNO ABIERTO: Calculamos todo en base a ESA caja
+            // SI HAY TURNO ABIERTO: Calculamos todo en base a ESA caja
             if (cajaAbierta != null)
             {
                 // a. Sumamos todas las reservas vinculadas a esta caja (sin importar si fueron ayer u hoy)
@@ -46,7 +46,7 @@ namespace Backend.Controllers
             }
             else
             {
-                // 🔴 SI NO HAY TURNO ABIERTO: Mostramos 0 o datos del día calendario (opcional)
+                //  SI NO HAY TURNO ABIERTO: Mostramos 0 o datos del día calendario (opcional)
                 // Por seguridad operativa, mejor mostrar 0 para obligar a abrir caja.
                 ventasJornada = 0;
                

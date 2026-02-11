@@ -16,7 +16,7 @@ namespace Backend.Controllers
         }
 
         // GET: api/canchas?usuarioId=5
-        // 🔒 SEGURIDAD: Exigimos el usuarioId para filtrar
+        // SEGURIDAD: Exigimos el usuarioId para filtrar
         [HttpGet]
         public async Task<ActionResult<List<Cancha>>> ObtenerTodas([FromQuery] int usuarioId)
         {
@@ -33,7 +33,7 @@ namespace Backend.Controllers
         }
 
         // POST: api/canchas
-        // 🔒 SEGURIDAD: Validamos que la cancha tenga dueño
+        //  SEGURIDAD: Validamos que la cancha tenga dueño
         [HttpPost]
         public async Task<ActionResult<Cancha>> CrearCancha(Cancha cancha)
         {
@@ -58,7 +58,7 @@ namespace Backend.Controllers
         }
 
         // PUT: api/Canchas/5
-        // 🔒 SEGURIDAD: Verificamos existencia antes de editar
+        //  SEGURIDAD: Verificamos existencia antes de editar
         [HttpPut("{id}")]
         public async Task<IActionResult> EditarCancha(int id, Cancha cancha)
         {
@@ -80,7 +80,7 @@ namespace Backend.Controllers
         }
 
         // DELETE: api/Canchas/5
-        // 🔒 SEGURIDAD: Verificamos existencia antes de borrar
+        // SEGURIDAD: Verificamos existencia antes de borrar
         [HttpDelete("{id}")]
         public async Task<IActionResult> EliminarCancha(int id)
         {

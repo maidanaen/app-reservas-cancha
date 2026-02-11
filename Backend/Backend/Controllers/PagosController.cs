@@ -25,7 +25,7 @@ namespace Backend.Controllers
             }
             catch (Exception ex)
             {
-                // 🛑 AQUÍ ESTÁ LA CLAVE: Imprimimos el error en la consola negra de Visual Studio
+                //  Imprimimos el error en la consola negra de Visual Studio
                 Console.WriteLine("--------------------------------------------------");
                 Console.WriteLine("❌ ERROR MERCADO PAGO: " + ex.Message);
                 if (ex.InnerException != null)

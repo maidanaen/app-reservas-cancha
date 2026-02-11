@@ -28,14 +28,14 @@ namespace Backend.Controllers
             if (usuarioId == 0) return BadRequest("Falta usuarioId (Admin)");
 
             return await _context.Noticias
-                .Where(n => n.UsuarioId == usuarioId) // 🔒 SOLO SUS NOTICIAS
+                .Where(n => n.UsuarioId == usuarioId) //  SOLO SUS NOTICIAS
                 .OrderByDescending(n => n.FechaPublicacion)
                 .ToListAsync();
         }
 
         // 2. ENDPOINT PARA EL PÚBLICO (Web de Clientes)
         // Ruta: GET api/Noticias/publicas?usuarioId=0 (o el ID del club)
-        [HttpGet("publicas")] // 🟢 ESTA ES LA CLAVE: Le damos una sub-ruta
+        [HttpGet("publicas")] 
         public async Task<ActionResult<IEnumerable<Noticia>>> GetNoticiasPublicas([FromQuery] int usuarioId = 0)
         {
             // Empezamos trayendo todo
@@ -64,11 +64,10 @@ namespace Backend.Controllers
                 Titulo = datos.Titulo,
                 Cuerpo = datos.Cuerpo,
                 FechaPublicacion = DateTime.Now,
-                UsuarioId = usuarioId // 🔒 SELLO DE PROPIEDAD
+                UsuarioId = usuarioId //  SELLO DE PROPIEDAD
             };
 
-            // ... (Tu lógica de guardar imagen aquí va igual) ...
-            // Si la necesitas completa avísame, es la misma que tenías antes.
+           
 
             _context.Noticias.Add(nuevaNoticia);
             await _context.SaveChangesAsync();

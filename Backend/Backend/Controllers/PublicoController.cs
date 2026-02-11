@@ -20,7 +20,7 @@ namespace Backend.Controllers
         [HttpGet("sedes")]
         public async Task<ActionResult> GetSedesConCanchas()
         {
-            // 🟢 ESTRATEGIA: Buscamos las canchas y las agrupamos por Usuario (Dueño)
+            //  ESTRATEGIA: Buscamos las canchas y las agrupamos por Usuario (Dueño)
             // Así no necesitamos que la clase Usuario tenga la lista de canchas.
             var sedes = await _context.Canchas
                 .Include(c => c.Usuario)
