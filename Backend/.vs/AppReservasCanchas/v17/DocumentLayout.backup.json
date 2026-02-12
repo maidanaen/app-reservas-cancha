@@ -3,8 +3,19 @@
   "WorkspaceRootPath": "D:\\AppReservasCanchas\\Backend\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{4B0E678C-F86D-4944-8E32-072B3C5793F8}|..\\Domain\\Domain.csproj|d:\\appreservascanchas\\domain\\entities\\caja.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\cajascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\cajascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\superadmincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\superadmincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\publicocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -37,14 +48,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\canchascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\canchascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\cajascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\cajascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\reservascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -84,34 +87,8 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 2,
           "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "PagosController.cs",
-              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\PagosController.cs",
-              "RelativeDocumentMoniker": "Backend\\Controllers\\PagosController.cs",
-              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\PagosController.cs",
-              "RelativeToolTip": "Backend\\Controllers\\PagosController.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABsAAAATAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-11T16:28:05.685Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "ConsumosController.cs",
-              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ConsumosController.cs",
-              "RelativeDocumentMoniker": "Backend\\Controllers\\ConsumosController.cs",
-              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ConsumosController.cs",
-              "RelativeToolTip": "Backend\\Controllers\\ConsumosController.cs",
-              "ViewState": "AgIAACYAAAAAAAAAAAAwwDsAAAAIAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-11T16:25:57.489Z",
-              "EditorCaption": ""
-            },
             {
               "$type": "Bookmark",
               "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
@@ -123,19 +100,43 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Caja.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Domain\\Entities\\Caja.cs",
+              "RelativeDocumentMoniker": "..\\Domain\\Entities\\Caja.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Domain\\Entities\\Caja.cs",
+              "RelativeToolTip": "..\\Domain\\Entities\\Caja.cs",
+              "ViewState": "AgIAABAAAAAAAAAAAADwvyUAAAAzAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-12T01:57:00.13Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CajasController.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\CajasController.cs",
+              "RelativeDocumentMoniker": "Backend\\Controllers\\CajasController.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\CajasController.cs",
+              "RelativeToolTip": "Backend\\Controllers\\CajasController.cs",
+              "ViewState": "AgIAAEsAAAAAAAAAAAAmwGoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-03T05:06:43.867Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "SuperAdminController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\SuperAdminController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\SuperAdminController.cs",
               "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\SuperAdminController.cs",
               "RelativeToolTip": "Backend\\Controllers\\SuperAdminController.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAAxAAAAAAAAAA==",
+              "ViewState": "AgIAAH4AAAAAAAAAAAAmwBYAAAAxAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-06T03:43:59.483Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-06T03:43:59.483Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 11,
               "Title": "CanchasController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\CanchasController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\CanchasController.cs",
@@ -143,12 +144,11 @@
               "RelativeToolTip": "Backend\\Controllers\\CanchasController.cs",
               "ViewState": "AgIAACkAAAAAAAAAAAAwwFIAAAAKAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-11T16:25:22.146Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-11T16:25:22.146Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 7,
               "Title": "MesasController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\MesasController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\MesasController.cs",
@@ -156,25 +156,47 @@
               "RelativeToolTip": "Backend\\Controllers\\MesasController.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAADgAAAArAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-03T05:06:05.755Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-03T05:06:05.755Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "CajasController.cs",
-              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\CajasController.cs",
-              "RelativeDocumentMoniker": "Backend\\Controllers\\CajasController.cs",
-              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\CajasController.cs",
-              "RelativeToolTip": "Backend\\Controllers\\CajasController.cs",
-              "ViewState": "AgIAAKcAAAAAAAAAAAAuwG4AAAAKAAAAAAAAAA==",
+              "DocumentIndex": 3,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\AuthController.cs",
+              "RelativeDocumentMoniker": "Backend\\Controllers\\AuthController.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\AuthController.cs",
+              "RelativeToolTip": "Backend\\Controllers\\AuthController.cs",
+              "ViewState": "AgIAAD4AAAAAAAAAAAAwwEoAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-03T05:06:43.867Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-09T22:03:02.378Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "ConsumosController.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ConsumosController.cs",
+              "RelativeDocumentMoniker": "Backend\\Controllers\\ConsumosController.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ConsumosController.cs",
+              "RelativeToolTip": "Backend\\Controllers\\ConsumosController.cs",
+              "ViewState": "AgIAACYAAAAAAAAAAAAwwDsAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-11T16:25:57.489Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 6,
+              "Title": "PagosController.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\PagosController.cs",
+              "RelativeDocumentMoniker": "Backend\\Controllers\\PagosController.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\PagosController.cs",
+              "RelativeToolTip": "Backend\\Controllers\\PagosController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABsAAAATAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-11T16:28:05.685Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
               "Title": "DashboardController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\DashboardController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\DashboardController.cs",
@@ -182,12 +204,11 @@
               "RelativeToolTip": "Backend\\Controllers\\DashboardController.cs",
               "ViewState": "AgIAACQAAAAAAAAAAAAowDAAAAATAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-03T06:27:13.233Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-03T06:27:13.233Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 5,
               "Title": "ProductosController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ProductosController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\ProductosController.cs",
@@ -195,12 +216,11 @@
               "RelativeToolTip": "Backend\\Controllers\\ProductosController.cs",
               "ViewState": "AgIAAAsAAAAAAAAAAAAQwBkAAABFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-03T05:05:46.284Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-03T05:05:46.284Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 4,
               "Title": "PublicoController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\PublicoController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\PublicoController.cs",
@@ -208,12 +228,11 @@
               "RelativeToolTip": "Backend\\Controllers\\PublicoController.cs",
               "ViewState": "AgIAAAUAAAAAAAAAAAAuwBYAAAAPAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-07T07:22:13.077Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-07T07:22:13.077Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 12,
               "Title": "ReservasController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ReservasController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\ReservasController.cs",
@@ -221,12 +240,11 @@
               "RelativeToolTip": "Backend\\Controllers\\ReservasController.cs",
               "ViewState": "AgIAAMgAAAAAAAAAAAAuwOEAAABFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-03T06:06:06.753Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-03T06:06:06.753Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 13,
               "Title": "20260210035104_FixPendientes.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Infrastructure\\Migrations\\20260210035104_FixPendientes.cs",
               "RelativeDocumentMoniker": "..\\Infrastructure\\Migrations\\20260210035104_FixPendientes.cs",
@@ -234,12 +252,11 @@
               "RelativeToolTip": "..\\Infrastructure\\Migrations\\20260210035104_FixPendientes.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-10T03:51:05.561Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-10T03:51:05.561Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 15,
               "Title": "appsettings.json",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\appsettings.json",
               "RelativeDocumentMoniker": "Backend\\appsettings.json",
@@ -251,7 +268,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 8,
               "Title": "NoticiasController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\NoticiasController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\NoticiasController.cs",
@@ -259,12 +276,11 @@
               "RelativeToolTip": "Backend\\Controllers\\NoticiasController.cs",
               "ViewState": "AgIAAB0AAAAAAAAAAAAIwEUAAAALAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-03T05:06:22.534Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-03T05:06:22.534Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 14,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Program.cs",
               "RelativeDocumentMoniker": "Backend\\Program.cs",
@@ -276,20 +292,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
-              "Title": "AuthController.cs",
-              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\AuthController.cs",
-              "RelativeDocumentMoniker": "Backend\\Controllers\\AuthController.cs",
-              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\AuthController.cs",
-              "RelativeToolTip": "Backend\\Controllers\\AuthController.cs",
-              "ViewState": "AgIAAD4AAAAAAAAAAAAwwEoAAAAJAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-09T22:03:02.378Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 16,
               "Title": "AppDbContex.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Infrastructure\\Persistencia\\AppDbContex.cs",
               "RelativeDocumentMoniker": "..\\Infrastructure\\Persistencia\\AppDbContex.cs",
@@ -301,7 +304,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 17,
               "Title": "Usuario.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Domain\\Entities\\Usuario.cs",
               "RelativeDocumentMoniker": "..\\Domain\\Entities\\Usuario.cs",
@@ -313,7 +316,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 19,
               "Title": "LogSistema.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Domain\\Entities\\LogSistema.cs",
               "RelativeDocumentMoniker": "..\\Domain\\Entities\\LogSistema.cs",
@@ -325,7 +328,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 18,
               "Title": "Reserva.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Domain\\Entities\\Reserva.cs",
               "RelativeDocumentMoniker": "..\\Domain\\Entities\\Reserva.cs",
@@ -337,7 +340,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 20,
               "Title": "Mesa.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Domain\\Entities\\Mesa.cs",
               "RelativeDocumentMoniker": "..\\Domain\\Entities\\Mesa.cs",
