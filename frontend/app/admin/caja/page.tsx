@@ -54,16 +54,21 @@ export default function CajaPage() {
     const [montoInicial, setMontoInicial] = useState("");
     const [showModalCierre, setShowModalCierre] = useState(false);
     
-    // 🟢 NUEVO: Modal de Confirmación Final (El "Seguro?" bonito)
+    // Modal de Confirmación Final
     const [showConfirmacionFinal, setShowConfirmacionFinal] = useState(false);
 
+    // Estados para el Arqueo (Conteo de dinero)
     const [arqueoEfectivo, setArqueoEfectivo] = useState("");
     const [arqueoTransf, setArqueoTransf] = useState("");
+
+    // 🟢 NUEVOS ESTADOS PARA LA BITÁCORA DE CIERRE
+    const [gastos, setGastos] = useState("");
+    const [comentarios, setComentarios] = useState("");
 
     // Modal Detalle
     const [movimientoSeleccionado, setMovimientoSeleccionado] = useState<Movimiento | null>(null);
 
-    // 🟢 SISTEMA DE NOTIFICACIONES
+    // SISTEMA DE NOTIFICACIONES
     const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
 
     const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
@@ -103,7 +108,7 @@ export default function CajaPage() {
         mostrarMensaje('exito', "✅ Turno abierto correctamente");
     };
 
-    // 🟢 PASO 1: Validar montos antes de abrir confirmación
+    // PASO 1: Validar montos antes de abrir confirmación
     const validarYConfirmar = () => {
         if (arqueoEfectivo === "" || arqueoTransf === "") {
             mostrarMensaje('error', "⚠️ Debes ingresar los montos del arqueo.");
@@ -113,12 +118,19 @@ export default function CajaPage() {
         setShowConfirmacionFinal(true);
     };
 
-    // 🟢 PASO 2: Ejecutar cierre real
+    // 🟢 PASO 2: Ejecutar cierre real (CON GASTOS Y NOTAS)
     const cerrarCajaDefinitivo = async () => {
         if (!reporteActual) return;
         const userId = localStorage.getItem("usuarioId");
         
-        const dto = { efectivoReal: Number(arqueoEfectivo), transferenciaReal: Number(arqueoTransf) };
+        // Aquí armamos el paquete completo para el Backend
+        const dto = { 
+            efectivoReal: Number(arqueoEfectivo), 
+            transferenciaReal: Number(arqueoTransf),
+            // Mapeamos los nuevos campos para el DTO del Backend
+            gastosRegistrados: Number(gastos), 
+            comentarios: comentarios
+        };
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         const res = await fetch(`${API_URL}/api/Cajas/cerrar?usuarioId=${userId}`, {
@@ -128,7 +140,11 @@ export default function CajaPage() {
         if(res.ok){
             setShowModalCierre(false);
             setShowConfirmacionFinal(false); // Cerramos ambos modales
-            setArqueoEfectivo(""); setArqueoTransf("");
+            
+            // Limpiamos todos los campos
+            setArqueoEfectivo(""); setArqueoTransf(""); 
+            setGastos(""); setComentarios("");
+
             cargarDatos();
             mostrarMensaje('exito', "🔒 Caja cerrada correctamente");
         } else {
@@ -170,8 +186,7 @@ export default function CajaPage() {
                 </Link>
             </div>
 
-            {/* ... TU CONTENIDO ORIGINAL DE CAJA (HEADER, KPIS, MOVIMIENTOS) SE MANTIENE IGUAL ... */}
-            {/* Solo pego la estructura base para que el código funcione completo */}
+            {/* CONTENIDO PRINCIPAL CAJA */}
             <div className="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden mb-10 transition-all">
                 {reporteActual ? (
                     <div className="animate-in fade-in slide-in-from-bottom-4">
@@ -190,7 +205,7 @@ export default function CajaPage() {
                             </button>
                         </div>
 
-                        {/* KPIS Y MOVIMIENTOS (IGUAL QUE ANTES) */}
+                        {/* KPIS */}
                         <div className="p-8 grid md:grid-cols-3 gap-6 bg-gray-50/50 border-b border-gray-100">
                             <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-xl shadow-slate-200 relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-8 bg-white/5 rounded-full -mr-4 -mt-4"></div>
@@ -235,10 +250,9 @@ export default function CajaPage() {
                 )}
             </div>
 
-            {/* SECCIÓN DESGLOSE Y LISTA (Mantengo tu código original aquí para no cortar) */}
+            {/* SECCIÓN DESGLOSE Y LISTA */}
             {reporteActual && (
                 <>
-                    {/* DESGLOSE */}
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden mb-10">
                         <div className="p-6 border-b border-gray-100">
                             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -344,34 +358,70 @@ export default function CajaPage() {
             {/* MODAL ARQUEO DE CAJA */}
             {showModalCierre && reporteActual && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-                    <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 sticky top-0 z-10">
                             <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><Lock size={20} className="text-red-500"/> Confirmar Cierre</h3>
                             <button onClick={() => setShowModalCierre(false)} className="text-gray-400 hover:text-red-500"><X size={24}/></button>
                         </div>
                         <div className="p-8 space-y-6">
                             <p className="text-sm text-gray-500 text-center mb-4">Ingresa los montos reales contados.</p>
+                            
+                            {/* ARQUEO EFECTIVO */}
                             <div className="space-y-2">
                                 <label className="flex justify-between text-sm font-bold text-green-700"><span>Efectivo en Caja</span><span className="text-gray-400 font-normal">Teórico: ${resumen.totalEfectivo.toLocaleString()}</span></label>
                                 <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span><input type="number" autoFocus className="w-full p-4 pl-8 text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" value={arqueoEfectivo} onChange={e => setArqueoEfectivo(e.target.value)}/></div>
                                 {arqueoEfectivo && <div className={`text-xs font-bold text-right ${difEfectivo >= 0 ? 'text-green-600' : 'text-red-500'}`}>Diferencia: {difEfectivo >= 0 ? '+' : ''}${difEfectivo.toLocaleString()}</div>}
                             </div>
+
+                            {/* ARQUEO TRANSFERENCIA */}
                             <div className="space-y-2">
                                 <label className="flex justify-between text-sm font-bold text-violet-700"><span>Banco / MP</span><span className="text-gray-400 font-normal">Teórico: ${resumen.totalTransferencia.toLocaleString()}</span></label>
                                 <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span><input type="number" className="w-full p-4 pl-8 text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 outline-none" value={arqueoTransf} onChange={e => setArqueoTransf(e.target.value)}/></div>
                                 {arqueoTransf && <div className={`text-xs font-bold text-right ${difTransf >= 0 ? 'text-green-600' : 'text-red-500'}`}>Diferencia: {difTransf >= 0 ? '+' : ''}${difTransf.toLocaleString()}</div>}
                             </div>
+
+                            {/* 🟢 NUEVA SECCIÓN: GASTOS Y NOTAS */}
+                            <div className="pt-4 border-t border-gray-100 space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-red-500 uppercase flex items-center gap-1">
+                                         💸 Salidas de Caja / Gastos
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">-$</span>
+                                        <input 
+                                            type="number" 
+                                            placeholder="0"
+                                            className="w-full p-3 pl-8 text-sm font-bold bg-red-50 border border-red-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-red-700"
+                                            value={gastos} 
+                                            onChange={e => setGastos(e.target.value)}
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-gray-400">Dinero retirado durante el turno (Proveedores, Insumos, Retiros).</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1">
+                                         📝 Bitácora / Observaciones
+                                    </label>
+                                    <textarea 
+                                        rows={3}
+                                        placeholder="Ej: Faltaron $500 por error en vuelto. Se pagó hielo..."
+                                        className="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-slate-500 outline-none resize-none"
+                                        value={comentarios} 
+                                        onChange={e => setComentarios(e.target.value)}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div className="p-6 bg-gray-50 border-t border-gray-100 flex gap-4">
+                        <div className="p-6 bg-gray-50 border-t border-gray-100 flex gap-4 sticky bottom-0 z-10">
                             <button onClick={() => setShowModalCierre(false)} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-200 transition">Cancelar</button>
-                            {/* 🟢 EL BOTÓN AHORA LLAMA A VALIDAR Y CONFIRMAR, NO CIERRA DIRECTO */}
                             <button onClick={validarYConfirmar} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition flex justify-center items-center gap-2"><CheckCircle size={18}/> FINALIZAR TURNO</button>
                         </div>
                     </div>
                 </div>
             )}
 
-           {/* --- MODAL DETALLE INTELIGENTE (MANTUVE TU CÓDIGO) --- */}
+           {/* --- MODAL DETALLE INTELIGENTE --- */}
             {movimientoSeleccionado && (
                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setMovimientoSeleccionado(null)}>
                     <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
@@ -416,8 +466,8 @@ export default function CajaPage() {
                                     <div className="space-y-2">
                                         {(() => {
                                             const esAlquiler = (nombre: string) => nombre.toLowerCase().includes('alquiler') || nombre.toLowerCase().includes('pista') || nombre.toLowerCase().includes('luz');
-                                            const totalAlquiler = movimientoSeleccionado.items.filter(i => esAlquiler(i.producto)).reduce((acc, i) => acc + i.precio, 0);
-                                            const itemsRaw = movimientoSeleccionado.items.filter(i => !esAlquiler(i.producto) && i.precio > 0);
+                                            const totalAlquiler = movimientoSeleccionado.items!.filter(i => esAlquiler(i.producto)).reduce((acc, i) => acc + i.precio, 0);
+                                            const itemsRaw = movimientoSeleccionado.items!.filter(i => !esAlquiler(i.producto) && i.precio > 0);
                                             const itemsAgrupados = itemsRaw.reduce((acc: any[], curr) => {
                                                 const existing = acc.find((i: any) => i.producto === curr.producto);
                                                 const cantidadReal = curr.cantidad || 1; 
@@ -458,7 +508,7 @@ export default function CajaPage() {
                                     
                                     <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100 font-bold text-slate-800 text-sm">
                                         <span>Total Consumo</span>
-                                        <span className="font-mono text-base text-slate-900">${movimientoSeleccionado.items.reduce((acc, item) => acc + item.precio, 0).toLocaleString()}</span>
+                                        <span className="font-mono text-base text-slate-900">${movimientoSeleccionado.items!.reduce((acc, item) => acc + item.precio, 0).toLocaleString()}</span>
                                     </div>
                                 </div>
                             )}

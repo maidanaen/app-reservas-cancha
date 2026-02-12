@@ -24,12 +24,17 @@ namespace Domain.Entities
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalTransferencia { get; set; }
 
-        // 🟢 1. Lo que contaste de billetes (Efectivo Real)
+        //  (Efectivo Real)
         [Column(TypeName = "decimal(18,2)")]
         public decimal MontoFinal { get; set; }
 
-        // 🟢 2. Lo que viste en el Banco/MP (Transferencia Real)
+        //  (Transferencia Real)
         [Column(TypeName = "decimal(18,2)")]
         public decimal MontoRealTransferencia { get; set; }
+
+        // Bitacora Financiera
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalGastos {  get; set; } = 0;
+        public string? Observaciones { get; set; } 
     }
 }

@@ -31,7 +31,7 @@ namespace Backend.Controllers
 
             var nuevaCaja = new Caja
             {
-                FechaApertura = DateTime.Now,
+                FechaApertura = DateTime.UtcNow,
                 MontoInicial = montoInicial,
                 UsuarioId = usuarioId // ASIGNAMOS DUEÑO
             };
@@ -88,12 +88,13 @@ namespace Backend.Controllers
         public async Task<IActionResult> CerrarCaja([FromQuery] int usuarioId, [FromBody] ArqueoCierreDto arqueo)
         {
             if (usuarioId == 0) return BadRequest("Se requiere el ID del usuario.");
-
+            // 1. Buscamos la caja (CON SEGURIDAD DE USUARIO)
             var caja = await _context.Cajas
                 .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId && c.FechaCierre == null);
 
             if (caja == null) return BadRequest("No hay caja abierta.");
 
+            // 2. Calculamos los totales teóricos del sistema (Ventas registradas)
             var reporte = await GenerarReporteCaja(caja);
             dynamic r = reporte;
 
@@ -101,7 +102,10 @@ namespace Backend.Controllers
             caja.TotalTransferencia = r.Resumen.TotalTransferencia;
             caja.MontoFinal = arqueo?.EfectivoReal ?? 0;
             caja.MontoRealTransferencia = arqueo?.TransferenciaReal ?? 0;
-            caja.FechaCierre = DateTime.Now;
+            caja.TotalGastos = arqueo?.TotalGastos ?? 0; // Plata que salió
+            caja.Observaciones = arqueo?.Observaciones; // Notas del encargado
+
+            caja.FechaCierre = DateTime.UtcNow; 
 
             await _context.SaveChangesAsync();
             return Ok(new { mensaje = "Caja cerrada correctamente", caja });
@@ -182,6 +186,8 @@ namespace Backend.Controllers
                     TotalEfectivo = caja.MontoInicial + canchasEfvo + mesasEfvo + barraEfvo,
                     TotalTransferencia = canchasTransf + mesasTransf + barraTransf,
                     TotalSistema = (caja.MontoInicial + canchasEfvo + mesasEfvo + barraEfvo) + (canchasTransf + mesasTransf + barraTransf),
+                    GastosRegistrados = caja.TotalGastos,
+                    Observaciones = caja.Observaciones,
                     Detalle = new
                     {
                         Canchas = new { Efectivo = canchasEfvo, Transferencia = canchasTransf },
@@ -198,5 +204,7 @@ namespace Backend.Controllers
     {
         public decimal EfectivoReal { get; set; }
         public decimal TransferenciaReal { get; set; }
+        public decimal TotalGastos { get; set; }
+        public string? Observaciones { get; set; }
     }
 }
