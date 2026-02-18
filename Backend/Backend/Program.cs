@@ -71,6 +71,7 @@ builder.Services.AddScoped<ICanchaRepository, CanchaRepository>();
 builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
 // Asegúrate de que MercadoPagoService tenga su propia config si la necesita
 builder.Services.AddScoped<MercadoPagoService>();
+builder.Services.AddHttpClient<Domain.Interfaces.INotificacionService, Infrastructure.Services.TelegramService>(); 
 
 var app = builder.Build();
 
