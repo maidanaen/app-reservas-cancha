@@ -6,10 +6,9 @@ import {
 } from 'recharts';
 import { 
   DollarSign, Users, TrendingUp, AlertTriangle, Calendar, 
-  ArrowRight, Lock 
+  ArrowRight, Lock, Send // 🟢 IMPORTAMOS 'Send'
 } from "lucide-react";
 import { API_URL } from '@/utils/config';
-
 
 export default function AdminDashboard() {
   const [nombreNegocio, setNombreNegocio] = useState("Panel Principal");
@@ -24,6 +23,9 @@ export default function AdminDashboard() {
 
   const [proximosTurnos, setProximosTurnos] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
+
+  // 🟢 NUEVO: Estado para el botón de Telegram
+  const [generandoLink, setGenerandoLink] = useState(false);
 
   useEffect(() => {
     async function cargarTodo() {
@@ -40,7 +42,6 @@ export default function AdminDashboard() {
       
       // 1. CARGAR ESTADÍSTICAS (KPIs y Gráfico)
       try {
-        
         const resStats = await fetch(`${API_URL}/api/Dashboard/resumen?usuarioId=${userId}`);
         if (resStats.ok) {
           const data = await resStats.json();
@@ -83,6 +84,39 @@ export default function AdminDashboard() {
     cargarTodo();
   }, []);
 
+  // 🟢 NUEVA FUNCIÓN: Conectar Telegram
+  const conectarTelegram = async () => {
+      const userId = localStorage.getItem("usuarioId");
+      if (!userId) {
+          alert("Error: No se identificó el usuario.");
+          return;
+      }
+
+      setGenerandoLink(true);
+      try {
+          process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; 
+          
+          // Llamamos a tu AuthController
+          const res = await fetch(`${API_URL}/api/Auth/generar-link-telegram?usuarioId=${userId}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" }
+          });
+
+          if (res.ok) {
+              const data = await res.json();
+              // Abre Telegram en una nueva pestaña mágica
+              window.open(data.url, "_blank");
+          } else {
+              alert("❌ Error al generar el enlace de Telegram.");
+          }
+      } catch (error) {
+          console.error("Error conectando a Telegram:", error);
+          alert("❌ Error de conexión con el servidor.");
+      } finally {
+          setGenerandoLink(false);
+      }
+  };
+
   if (cargando) return <div className="min-h-screen flex items-center justify-center text-gray-400 font-medium">Cargando tu imperio...</div>;
 
   return (
@@ -105,7 +139,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* --- TARJETAS (KPIs) --- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         
         {/* Card 1: Ventas */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 relative overflow-hidden group">
@@ -160,10 +194,10 @@ export default function AdminDashboard() {
       </div>
 
       {/* --- GRID PRINCIPAL --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 h-auto lg:h-96">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto lg:h-96">
          
          {/* COLUMNA IZQUIERDA: GRÁFICO */}
-         <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col" style={{height: "90%"}}>
+         <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col" style={{height: "100%"}}>
              <h3 className="font-bold text-slate-800 mb-6">Ingresos de la Semana</h3>
              <div className="flex-1 w-full min-h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -183,7 +217,7 @@ export default function AdminDashboard() {
          </div>
 
          {/* COLUMNA DERECHA: PRÓXIMOS TURNOS */}
-         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col" style={{height: "90%"}}>
+         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col" style={{height: "100%"}}>
              <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800">Próximos Partidos</h3>
                 <Link href="/admin/reservas" className="text-blue-600 hover:bg-blue-50 p-1 rounded-lg transition"><ArrowRight size={18}/></Link>
@@ -227,7 +261,35 @@ export default function AdminDashboard() {
                 )}
              </div>
          </div>
+      </div>
 
+      {/* 🟢 NUEVA SECCIÓN: ALERTAS DE TELEGRAM */}
+      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200 mt-6 mb-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                  <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                      🤖 Alertas por Telegram
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                      Recibe notificaciones instantáneas y gratuitas en tu celular cada vez que un cliente realice una nueva reserva desde la web.
+                  </p>
+              </div>
+              
+              <button 
+                  onClick={conectarTelegram}
+                  disabled={generandoLink}
+                  className="bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-200/50 disabled:opacity-50 whitespace-nowrap"
+              >
+                  {generandoLink ? (
+                      <span className="animate-pulse">Generando enlace...</span>
+                  ) : (
+                      <>
+                          <Send size={20} />
+                          Conectar Bot
+                      </>
+                  )}
+              </button>
+          </div>
       </div>
 
     </main>

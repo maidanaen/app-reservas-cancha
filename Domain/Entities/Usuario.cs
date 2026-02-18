@@ -18,5 +18,7 @@ namespace Domain.Entities
         public DateTime? UltimoPago { get; set; }
         public string? LogoUrl { get; set; }
         public string? FotoUrl { get; set; }
+        public string? TelegramChatId { get; set; }
+        public string? TelegramConnectionToken { get; set; }
     }
 }

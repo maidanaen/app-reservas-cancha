@@ -106,6 +106,27 @@ namespace Backend.Controllers
 
             return Ok(clubes);
         }
+
+        [HttpPost("generar-link-telegram")]
+        public async Task<ActionResult> GenerarLinkTelegram([FromQuery] int usuarioId)
+        {
+            var usuario = await _context.Usuarios.FindAsync(usuarioId);
+            if (usuario == null) return NotFound(new { message = "Usuario no encontrado" });
+
+            // 1. Generamos un token único (GUID)
+            string token = Guid.NewGuid().ToString();
+
+            // 2. Lo guardamos en la base de datos (pisando cualquiera anterior)
+            usuario.TelegramConnectionToken = token;
+            await _context.SaveChangesAsync();
+
+            // 3. Devolvemos la URL mágica
+            // ⚠️ REEMPLAZA 'TuAppReservas_bot' POR EL NOMBRE DE USUARIO REAL DE TU BOT EN TELEGRAM (El que termina en _bot)
+            string nombreBot = "CanchasNoti_bot";
+            string urlTelegram = $"https://t.me/{nombreBot}?start={token}";
+
+            return Ok(new { url = urlTelegram });
+        }
     }
 
     // Clase auxiliar (DTO)
