@@ -61,7 +61,7 @@ export default function CajaPage() {
     const [arqueoEfectivo, setArqueoEfectivo] = useState("");
     const [arqueoTransf, setArqueoTransf] = useState("");
 
-    // 🟢 NUEVOS ESTADOS PARA LA BITÁCORA DE CIERRE
+    // ESTADOS PARA LA BITÁCORA DE CIERRE
     const [gastos, setGastos] = useState("");
     const [comentarios, setComentarios] = useState("");
 
@@ -74,6 +74,20 @@ export default function CajaPage() {
     const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
         setNotificacion({ tipo, msj });
         setTimeout(() => setNotificacion(null), 4000);
+    };
+
+    //  FUNCIONES PARA CORREGIR ZONA HORARIA (UTC a Local - Argentina)
+    const formatearHoraLocal = (fechaString?: string) => {
+        if (!fechaString) return "";
+        // Al agregar 'Z', el navegador entiende que es UTC y le resta las 3 horas automáticamente
+        const utcString = fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`;
+        return new Date(utcString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatearFechaLocal = (fechaString?: string) => {
+        if (!fechaString) return "";
+        const utcString = fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`;
+        return new Date(utcString).toLocaleDateString();
     };
 
     const cargarDatos = async () => {
@@ -108,26 +122,21 @@ export default function CajaPage() {
         mostrarMensaje('exito', "✅ Turno abierto correctamente");
     };
 
-    // PASO 1: Validar montos antes de abrir confirmación
     const validarYConfirmar = () => {
         if (arqueoEfectivo === "" || arqueoTransf === "") {
             mostrarMensaje('error', "⚠️ Debes ingresar los montos del arqueo.");
             return;
         }
-        // Si todo ok, abrimos el modal "Seguro?"
         setShowConfirmacionFinal(true);
     };
 
-    // 🟢 PASO 2: Ejecutar cierre real (CON GASTOS Y NOTAS)
     const cerrarCajaDefinitivo = async () => {
         if (!reporteActual) return;
         const userId = localStorage.getItem("usuarioId");
         
-        // Aquí armamos el paquete completo para el Backend
         const dto = { 
             efectivoReal: Number(arqueoEfectivo), 
             transferenciaReal: Number(arqueoTransf),
-            // Mapeamos los nuevos campos para el DTO del Backend
             gastosRegistrados: Number(gastos), 
             comentarios: comentarios
         };
@@ -139,9 +148,8 @@ export default function CajaPage() {
 
         if(res.ok){
             setShowModalCierre(false);
-            setShowConfirmacionFinal(false); // Cerramos ambos modales
+            setShowConfirmacionFinal(false); 
             
-            // Limpiamos todos los campos
             setArqueoEfectivo(""); setArqueoTransf(""); 
             setGastos(""); setComentarios("");
 
@@ -196,8 +204,8 @@ export default function CajaPage() {
                                     <Unlock size={24}/> Turno Abierto
                                 </h2>
                                 <div className="flex gap-4 text-sm font-bold text-gray-400">
-                                    <span className="flex items-center gap-1"><Calendar size={14}/> {new Date(caja.fechaApertura).toLocaleDateString()}</span>
-                                    <span className="flex items-center gap-1"><Clock size={14}/> {new Date(caja.fechaApertura).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}hs</span>
+                                    <span className="flex items-center gap-1"><Calendar size={14}/> {formatearFechaLocal(caja.fechaApertura)}</span>
+                                    <span className="flex items-center gap-1"><Clock size={14}/> {formatearHoraLocal(caja.fechaApertura)}hs</span>
                                 </div>
                             </div>
                             <button onClick={() => setShowModalCierre(true)} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg shadow-slate-200 flex items-center gap-2">
@@ -314,7 +322,9 @@ export default function CajaPage() {
                                     ) : (
                                         movimientos.map((m: Movimiento) => (
                                             <tr key={m.id} className="hover:bg-blue-50/30 transition group">
-                                                <td className="p-4 pl-8 font-mono text-gray-500">{new Date(m.hora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                                <td className="p-4 pl-8 font-mono text-gray-500">
+                                                    {formatearHoraLocal(m.hora)}
+                                                </td>
                                                 <td className="p-4 font-bold text-slate-700 flex items-center gap-2">{getIconoConcepto(m.concepto)}{m.concepto}</td>
                                                 <td className="p-4 text-gray-600 font-medium">{m.detalle}</td>
                                                 <td className="p-4 text-center">
@@ -380,7 +390,7 @@ export default function CajaPage() {
                                 {arqueoTransf && <div className={`text-xs font-bold text-right ${difTransf >= 0 ? 'text-green-600' : 'text-red-500'}`}>Diferencia: {difTransf >= 0 ? '+' : ''}${difTransf.toLocaleString()}</div>}
                             </div>
 
-                            {/* 🟢 NUEVA SECCIÓN: GASTOS Y NOTAS */}
+                            {/* GASTOS Y NOTAS */}
                             <div className="pt-4 border-t border-gray-100 space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-red-500 uppercase flex items-center gap-1">
@@ -432,8 +442,9 @@ export default function CajaPage() {
                                     {getIconoConcepto(movimientoSeleccionado.concepto)}
                                     {movimientoSeleccionado.concepto}
                                 </h3>
+                                {/* APLICAMOS LA FUNCIÓN DE HORA LOCAL */}
                                 <p className="text-xs text-gray-500 font-medium mt-1">
-                                    {new Date(movimientoSeleccionado.hora).toLocaleDateString()} • {new Date(movimientoSeleccionado.hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}hs
+                                    {formatearFechaLocal(movimientoSeleccionado.hora)} • {formatearHoraLocal(movimientoSeleccionado.hora)}hs
                                 </p>
                             </div>
                             <button onClick={() => setMovimientoSeleccionado(null)} className="bg-white p-1 rounded-full text-gray-400 hover:text-red-500 shadow-sm border border-gray-100 transition"><X size={18}/></button>
