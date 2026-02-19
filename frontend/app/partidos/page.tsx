@@ -90,7 +90,7 @@ export default function PartidosPage() {
     setCargando(true);
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     
-    // Armar nombre del lugar
+    // Armar nombre del lugar y obtener el ID del dueño
     const clubObj = sedes.find(s => s.clubId === Number(clubSeleccionado));
     const canchaObj = clubObj?.canchas.find((c: any) => c.id === Number(canchaSeleccionada));
     const lugarFinal = `${canchaObj.nombre} - ${clubObj.nombreClub}`;
@@ -103,7 +103,9 @@ export default function PartidosPage() {
         jugadoresFaltantes: Number(cuantosFaltan),
         claveBorrado: nuevaClave,
         deporte: nuevoDeporte, 
-        lugar: lugarFinal      
+        lugar: lugarFinal,
+        // 🟢 SOLUCIÓN MÁGICA: Le mandamos el UsuarioId (Dueño del club) al backend
+        usuarioId: clubObj.clubId 
     };
 
     await fetch(`${API_URL}/api/Partidos`, {
@@ -150,7 +152,6 @@ export default function PartidosPage() {
   };
 
   const borrarSalaPropia = async (id: number) => {
-      // Nota: prompt() sigue siendo la mejor opción rápida para pedir contraseña sin crear otro modal complejo
       const claveIngresada = prompt("🔒 Clave de borrado:");
       if (!claveIngresada) return;
 
