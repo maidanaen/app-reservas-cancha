@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { Users, Plus, UserPlus, Calendar, Trash2, MessageCircle, CheckCircle, MapPin, Trophy, AlertCircle, X, Lock } from "lucide-react";
 import { API_URL } from '@/utils/config';
-import Swal from 'sweetalert2'; // 🟢 Importamos SweetAlert
 
 interface Inscripcion {
     id: number;
@@ -39,6 +38,10 @@ export default function PartidosPage() {
   const [miNombre, setMiNombre] = useState("");
   const [miContacto, setMiContacto] = useState("");
 
+  // 🟢 ESTADOS MODAL ELIMINAR SALA
+  const [salaAEliminar, setSalaAEliminar] = useState<number | null>(null);
+  const [claveIngresada, setClaveIngresada] = useState("");
+
   // Formulario Crear Sala
   const [nuevoCreador, setNuevoCreador] = useState("");
   const [nuevoContacto, setNuevoContacto] = useState("");
@@ -63,7 +66,6 @@ export default function PartidosPage() {
         const resPartidos = await fetch(`${API_URL}/api/Partidos`);
         if (resPartidos.ok) setPartidos(await resPartidos.json());
 
-        // Cargar Sedes (Clubes y Canchas)
         const resSedes = await fetch(`${API_URL}/api/Publico/sedes`);
         if (resSedes.ok) setSedes(await resSedes.json());
 
@@ -72,7 +74,6 @@ export default function PartidosPage() {
 
   useEffect(() => { cargarDatos(); }, []);
 
-  // FUNCIÓN INTELIGENTE PARA GENERAR LINK DE WHATSAPP
   const generarLinkWhatsApp = (numero: string, nombreOrg: string, deporte: string) => {
       if (!numero) return "#";
       let limpio = numero.replace(/\D/g, "");
@@ -149,45 +150,29 @@ export default function PartidosPage() {
       }
   };
 
-  // 🟢 SWEETALERT CON INPUT PARA BORRAR SALA
-  const borrarSalaPropia = async (id: number) => {
-      const { value: claveIngresada } = await Swal.fire({
-          title: '¿Borrar partido?',
-          text: 'Ingresa la clave que creaste al momento de publicarlo:',
-          input: 'password', // Tipo password para que salgan puntitos
-          inputPlaceholder: 'Ingresa tu clave...',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonColor: '#d33',
-          cancelButtonColor: '#94a3b8',
-          confirmButtonText: 'Sí, borrar',
-          cancelButtonText: 'Cancelar',
-          inputValidator: (value) => {
-              if (!value) {
-                  return '¡Debes ingresar una clave!';
-              }
-          }
-      });
+  // 🟢 LÓGICA MODAL ELIMINAR SALA
+  const iniciarBorradoSala = (id: number) => {
+      setSalaAEliminar(id);
+      setClaveIngresada("");
+  };
 
-      if (!claveIngresada) return;
+  const confirmarBorrarSalaPropia = async () => {
+      if (!claveIngresada.trim()) {
+          mostrarMensaje('error', "Debes ingresar tu clave de seguridad.");
+          return;
+      }
 
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      const res = await fetch(`${API_URL}/api/Partidos/borrar/${id}?clave=${claveIngresada}`, { 
+      const res = await fetch(`${API_URL}/api/Partidos/borrar/${salaAEliminar}?clave=${claveIngresada}`, { 
           method: "DELETE" 
       });
 
       if (res.ok) {
-          Swal.fire({
-              toast: true,
-              position: 'top-end',
-              icon: 'success',
-              title: 'Sala eliminada correctamente',
-              showConfirmButton: false,
-              timer: 2500
-          });
+          mostrarMensaje('exito', "🗑️ Sala eliminada.");
+          setSalaAEliminar(null);
           cargarDatos();
       } else {
-          Swal.fire('Error', '⛔ La clave ingresada es incorrecta.', 'error');
+          mostrarMensaje('error', "⛔ La clave ingresada es incorrecta.");
       }
   };
 
@@ -196,7 +181,7 @@ export default function PartidosPage() {
       
       {/* 🔔 NOTIFICACIÓN FLOTANTE */}
       {notificacion && (
-          <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
+          <div className={`fixed top-6 right-6 z-[70] px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
               notificacion.tipo === 'error' 
                 ? 'bg-red-50 text-red-800 border-red-200' 
                 : 'bg-green-50 text-green-800 border-green-200'
@@ -342,7 +327,7 @@ export default function PartidosPage() {
                                     {iconoDeporte} {p.deporte}
                                 </span>
                              </div>
-                            <button onClick={() => borrarSalaPropia(p.id)} className="text-gray-300 hover:text-red-500 transition" title="Borrar Partido"><Trash2 size={18} /></button>
+                            <button onClick={() => iniciarBorradoSala(p.id)} className="text-gray-300 hover:text-red-500 transition" title="Borrar Partido"><Trash2 size={18} /></button>
                         </div>
 
                         <div className="flex items-center gap-2 mb-2">
@@ -439,6 +424,37 @@ export default function PartidosPage() {
               </div>
           </div>
       )}
+
+      {/* 🟢 MODAL ELIMINAR SALA CON CONTRASEÑA (DISEÑO PERSONALIZADO) */}
+      {salaAEliminar && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-red-500">
+                    <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+                        <Trash2 size={32}/>
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 mb-2">¿Borrar Partido?</h3>
+                    <p className="text-gray-500 mb-6 text-sm">Ingresa la clave que usaste al crear la sala.</p>
+                    
+                    <div className="mb-6 relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
+                        <input 
+                            type="password" 
+                            autoFocus
+                            placeholder="Clave de seguridad"
+                            className="w-full p-3 pl-10 bg-gray-50 border border-gray-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-red-500 text-center tracking-widest"
+                            value={claveIngresada}
+                            onChange={(e) => setClaveIngresada(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && confirmarBorrarSalaPropia()}
+                        />
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button onClick={() => setSalaAEliminar(null)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                        <button onClick={confirmarBorrarSalaPropia} className="flex-1 py-3 text-white font-bold bg-red-600 hover:bg-red-700 rounded-xl shadow-lg transition">Sí, Borrar</button>
+                    </div>
+                </div>
+            </div>
+        )}
 
     </main>
   );

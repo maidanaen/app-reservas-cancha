@@ -7,7 +7,6 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { API_URL } from '@/utils/config';
-import Swal from 'sweetalert2'; // 🟢 Importamos SweetAlert
 
 // --- TIPOS DE DATOS ---
 interface Mesa {
@@ -66,10 +65,17 @@ export default function GestionMesasPage() {
   const [pagaConEfectivo, setPagaConEfectivo] = useState("");   
   const [procesandoPago, setProcesandoPago] = useState(false);
 
-  // SISTEMA DE NOTIFICACIONES (TOAST)
-  const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
+  // 🟢 ESTADOS MODALES PERSONALIZADOS
+  const [mesaAEliminar, setMesaAEliminar] = useState<number | null>(null);
+  const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
+  
+  const [mostrarModalCobroIncompleto, setMostrarModalCobroIncompleto] = useState(false);
+  const [datosCobroPendiente, setDatosCobroPendiente] = useState<{faltante: number, efvo: number, trans: number} | null>(null);
 
-  const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
+  // SISTEMA DE NOTIFICACIONES (TOAST)
+  const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito' | 'info', msj: string } | null>(null);
+
+  const mostrarMensaje = (tipo: 'error' | 'exito' | 'info', msj: string) => {
       setNotificacion({ tipo, msj });
       setTimeout(() => setNotificacion(null), 4000);
   };
@@ -107,7 +113,7 @@ export default function GestionMesasPage() {
     if(!nuevaMesaNombre) return;
     const userId = localStorage.getItem("usuarioId");
     if (!userId) {
-        Swal.fire('Error', 'Error de sesión. Recarga la página.', 'error');
+        mostrarMensaje('error', 'Error de sesión. Recarga la página.');
         return;
     }
 
@@ -124,36 +130,31 @@ export default function GestionMesasPage() {
     cargarMesas();
   };
 
-  // 3. BORRAR MESA (🟢 SWEETALERT AÑADIDO)
-  const borrarMesa = async (e: React.MouseEvent, id: number) => {
-    e.stopPropagation(); 
-    
-    const result = await Swal.fire({
-        title: '¿Eliminar mesa?',
-        text: "La mesa desaparecerá del salón.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#94a3b8',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    });
+  // 3. BORRAR MESA
+  const iniciarEliminarMesa = (e: React.MouseEvent, id: number) => {
+      e.stopPropagation();
+      setMesaAEliminar(id);
+      setMostrarModalEliminar(true);
+  };
 
-    if (!result.isConfirmed) return;
+  const confirmarEliminarMesa = async () => {
+      if(!mesaAEliminar) return;
+      const userId = localStorage.getItem("usuarioId");
 
-    const userId = localStorage.getItem("usuarioId");
-
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    try {
-        const res = await fetch(`${API_URL}/api/Mesas/${id}?usuarioId=${userId}`, { method: "DELETE" });
-        if (res.ok) {
-            cargarMesas(); 
-            if (mesaSeleccionada?.id === id) setMesaSeleccionada(null); 
-            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Mesa eliminada', showConfirmButton: false, timer: 2000 });
-        }
-    } catch (error) {
-        Swal.fire('Error', 'No se pudo eliminar la mesa.', 'error');
-    }
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      try {
+          const res = await fetch(`${API_URL}/api/Mesas/${mesaAEliminar}?usuarioId=${userId}`, { method: "DELETE" });
+          if (res.ok) {
+              cargarMesas(); 
+              if (mesaSeleccionada?.id === mesaAEliminar) setMesaSeleccionada(null); 
+              mostrarMensaje('exito', 'Mesa eliminada correctamente.');
+          }
+      } catch (error) {
+          mostrarMensaje('error', 'No se pudo eliminar la mesa.');
+      } finally {
+          setMostrarModalEliminar(false);
+          setMesaAEliminar(null);
+      }
   };
 
   // 4. SELECCIONAR MESA
@@ -170,7 +171,7 @@ export default function GestionMesasPage() {
     }
   };
 
-  // 5. ABRIR MESA (CON NOTIFICACIÓN BONITA)
+  // 5. ABRIR MESA 
   const abrirMesa = async () => {
     if (!mesaSeleccionada) return;
     const userId = localStorage.getItem("usuarioId");
@@ -253,52 +254,45 @@ export default function GestionMesasPage() {
   const billeteCliente = Number(pagaConEfectivo);
   const vuelto = billeteCliente - efectivoAPagar;
 
-  const confirmarCobroFinal = async () => {
+  const validarYConfirmarCobro = () => {
     if (!reservaActiva || !mesaSeleccionada) return;
     const userId = localStorage.getItem("usuarioId");
     
     if (!userId) {
-        Swal.fire('Error', 'Error de sesión. Recarga la página.', 'error');
+        mostrarMensaje('error', 'Error de sesión. Recarga la página.');
         return;
     }
 
     const totalCubierto = transferencia + (billeteCliente >= efectivoAPagar ? efectivoAPagar : billeteCliente);
     
-    // 🟢 SWEETALERT PARA PAGO INCOMPLETO
     if (totalCubierto < totalCuenta - 100) { 
-        const result = await Swal.fire({
-            title: 'Pago Incompleto',
-            text: `Faltan $${(totalCuenta - totalCubierto).toLocaleString()}. ¿Quieres cerrar la mesa igual?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#3b82f6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Sí, cerrar mesa',
-            cancelButtonText: 'Revisar montos'
+        setDatosCobroPendiente({
+            faltante: totalCuenta - totalCubierto,
+            efvo: billeteCliente >= efectivoAPagar ? efectivoAPagar : billeteCliente,
+            trans: transferencia
         });
-        if (!result.isConfirmed) return;
+        setMostrarModalCobroIncompleto(true);
+        return;
     }
 
+    ejecutarCobroReal(billeteCliente >= efectivoAPagar ? efectivoAPagar : billeteCliente, transferencia);
+  };
+
+  const ejecutarCobroReal = async (efectivoReal: number, transfReal: number) => {
     setProcesandoPago(true);
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    const userId = localStorage.getItem("usuarioId");
 
     try {
-        let efectivoRealAGuardar = 0;
-        if (billeteCliente >= efectivoAPagar) {
-            efectivoRealAGuardar = efectivoAPagar;
-        } else {
-            efectivoRealAGuardar = billeteCliente;
-        }
-
-        const res = await fetch(`${API_URL}/api/Reservas/cobrar/${reservaActiva.id}`, {
+        const res = await fetch(`${API_URL}/api/Reservas/cobrar/${reservaActiva?.id}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ cobradoEfectivo: efectivoRealAGuardar, cobradoTransferencia: transferencia })
+            body: JSON.stringify({ cobradoEfectivo: efectivoReal, cobradoTransferencia: transfReal })
         });
 
         if (res.ok) {
-            const resMesa = await fetch(`${API_URL}/api/Mesas/${mesaSeleccionada.id}/cerrar?usuarioId=${userId}`, {
+            const resMesa = await fetch(`${API_URL}/api/Mesas/${mesaSeleccionada?.id}/cerrar?usuarioId=${userId}`, {
                  method: "POST", headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({ cobradoEfectivo: efectivoRealAGuardar, cobradoTransferencia: transferencia }) 
+                 body: JSON.stringify({ cobradoEfectivo: efectivoReal, cobradoTransferencia: transfReal }) 
             });
 
             if (resMesa.ok) {
@@ -315,7 +309,10 @@ export default function GestionMesasPage() {
         console.error(error); 
         mostrarMensaje('error', "Error de conexión"); 
     } 
-    finally { setProcesandoPago(false); }
+    finally { 
+        setProcesandoPago(false); 
+        setMostrarModalCobroIncompleto(false);
+    }
   };
 
   const productosFiltrados = productos.filter(p => p.categoria === catActiva);
@@ -323,16 +320,14 @@ export default function GestionMesasPage() {
   return (
     <main className="min-h-screen bg-gray-100 p-6 font-sans flex flex-col md:flex-row gap-6 relative ml-4">
       
-      {/* 🔔 NOTIFICACIÓN FLOTANTE (TOAST) */}
+      {/* 🔔 NOTIFICACIÓN FLOTANTE */}
       {notificacion && (
-          <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
-              notificacion.tipo === 'error' 
-                ? 'bg-red-50 text-red-800 border-red-200' 
-                : 'bg-green-50 text-green-800 border-green-200'
+          <div className={`fixed top-6 right-6 z-[70] px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
+              notificacion.tipo === 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
           }`}>
               {notificacion.tipo === 'error' ? <AlertCircle size={24} className="text-red-600"/> : <CheckCircle size={24} className="text-green-600"/>}
               <div>
-                  <h4 className="font-black text-sm uppercase">{notificacion.tipo === 'error' ? 'Acción Bloqueada' : 'Éxito'}</h4>
+                  <h4 className="font-black text-sm uppercase">{notificacion.tipo === 'error' ? 'Alerta' : 'Éxito'}</h4>
                   <p className="font-medium text-sm">{notificacion.msj}</p>
               </div>
               <button onClick={() => setNotificacion(null)} className="ml-4 opacity-50 hover:opacity-100"><X size={18}/></button>
@@ -352,7 +347,7 @@ export default function GestionMesasPage() {
         <div className="grid grid-cols-2 gap-4">
             {mesas.map(mesa => (
                 <button key={mesa.id} onClick={() => clickMesa(mesa)} className={`p-6 rounded-2xl shadow-sm border-2 transition relative text-left group ${mesaSeleccionada?.id === mesa.id ? 'ring-2 ring-blue-500 scale-105' : ''} ${mesa.estaOcupada ? 'bg-red-50 border-red-200 text-red-800 hover:bg-red-100' : 'bg-green-50 border-green-200 text-green-800 hover:bg-green-100'}`}>
-                    {!mesa.estaOcupada && <div onClick={(e) => borrarMesa(e, mesa.id)} className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-600 hover:bg-white rounded-full transition z-10 opacity-0 group-hover:opacity-100"><Trash2 size={16}/></div>}
+                    {!mesa.estaOcupada && <div onClick={(e) => iniciarEliminarMesa(e, mesa.id)} className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-600 hover:bg-white rounded-full transition z-10 opacity-0 group-hover:opacity-100"><Trash2 size={16}/></div>}
                     <div className="flex justify-between items-start mb-2"><span className="font-bold text-lg">{mesa.nombre}</span>{mesa.estaOcupada ? <Users size={20}/> : <CheckCircle size={20}/>}</div>
                     <p className="text-xs font-bold uppercase tracking-wider">{mesa.estaOcupada ? "Ocupada" : "Libre"}</p>
                 </button>
@@ -452,7 +447,7 @@ export default function GestionMesasPage() {
                                         </div>
                                     </div>
 
-                                    <button disabled={procesandoPago} onClick={confirmarCobroFinal} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg disabled:opacity-50 mt-2 active:scale-95">
+                                    <button disabled={procesandoPago} onClick={validarYConfirmarCobro} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg disabled:opacity-50 mt-2 active:scale-95">
                                         {procesandoPago ? "Procesando..." : "CONFIRMAR CIERRE"}
                                     </button>
                                 </div>
@@ -462,6 +457,42 @@ export default function GestionMesasPage() {
                 </div>
             </div>
         )}
+
+        {/* 🟢 MODAL ELIMINAR MESA */}
+        {mostrarModalEliminar && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-red-500">
+                    <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+                        <Trash2 size={32}/>
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 mb-2">¿Borrar Mesa?</h3>
+                    <p className="text-gray-500 mb-6 text-sm">La mesa desaparecerá del salón permanentemente.</p>
+                    <div className="flex gap-3">
+                        <button onClick={() => setMostrarModalEliminar(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                        <button onClick={confirmarEliminarMesa} className="flex-1 py-3 text-white font-bold bg-red-600 hover:bg-red-700 rounded-xl shadow-lg transition">Sí, Borrar</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* 🟢 MODAL COBRO INCOMPLETO */}
+        {mostrarModalCobroIncompleto && datosCobroPendiente && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-blue-500">
+                    <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle size={32}/>
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 mb-2">Pago Incompleto</h3>
+                    <p className="text-gray-500 mb-2 text-sm">El monto ingresado no cubre el total de la cuenta.</p>
+                    <p className="text-red-500 font-bold text-lg mb-6">Faltan: ${datosCobroPendiente.faltante.toLocaleString()}</p>
+                    <div className="flex gap-3">
+                        <button onClick={() => setMostrarModalCobroIncompleto(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-gray-100 rounded-xl transition">Revisar</button>
+                        <button onClick={() => ejecutarCobroReal(datosCobroPendiente.efvo, datosCobroPendiente.trans)} className="flex-1 py-3 text-white font-bold bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg transition">Cerrar igual</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
       </div>
     </main>
   );

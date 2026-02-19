@@ -3,12 +3,11 @@ import { useState, useEffect } from "react";
 import { 
   Calendar, User, Phone, ArrowLeft, Search, 
   Trash2, CalendarPlus, RefreshCw, Timer, ArrowRight, CheckCircle,
-  MessageCircle // 🟢 IMPORTAMOS EL ICONO DE WHATSAPP
+  MessageCircle, AlertCircle, X 
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation"; 
 import { API_URL } from '@/utils/config';
-import Swal from 'sweetalert2'; // 🟢 IMPORTAMOS SWEETALERT
 
 interface Cancha {
   id: number;
@@ -41,6 +40,15 @@ export default function ReservasPage() {
   
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [canchaId, setCanchaId] = useState<number>(0);
+
+  // 🟢 ESTADOS MODAL ELIMINAR Y NOTIFICACIONES
+  const [reservaAEliminar, setReservaAEliminar] = useState<number | null>(null);
+  const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
+
+  const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
+      setNotificacion({ tipo, msj });
+      setTimeout(() => setNotificacion(null), 4000);
+  };
 
   useEffect(() => {
     async function cargarCanchas() {
@@ -87,50 +95,38 @@ export default function ReservasPage() {
     } finally { setCargando(false); }
   };
 
-  // 🟢 FUNCIÓN WHATSAPP INTELIGENTE
+  // FUNCIÓN WHATSAPP INTELIGENTE
   const abrirWhatsApp = (telefono: string) => {
       if (!telefono || telefono.length < 5) return;
       
-      // 1. Dejar solo números
       const limpio = telefono.replace(/\D/g, "");
-      
-      // 2. Agregar código de país (Argentina 549) si no lo tiene
-      // Asumimos que si tiene 10 dígitos (ej: 3794...) es local
       const numeroFinal = limpio.length === 10 ? `549${limpio}` : limpio;
 
       const url = `https://wa.me/${numeroFinal}`;
       window.open(url, "_blank");
   };
 
-  // 🟢 FUNCIÓN CANCELAR CON SWEETALERT (Bonita)
-  const handleCancelar = async (id: number) => {
-    // Reemplazamos el confirm() nativo por Swal
-    const result = await Swal.fire({
-        title: '¿Cancelar Turno?',
-        text: "Esta acción liberará el horario inmediatamente.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#1f2937', // Color oscuro (Slate-900)
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, cancelar',
-        cancelButtonText: 'No, volver'
-    });
+  // 🟢 LÓGICA MODAL CANCELAR TURNO
+  const iniciarEliminar = (id: number) => {
+      setReservaAEliminar(id);
+  };
 
-    if (!result.isConfirmed) return;
+  const confirmarCancelar = async () => {
+    if (!reservaAEliminar) return;
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
-      const res = await fetch(`${API_URL}/api/Reservas/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/api/Reservas/${reservaAEliminar}`, { method: "DELETE" });
       if (res.ok) {
-          Swal.fire(
-            '¡Eliminado!',
-            'El turno ha sido cancelado.',
-            'success'
-          );
+          mostrarMensaje('exito', '🗑️ El turno ha sido cancelado.');
           buscarReservas();
+      } else {
+          mostrarMensaje('error', 'No se pudo cancelar el turno.');
       }
     } catch (error) { 
-        Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+        mostrarMensaje('error', 'Error de conexión con el servidor.');
+    } finally {
+        setReservaAEliminar(null);
     }
   };
 
@@ -178,6 +174,20 @@ export default function ReservasPage() {
   return (
     <main className="max-w-7xl mx-auto p-6 font-sans bg-gray-50 min-h-screen relative">
       
+      {/* 🔔 NOTIFICACIÓN FLOTANTE */}
+      {notificacion && (
+          <div className={`fixed top-6 right-6 z-[70] px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
+              notificacion.tipo === 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
+          }`}>
+              {notificacion.tipo === 'error' ? <AlertCircle size={24} className="text-red-600"/> : <CheckCircle size={24} className="text-green-600"/>}
+              <div>
+                  <h4 className="font-black text-sm uppercase">{notificacion.tipo === 'error' ? 'Error' : 'Éxito'}</h4>
+                  <p className="font-medium text-sm">{notificacion.msj}</p>
+              </div>
+              <button onClick={() => setNotificacion(null)} className="ml-4 opacity-50 hover:opacity-100"><X size={18}/></button>
+          </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
@@ -266,7 +276,7 @@ export default function ReservasPage() {
                                     <ArrowRight size={20} />
                                 </Link>
                                 <button 
-                                    onClick={() => handleCancelar(reserva.id)}
+                                    onClick={() => iniciarEliminar(reserva.id)}
                                     className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition"
                                     title="Cancelar Turno"
                                 >
@@ -282,7 +292,7 @@ export default function ReservasPage() {
                                   <span className="font-semibold capitalize">{reserva.clienteNombre}</span>
                               </div>
                               
-                              {/* 🟢 BOTÓN DE WHATSAPP MEJORADO */}
+                              {/* BOTÓN DE WHATSAPP MEJORADO */}
                               <div className="flex items-center gap-3">
                                   <button 
                                     onClick={() => abrirWhatsApp(reserva.clienteTelefono)}
@@ -311,6 +321,24 @@ export default function ReservasPage() {
                 })}
             </div>
         )}
+
+        {/* 🟢 MODAL ELIMINAR RESERVA */}
+        {reservaAEliminar && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-red-500">
+                    <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+                        <Trash2 size={32}/>
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 mb-2">¿Cancelar Turno?</h3>
+                    <p className="text-gray-500 mb-6 text-sm">Esta acción liberará el horario para otros clientes inmediatamente y no se puede deshacer.</p>
+                    <div className="flex gap-3">
+                        <button onClick={() => setReservaAEliminar(null)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-gray-100 rounded-xl transition">Volver</button>
+                        <button onClick={confirmarCancelar} className="flex-1 py-3 text-white font-bold bg-red-600 hover:bg-red-700 rounded-xl shadow-lg transition">Sí, Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
       </div>
     </main>
   );
