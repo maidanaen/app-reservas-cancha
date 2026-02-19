@@ -2,9 +2,8 @@
 import { useEffect, useState } from "react";
 import { 
     Plus, Edit2, Trash2, LayoutGrid, Users, 
-    Trophy, X, Save, Clock, Lock, Phone, User, Activity, CheckCircle,
-    PauseCircle, PlayCircle, AlertCircle, MapPin, Sun, Warehouse, 
-    Calendar, AlertTriangle
+    X, Save, PauseCircle, PlayCircle, AlertCircle, Sun, Warehouse, 
+    Calendar, Phone, User, CheckCircle, Lock
 } from "lucide-react";
 import { API_URL } from '@/utils/config';
 
@@ -56,7 +55,7 @@ export default function GestionCanchasPage() {
     const [canchaAEliminar, setCanchaAEliminar] = useState<Cancha | null>(null);
     const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
 
-    // --- ESTADOS: MODALES DE CONFIRMACIÓN (Salas/Partidos) 🟢 NUEVO
+    // --- ESTADOS: MODALES DE CONFIRMACIÓN (Salas/Partidos)
     const [salaAEliminar, setSalaAEliminar] = useState<SalaPartido | null>(null);
     const [mostrarModalEliminarSala, setMostrarModalEliminarSala] = useState(false);
 
@@ -93,9 +92,17 @@ export default function GestionCanchasPage() {
     };
 
     const cargarSalas = async () => {
+        // 🟢 1. OBTENEMOS EL ID DEL DUEÑO LOGUEADO
+        const userId = localStorage.getItem("usuarioId");
+        if (!userId) return;
+
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const res = await fetch(`${API_URL}/api/Partidos?todo=true`);
+            // 🟢 2. CAMBIO CRÍTICO: FILTRAR POR USUARIO
+            // Antes decía: ?todo=true (Traía todo)
+            // Ahora dice: ?usuarioId=... (Trae solo lo tuyo)
+            const res = await fetch(`${API_URL}/api/Partidos?usuarioId=${userId}`);
+            
             if (res.ok) {
                 const data = await res.json();
                 const partidosMapeados = data.map((p: any) => ({
@@ -326,7 +333,7 @@ export default function GestionCanchasPage() {
                     <div className="grid gap-4">
                         {salas.length === 0 ? (
                             <div className="p-10 text-center bg-white rounded-3xl border border-dashed border-gray-300 text-gray-400">
-                                No hay partidos públicos activos por el momento.
+                                No hay partidos públicos activos en tus canchas.
                             </div>
                         ) : (
                             salas.map(s => (

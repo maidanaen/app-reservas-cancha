@@ -65,7 +65,7 @@ export default function MisReservasPage() {
         </div>
         <input 
             type="tel" 
-            placeholder="Ingresa tu número (Ej: 3795014124)" 
+            placeholder="Ingresa tu número (Ej: 3795001122)" 
             className="w-full pl-12 pr-32 py-5 bg-white rounded-2xl border border-slate-100 text-slate-900 font-bold text-lg focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition placeholder:font-normal placeholder:text-slate-400"
             value={telefono}
             onChange={(e) => setTelefono(e.target.value)}

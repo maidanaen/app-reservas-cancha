@@ -2,11 +2,13 @@
 import { useState, useEffect } from "react";
 import { 
   Calendar, User, Phone, ArrowLeft, Search, 
-  Trash2, CalendarPlus, RefreshCw, Timer, ArrowRight, CheckCircle 
+  Trash2, CalendarPlus, RefreshCw, Timer, ArrowRight, CheckCircle,
+  MessageCircle // 🟢 IMPORTAMOS EL ICONO DE WHATSAPP
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation"; 
 import { API_URL } from '@/utils/config';
+import Swal from 'sweetalert2'; // 🟢 IMPORTAMOS SWEETALERT
 
 interface Cancha {
   id: number;
@@ -85,13 +87,51 @@ export default function ReservasPage() {
     } finally { setCargando(false); }
   };
 
+  // 🟢 FUNCIÓN WHATSAPP INTELIGENTE
+  const abrirWhatsApp = (telefono: string) => {
+      if (!telefono || telefono.length < 5) return;
+      
+      // 1. Dejar solo números
+      const limpio = telefono.replace(/\D/g, "");
+      
+      // 2. Agregar código de país (Argentina 549) si no lo tiene
+      // Asumimos que si tiene 10 dígitos (ej: 3794...) es local
+      const numeroFinal = limpio.length === 10 ? `549${limpio}` : limpio;
+
+      const url = `https://wa.me/${numeroFinal}`;
+      window.open(url, "_blank");
+  };
+
+  // 🟢 FUNCIÓN CANCELAR CON SWEETALERT (Bonita)
   const handleCancelar = async (id: number) => {
-    if (!confirm("¿Seguro que quieres cancelar este turno?")) return;
+    // Reemplazamos el confirm() nativo por Swal
+    const result = await Swal.fire({
+        title: '¿Cancelar Turno?',
+        text: "Esta acción liberará el horario inmediatamente.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#1f2937', // Color oscuro (Slate-900)
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, cancelar',
+        cancelButtonText: 'No, volver'
+    });
+
+    if (!result.isConfirmed) return;
+
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     try {
       const res = await fetch(`${API_URL}/api/Reservas/${id}`, { method: "DELETE" });
-      if (res.ok) buscarReservas();
-    } catch (error) { alert("Error de conexión."); }
+      if (res.ok) {
+          Swal.fire(
+            '¡Eliminado!',
+            'El turno ha sido cancelado.',
+            'success'
+          );
+          buscarReservas();
+      }
+    } catch (error) { 
+        Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+    }
   };
 
   const getDuracion = (inicio: string, fin: string) => {
@@ -105,7 +145,6 @@ export default function ReservasPage() {
   };
 
   const renderEstadoPago = (reserva: Reserva) => {
-      // (Tu lógica original de cálculo de deuda)
       const canchaActual = canchas.find(c => c.id === canchaId);
       let totalDeuda = 0;
       if (canchaActual) {
@@ -152,7 +191,6 @@ export default function ReservasPage() {
         </div>
 
         <div className="flex items-center gap-3">
-            {/* 🟢 VOLVIMOS AL LINK HACIA LA OTRA PÁGINA */}
             <Link href="/admin/reservas/crear" className="bg-black text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 flex items-center gap-2 shadow-sm transition">
                 <CalendarPlus size={18} /> Nuevo Turno
             </Link>
@@ -230,20 +268,32 @@ export default function ReservasPage() {
                                 <button 
                                     onClick={() => handleCancelar(reserva.id)}
                                     className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition"
+                                    title="Cancelar Turno"
                                 >
                                     <Trash2 size={20} />
                                 </button>
                               </div>
                           </div>
 
-                          <div className="space-y-2 mb-4">
+                          <div className="space-y-3 mb-4">
+                              {/* NOMBRE DEL CLIENTE */}
                               <div className="flex items-center gap-3 text-gray-800">
                                   <div className="bg-gray-100 p-1.5 rounded text-gray-500"><User size={16} /></div>
                                   <span className="font-semibold capitalize">{reserva.clienteNombre}</span>
                               </div>
-                              <div className="flex items-center gap-3 text-gray-600 text-sm">
-                                  <div className="bg-gray-100 p-1.5 rounded text-gray-500"><Phone size={16} /></div>
-                                  <span>{reserva.clienteTelefono || "Sin teléfono"}</span>
+                              
+                              {/* 🟢 BOTÓN DE WHATSAPP MEJORADO */}
+                              <div className="flex items-center gap-3">
+                                  <button 
+                                    onClick={() => abrirWhatsApp(reserva.clienteTelefono)}
+                                    className="flex-1 flex items-center gap-2 bg-green-50 text-green-700 hover:bg-green-100 px-3 py-2 rounded-lg transition border border-green-200 group/wa"
+                                    title="Enviar mensaje por WhatsApp"
+                                  >
+                                      <MessageCircle size={16} className="text-green-600"/>
+                                      <span className="text-sm font-bold truncate">
+                                        {reserva.clienteTelefono || "Sin teléfono"}
+                                      </span>
+                                  </button>
                               </div>
                           </div>
 

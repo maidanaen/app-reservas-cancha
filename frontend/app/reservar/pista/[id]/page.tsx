@@ -1,16 +1,10 @@
-
 "use client";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { 
   Calendar, Clock, User, Phone, CheckCircle, CreditCard, 
-  Banknote, Landmark, ArrowLeft, ArrowRight, Grid, Timer, Hourglass, 
-  Shield,
-  Zap,
-  MapPin,
-  Info,
-  SunMoon,
-  Warehouse
+  Banknote, Landmark, ArrowLeft, Grid, Timer, Hourglass, 
+  Shield, Zap, MapPin, Info, SunMoon, Warehouse
 } from "lucide-react";
 import Link from "next/link";
 import { API_URL } from '@/utils/config';
@@ -22,8 +16,8 @@ interface Cancha {
   horaApertura: number;
   horaCierre: number;
   activa: boolean;
-  imgUrl: string;  // 🟢 Vital para la foto
-  techada: boolean; // 🟢 Vital para iconos
+  imgUrl: string;  
+  techada: boolean; 
   deporte: string;
 }
 
@@ -45,7 +39,7 @@ export default function ReservarPage() {
   // --- ESTADOS ---
   const [cancha, setCancha] = useState<Cancha | null>(null);
   
-  // CAMBIO 1: Lista simple de textos para los horarios ocupados
+  // Lista simple de textos para los horarios ocupados
   const [horariosOcupados, setHorariosOcupados] = useState<string[]>([]);
   
   const [cargando, setCargando] = useState(false);
@@ -62,8 +56,11 @@ export default function ReservarPage() {
   const [formDatos, setFormDatos] = useState({
     nombre: "",
     telefono: "",
-    metodoPago: "Mercado Pago"
+    metodoPago: "Efectivo" 
   });
+
+  // 🟢 VALIDACIONES: Estado para errores
+  const [errores, setErrores] = useState({ nombre: "", telefono: "" });
 
   // 1. Cargar Cancha
   useEffect(() => {
@@ -74,18 +71,18 @@ export default function ReservarPage() {
       .catch((err) => console.error(err));
   }, [id]);
 
-  // 2. Cargar Disponibilidad (CAMBIO 2: Usamos el endpoint 'ocupadas')
+  // 2. Cargar Disponibilidad
   useEffect(() => {
     if (id && fechaSeleccionada) {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         fetch(`${API_URL}/api/Reservas/ocupadas?canchaId=${id}&fecha=${fechaSeleccionada}`)
             .then((res) => res.json())
             .then((data: string[]) => {
-                setHorariosOcupados(data); // Guardamos directamente ["14:00", "15:00"]
+                setHorariosOcupados(data); 
             })
             .catch((err) => {
                 console.error(err);
-                setHorariosOcupados([]); // Si falla, liberamos todo por seguridad
+                setHorariosOcupados([]); 
             });
     }
   }, [id, fechaSeleccionada]);
@@ -126,24 +123,20 @@ export default function ReservarPage() {
     setPaso(2); 
   };
 
-  // Función visual para la fecha "2026-01-29" -> "29/01/2026"
-  const formatearFechaVisual = (fechaISO: string) => {
-      if(!fechaISO) return "";
-      const [anio, mes, dia] = fechaISO.split('-');
-      return `${dia}/${mes}/${anio}`;
-  };
-
   // --- CONFIRMAR ---
   const handleReservar = async () => {
+    // 🔒 Validación final de seguridad antes de enviar
+    if (formDatos.nombre.trim().length < 4 || formDatos.telefono.replace(/\D/g, "").length < 10) {
+        alert("Por favor completa tus datos correctamente.");
+        return;
+    }
+
     setCargando(true);
     
-    // Crear ISO para Backend
     const fechaInicioISO = `${fechaSeleccionada}T${horaSeleccionada}:00`;
-    
     const fechaObjInicio = new Date(fechaInicioISO);
     fechaObjInicio.setMinutes(fechaObjInicio.getMinutes() + duracionSeleccionada);
     
-    // Reconstrucción manual ISO Local para fecha fin
     const anio = fechaObjInicio.getFullYear();
     const mes = String(fechaObjInicio.getMonth()+1).padStart(2,'0');
     const dia = String(fechaObjInicio.getDate()).padStart(2,'0');
@@ -177,7 +170,6 @@ export default function ReservarPage() {
         }
       } else {
         alert("❌ Ups, el horario ya no está disponible.");
-        // Recargar disponibilidad usando el nuevo endpoint
         const resRefresh = await fetch(`${API_URL}/api/Reservas/ocupadas?canchaId=${id}&fecha=${fechaSeleccionada}`);
         const dataRefresh = await resRefresh.json();
         setHorariosOcupados(dataRefresh);
@@ -191,14 +183,13 @@ export default function ReservarPage() {
   };
 
   if (!cancha) return <div className="min-h-screen flex items-center justify-center font-bold text-gray-500">Cargando...</div>;
+  
   // 🛑 BLOQUEO DE SEGURIDAD: SI ESTÁ EN MANTENIMIENTO
     if (!cancha.activa) {
-        // Importamos Wrench arriba: import { ..., Wrench } from "lucide-react";
         return (
             <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="bg-white max-w-md w-full p-8 rounded-3xl shadow-xl text-center border-t-8 border-orange-500 animate-in zoom-in-95">
                     <div className="bg-orange-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                        {/* Asegúrate de importar Wrench o usa AlertTriangle si no quieres importar más */}
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
                     </div>
                     <h1 className="text-3xl font-black text-slate-900 mb-2">Cancha en Mantenimiento</h1>
@@ -227,7 +218,7 @@ export default function ReservarPage() {
             <>
                 {/* 🟢 COLUMNA IZQUIERDA: INFORMACIÓN VISUAL */}
                 <div className="md:w-5/12 bg-slate-900 text-white p-8 flex flex-col justify-between relative overflow-hidden">
-                    {/* Imagen de Fondo con gradiente */}
+                    {/* Imagen de Fondo */}
                     <div className="absolute inset-0 z-0">
                         <img 
                             src={cancha.imgUrl || "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&q=80"} 
@@ -237,7 +228,7 @@ export default function ReservarPage() {
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent"></div>
                     </div>
 
-                    {/* Contenido sobre la imagen */}
+                    {/* Contenido */}
                     <div className="relative z-10">
                         <Link href="/reservar" className="inline-flex items-center text-slate-300 hover:text-white transition mb-6">
                             <ArrowLeft size={18} className="mr-2"/> Volver
@@ -281,7 +272,7 @@ export default function ReservarPage() {
                 {/* 🟢 COLUMNA DERECHA: MOTOR DE RESERVA */}
                 <div className="md:w-7/12 p-6 md:p-8 bg-white h-full overflow-y-auto">
                     
-                    {/* Filtros Compactos */}
+                    {/* Filtros */}
                     <div className="flex gap-4 mb-8 bg-gray-50 p-2 rounded-2xl border border-gray-100">
                         <div className="flex-1 relative">
                             <input 
@@ -306,12 +297,11 @@ export default function ReservarPage() {
                         </div>
                     </div>
 
-                    {/* GRILLA DE HORARIOS */}
+                    {/* GRILLA */}
                     <div className="mb-4 flex items-center justify-between">
                         <h3 className="font-black text-slate-900 text-lg flex items-center gap-2">
                             <Clock className="text-blue-600" size={20}/> Horarios Disponibles
                         </h3>
-                        {/* Referencias */}
                         <div className="flex gap-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                             <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-white border border-gray-300"></div> Libre</span>
                             <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-gray-100 border border-gray-200"></div> Ocupado</span>
@@ -329,12 +319,11 @@ export default function ReservarPage() {
                                     className={`
                                         py-3 rounded-xl text-sm font-bold transition border relative overflow-hidden group flex items-center justify-center
                                         ${estaOcupado 
-                                            ? "bg-red-50 text-red-400 border-red-100 cursor-not-allowed opacity-60" // 🔴 ROJO SUAVE (Estilo Premium)
-                                            : "bg-white border-gray-200 text-slate-700 hover:border-slate-900 hover:shadow-md active:scale-95" // Libre
+                                            ? "bg-red-50 text-red-400 border-red-100 cursor-not-allowed opacity-60" 
+                                            : "bg-white border-gray-200 text-slate-700 hover:border-slate-900 hover:shadow-md active:scale-95" 
                                         }
                                     `}
                                 >
-                                    {/* Si está ocupado, tachamos la hora sutilmente */}
                                     {estaOcupado ? (
                                         <span className="line-through decoration-red-300">{hora}</span>
                                     ) : (
@@ -348,11 +337,10 @@ export default function ReservarPage() {
             </>
         )}
 
-        {/* --- PASO 2: CONFIRMACIÓN (Ocupa todo el ancho cuando se activa) --- */}
+        {/* --- PASO 2: CONFIRMACIÓN --- */}
         {paso === 2 && (
              <div className="w-full animate-in fade-in slide-in-from-right-8 duration-500">
-                {/* ... (Aquí pegas el mismo código del Paso 2 que ya tenías, funciona perfecto) ... */}
-                {/* Te recomiendo solo cambiar el botón de "Volver" para que use setPaso(1) correctamente */}
+                
                  <div className="bg-slate-900 text-white p-8 flex justify-between items-center">
                     <div>
                         <button onClick={() => setPaso(1)} className="mb-2 flex items-center gap-2 text-slate-400 hover:text-white transition text-xs font-bold uppercase tracking-wider">
@@ -367,13 +355,64 @@ export default function ReservarPage() {
                 </div>
 
                 <div className="p-8 max-w-2xl mx-auto space-y-6">
-                    {/* ... Resto del formulario igual que antes ... */}
-                     <div className="space-y-4">
-                        <h3 className="font-bold text-gray-800 flex items-center gap-2"><User size={18}/> Tus Datos</h3>
-                        <input type="text" placeholder="Nombre y Apellido" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-slate-900 transition font-bold" value={formDatos.nombre} onChange={e => setFormDatos({...formDatos, nombre: e.target.value})}/>
-                        <input type="tel" placeholder="Teléfono (WhatsApp)" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-slate-900 transition font-bold" value={formDatos.telefono} onChange={e => setFormDatos({...formDatos, telefono: e.target.value})}/>
+                    
+                    {/* 🟢 SECCIÓN: TUS DATOS (CON VALIDACIÓN) */}
+                    <div className="space-y-4">
+                        <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                            <User size={18}/> Tus Datos
+                        </h3>
+                        
+                        {/* INPUT NOMBRE */}
+                        <div>
+                            <input 
+                                type="text" 
+                                placeholder="Nombre y Apellido" 
+                                className={`w-full p-4 border rounded-xl outline-none transition font-bold ${
+                                    errores.nombre 
+                                    ? "border-red-500 bg-red-50 focus:border-red-500" 
+                                    : "bg-gray-50 border-gray-200 focus:border-slate-900"
+                                }`}
+                                value={formDatos.nombre} 
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setFormDatos({...formDatos, nombre: val});
+                                    // Validación: Si ya escribieron algo, chequeamos largo
+                                    setErrores({
+                                        ...errores, 
+                                        nombre: val.trim().length > 0 && val.trim().length < 4 ? "Mínimo 4 letras (Nombre y Apellido)" : ""
+                                    });
+                                }}
+                            />
+                            {errores.nombre && <p className="text-red-500 text-xs mt-1 ml-1 font-bold">{errores.nombre}</p>}
+                        </div>
+
+                        {/* INPUT TELÉFONO */}
+                        <div>
+                            <input 
+                                type="tel" 
+                                placeholder="Teléfono (Ej: 3794123456)" 
+                                className={`w-full p-4 border rounded-xl outline-none transition font-bold ${
+                                    errores.telefono 
+                                    ? "border-red-500 bg-red-50 focus:border-red-500" 
+                                    : "bg-gray-50 border-gray-200 focus:border-slate-900"
+                                }`}
+                                value={formDatos.telefono} 
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    const soloNumeros = val.replace(/\D/g, ""); // Solo números para validar
+                                    setFormDatos({...formDatos, telefono: val});
+                                    
+                                    setErrores({
+                                        ...errores, 
+                                        telefono: val.length > 0 && soloNumeros.length < 10 ? "Mínimo 10 dígitos (Sin espacios ni guiones)" : ""
+                                    });
+                                }}
+                            />
+                            {errores.telefono && <p className="text-red-500 text-xs mt-1 ml-1 font-bold">{errores.telefono}</p>}
+                        </div>
                     </div>
 
+                    {/* SECCIÓN: FORMA DE PAGO */}
                     <div className="space-y-4">
                         <h3 className="font-bold text-gray-800 flex items-center gap-2"><CreditCard size={18}/> Forma de Pago</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -393,11 +432,18 @@ export default function ReservarPage() {
 
                     <button 
                         onClick={handleReservar}
-                        disabled={cargando || !formDatos.nombre || !formDatos.telefono}
+                        // 🔒 BLOQUEO INTELIGENTE
+                        disabled={
+                            cargando || 
+                            !formDatos.nombre || 
+                            !formDatos.telefono || 
+                            !!errores.nombre || 
+                            !!errores.telefono
+                        }
                         className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-xl shadow-blue-200 transition transform active:scale-95 ${
-                            cargando || !formDatos.nombre || !formDatos.telefono 
-                            ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none" 
-                            : "bg-blue-600 text-white hover:bg-blue-700"
+                            cargando || !formDatos.nombre || !formDatos.telefono || !!errores.nombre || !!errores.telefono
+                            ? "bg-gray-300 text-gray-400 cursor-not-allowed shadow-none" 
+                            : "bg-slate-900 text-white hover:bg-slate-800" 
                         }`}
                     >
                         {cargando ? "Reservando..." : <>Confirmar Reserva <CheckCircle size={20}/></>}
