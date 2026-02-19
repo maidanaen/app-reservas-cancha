@@ -1,12 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; // 🟢 Para redireccionar
+import { useRouter } from "next/navigation"; 
 import { 
     Search, ShoppingCart, Trash2, CreditCard, 
-    Package, X, Plus, Tag, Pencil, DollarSign, Calculator, Wallet, AlertTriangle 
+    Package, X, Plus, Tag, Pencil, DollarSign, Calculator, Wallet, AlertTriangle, CheckCircle 
 } from "lucide-react";
 import { API_URL } from '@/utils/config';
-import Swal from 'sweetalert2'; // 🟢 SweetAlert importado
 
 // --- INTERFACES ---
 interface Producto {
@@ -30,7 +29,7 @@ interface VentaHistorial {
 }
 
 export default function CantinaPage() {
-    const router = useRouter(); // 🟢 Inicializamos el router
+    const router = useRouter(); 
 
     // --- ESTADOS ---
     const [productos, setProductos] = useState<Producto[]>([]);
@@ -44,19 +43,28 @@ export default function CantinaPage() {
     const [cajaAbierta, setCajaAbierta] = useState(false); 
     const [totalEfectivo, setTotalEfectivo] = useState(0);
     const [totalTransferencia, setTotalTransferencia] = useState(0);
-    const [historialVentas, setHistorialVentas] = useState<VentaHistorial[]>([]);
     
     // Estados Modal Producto
     const [showModalProducto, setShowModalProducto] = useState(false);
     const [idEdicion, setIdEdicion] = useState<number | null>(null);
     const [formProd, setFormProd] = useState({ nombre: "", precio: "", categoria: "Bebidas" });
     
+    // 🟢 ESTADO MODAL ELIMINAR (Diseño Personalizado)
+    const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
+
     // Estados de Cobro
     const [modoCobro, setModoCobro] = useState(false);
     const [pagoTransferencia, setPagoTransferencia] = useState(""); 
     const [pagaConEfectivo, setPagaConEfectivo] = useState("");   
     const [procesando, setProcesando] = useState(false);
     
+    // 🟢 SISTEMA DE NOTIFICACIONES (TOAST)
+    const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
+
+    const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
+        setNotificacion({ tipo, msj });
+        setTimeout(() => setNotificacion(null), 4000);
+    };
 
     // --- CARGA INICIAL ROBUSTA ---
     const cargarTodo = async () => {
@@ -130,40 +138,17 @@ export default function CantinaPage() {
         const userId = localStorage.getItem("usuarioId");
         if (carrito.length === 0 || !userId) return;
         
-        // 🟢 ALERTA PRO DE CAJA CERRADA
+        // Validación Caja
         if (!cajaAbierta) {
-            Swal.fire({
-                title: '¡Caja Cerrada!',
-                text: "No puedes registrar ventas de cantina sin antes abrir la caja del día.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#f97316', // Naranja
-                cancelButtonColor: '#94a3b8',  // Gris
-                confirmButtonText: 'Ir a abrir Caja',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    router.push('/admin'); // 👈 Te lleva al Dashboard donde está la caja
-                }
-            });
+            mostrarMensaje('error', "La caja está CERRADA. Ve a la sección 'Caja' para abrirla.");
             return;
         }
 
         const totalCubierto = transferencia + (billeteCliente >= efectivoAPagar ? efectivoAPagar : billeteCliente);
         
-        // 🟢 ALERTA PRO DE PAGO INCOMPLETO
+        // Validación Pago Incompleto
         if (totalCubierto < totalCarrito - 1) {
-             const result = await Swal.fire({
-                 title: 'Pago Incompleto',
-                 text: `Faltan $${(totalCarrito - totalCubierto).toLocaleString()}. ¿Quieres registrar la venta igual?`,
-                 icon: 'question',
-                 showCancelButton: true,
-                 confirmButtonColor: '#3b82f6',
-                 cancelButtonColor: '#d33',
-                 confirmButtonText: 'Sí, cobrar igual',
-                 cancelButtonText: 'Revisar montos'
-             });
-             if (!result.isConfirmed) return;
+             if(!confirm(`⚠️ Faltan $${(totalCarrito - totalCubierto).toLocaleString()}. ¿Quieres registrar la venta igual?`)) return;
         }
 
         setProcesando(true);
@@ -194,17 +179,13 @@ export default function CantinaPage() {
                 setCarrito([]);
                 setModoCobro(false);
                 await cargarTodo(); 
-                // Opcional: un Toast chiquito de éxito
-                Swal.fire({
-                    toast: true, position: 'top-end', icon: 'success', 
-                    title: 'Venta registrada', showConfirmButton: false, timer: 2000
-                });
+                mostrarMensaje('exito', "✅ Venta registrada correctamente.");
             } else { 
                 const text = await res.text();
-                Swal.fire('Error', "No se pudo procesar la venta: " + text, 'error');
+                mostrarMensaje('error', "No se pudo procesar: " + text);
             }
         } catch (error) { 
-            Swal.fire('Error', "Error de conexión", 'error'); 
+            mostrarMensaje('error', "Error de conexión.");
         } 
         finally { setProcesando(false); }
     };
@@ -213,41 +194,34 @@ export default function CantinaPage() {
     const abrirModalNuevo = () => { setIdEdicion(null); setFormProd({ nombre: "", precio: "", categoria: "Bebidas" }); setShowModalProducto(true); };
     const abrirModalEditar = (e: React.MouseEvent, prod: Producto) => { e.stopPropagation(); setIdEdicion(prod.id); setFormProd({ nombre: prod.nombre, precio: prod.precio.toString(), categoria: prod.categoria }); setShowModalProducto(true); };
     
-    const eliminarProducto = async () => {
+    // 🟢 NUEVAS FUNCIONES PARA EL MODAL DE ELIMINAR
+    const iniciarEliminacion = () => {
+        setMostrarModalEliminar(true);
+    };
+
+    const confirmarEliminacion = async () => {
         if (!idEdicion) return;
         const userId = localStorage.getItem("usuarioId");
 
-        // 🟢 ALERTA PRO ELIMINAR PRODUCTO
-        const result = await Swal.fire({
-            title: '¿Eliminar producto?',
-            text: "Ya no aparecerá en el catálogo.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#94a3b8',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
-        });
-
-        if (result.isConfirmed) {
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-            try {
-                await fetch(`${API_URL}/api/Productos/${idEdicion}?usuarioId=${userId}`, { 
-                    method: "DELETE" 
-                });
-                cargarTodo(); 
-                setShowModalProducto(false);
-                Swal.fire('¡Eliminado!', 'El producto fue borrado.', 'success');
-            } catch (error) { 
-                Swal.fire('Error', 'No se pudo eliminar el producto.', 'error');
-            }
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+        try {
+            await fetch(`${API_URL}/api/Productos/${idEdicion}?usuarioId=${userId}`, { 
+                method: "DELETE" 
+            });
+            cargarTodo(); 
+            setShowModalProducto(false);
+            setMostrarModalEliminar(false);
+            mostrarMensaje('exito', '🗑️ Producto eliminado del catálogo.');
+        } catch (error) { 
+            mostrarMensaje('error', 'No se pudo eliminar el producto.');
+            setMostrarModalEliminar(false);
         }
     };
 
     const guardarProducto = async () => {
         const userId = localStorage.getItem("usuarioId");
         if (!formProd.nombre || !formProd.precio || !userId) {
-            Swal.fire('Faltan datos', 'Por favor completa el nombre y precio del producto.', 'warning');
+            mostrarMensaje('error', 'Por favor completa el nombre y precio del producto.');
             return;
         }
 
@@ -276,13 +250,9 @@ export default function CantinaPage() {
             
             cargarTodo(); 
             setShowModalProducto(false);
-            Swal.fire({
-                toast: true, position: 'top-end', icon: 'success', 
-                title: idEdicion ? 'Producto actualizado' : 'Producto creado', 
-                showConfirmButton: false, timer: 2000
-            });
+            mostrarMensaje('exito', idEdicion ? '✅ Producto actualizado' : '✅ Producto creado');
         } catch (error) { 
-            Swal.fire('Error', 'Hubo un problema al guardar', 'error'); 
+            mostrarMensaje('error', 'Hubo un problema al guardar el producto.');
         }
     };
 
@@ -292,6 +262,20 @@ export default function CantinaPage() {
     return (
         <div className="flex h-[calc(100vh-theme(spacing.24))] gap-6 font-sans relative m-4">
             
+            {/* 🔔 NOTIFICACIÓN FLOTANTE */}
+            {notificacion && (
+                <div className={`fixed top-6 right-6 z-[70] px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
+                    notificacion.tipo === 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
+                }`}>
+                    {notificacion.tipo === 'error' ? <AlertTriangle size={24} className="text-red-600"/> : <CheckCircle size={24} className="text-green-600"/>}
+                    <div>
+                        <h4 className="font-black text-sm uppercase">{notificacion.tipo === 'error' ? 'Error' : 'Éxito'}</h4>
+                        <p className="font-medium text-sm">{notificacion.msj}</p>
+                    </div>
+                    <button onClick={() => setNotificacion(null)} className="ml-4 opacity-50 hover:opacity-100"><X size={18}/></button>
+                </div>
+            )}
+
             {/* IZQUIERDA: CATÁLOGO */}
             <div className="flex-1 flex flex-col gap-6">
                 {/* Header */}
@@ -417,7 +401,7 @@ export default function CantinaPage() {
                 </div>
             </div>
 
-            {/* MODAL PRODUCTO */}
+            {/* MODAL EDITAR / CREAR PRODUCTO */}
             {showModalProducto && (
                 <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
                     <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 animate-in zoom-in-95">
@@ -433,10 +417,29 @@ export default function CantinaPage() {
                             </div>
                         </div>
                         <div className="mt-8 flex items-center gap-3">
-                            {idEdicion && <button onClick={eliminarProducto} className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 hover:text-red-600 transition" title="Eliminar"><Trash2 size={20}/></button>}
+                            {/* 🟢 AQUÍ CAMBIA EL BOTÓN: AHORA ABRE EL MODAL ROJO DE CONFIRMACIÓN */}
+                            {idEdicion && <button type="button" onClick={iniciarEliminacion} className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 hover:text-red-600 transition" title="Eliminar"><Trash2 size={20}/></button>}
+                            
                             <div className="flex-1"></div>
                             <button onClick={() => setShowModalProducto(false)} className="px-6 py-3 font-bold text-gray-500 hover:bg-gray-100 rounded-xl">Cancelar</button>
                             <button onClick={guardarProducto} className={`px-6 py-3 text-white rounded-xl font-bold shadow-lg transition ${idEdicion ? 'bg-orange-500 hover:bg-orange-600' : 'bg-slate-900 hover:bg-slate-800'}`}>{idEdicion ? 'Guardar Cambios' : 'Crear Producto'}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 🟢 NUEVO MODAL DE CONFIRMACIÓN DE ELIMINACIÓN (Estilo Imagen) */}
+            {mostrarModalEliminar && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-red-500">
+                        <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+                            <Trash2 size={32}/>
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900 mb-2">¿Borrar Producto?</h3>
+                        <p className="text-gray-500 mb-6 text-sm">Estás a punto de eliminar este producto del catálogo permanentemente.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setMostrarModalEliminar(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                            <button onClick={confirmarEliminacion} className="flex-1 py-3 text-white font-bold bg-red-600 hover:bg-red-700 rounded-xl shadow-lg transition">Sí, Borrar</button>
                         </div>
                     </div>
                 </div>
