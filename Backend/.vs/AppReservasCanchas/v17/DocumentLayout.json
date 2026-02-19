@@ -3,6 +3,13 @@
   "WorkspaceRootPath": "D:\\AppReservasCanchas\\Backend\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\partidoscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\partidoscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4B0E678C-F86D-4944-8E32-072B3C5793F8}|..\\Domain\\Domain.csproj|d:\\appreservascanchas\\domain\\entities\\partido.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\reservascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\reservascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -29,14 +36,27 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "ReservasController.cs",
-              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ReservasController.cs",
-              "RelativeDocumentMoniker": "Backend\\Controllers\\ReservasController.cs",
-              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ReservasController.cs",
-              "RelativeToolTip": "Backend\\Controllers\\ReservasController.cs",
-              "ViewState": "AgIAAJMBAAAAAAAAAAAgwKEAAAAQAAAAAAAAAA==",
+              "Title": "PartidosController.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\PartidosController.cs",
+              "RelativeDocumentMoniker": "Backend\\Controllers\\PartidosController.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\PartidosController.cs",
+              "RelativeToolTip": "Backend\\Controllers\\PartidosController.cs",
+              "ViewState": "AgIAAA0AAAAAAAAAAAA1wCcAAAA7AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-18T22:39:18.987Z",
+              "WhenOpened": "2026-02-19T03:14:18.012Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Partido.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Domain\\Entities\\Partido.cs",
+              "RelativeDocumentMoniker": "..\\Domain\\Entities\\Partido.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Domain\\Entities\\Partido.cs",
+              "RelativeToolTip": "..\\Domain\\Entities\\Partido.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAA7AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-19T03:13:21.615Z",
               "EditorCaption": ""
             },
             {
@@ -49,7 +69,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
+              "Title": "ReservasController.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ReservasController.cs",
+              "RelativeDocumentMoniker": "Backend\\Controllers\\ReservasController.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ReservasController.cs",
+              "RelativeToolTip": "Backend\\Controllers\\ReservasController.cs",
+              "ViewState": "AgIAAJMBAAAAAAAAAAAgwKEAAAAQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-18T22:39:18.987Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Program.cs",
               "RelativeDocumentMoniker": "Backend\\Program.cs",
@@ -57,12 +90,11 @@
               "RelativeToolTip": "Backend\\Program.cs",
               "ViewState": "AgIAADMAAAAAAAAAAAAAAEYAAAAvAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-18T22:31:50.062Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-18T22:31:50.062Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "Usuario.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Domain\\Entities\\Usuario.cs",
               "RelativeDocumentMoniker": "..\\Domain\\Entities\\Usuario.cs",
@@ -74,7 +106,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 5,
               "Title": "Mesa.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Domain\\Entities\\Mesa.cs",
               "RelativeDocumentMoniker": "..\\Domain\\Entities\\Mesa.cs",

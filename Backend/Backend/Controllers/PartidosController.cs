@@ -18,11 +18,18 @@ namespace Backend.Controllers
 
         // 1. VER PARTIDOS
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Partido>>> GetPartidos([FromQuery] bool todo = false)
+        public async Task<ActionResult<IEnumerable<Partido>>> GetPartidos([FromQuery] bool todo = false, [FromQuery] int? usuarioId = null)
         {
             var query = _context.Partidos
                 .Include(p => p.Inscripciones)
                 .AsQueryable();
+
+            //  Si mandan un usuarioId, filtramos solo los de él
+            if (usuarioId.HasValue && usuarioId.Value > 0)
+            {
+                
+                query = query.Where(p => p.UsuarioId == usuarioId.Value);
+            }
 
             if (!todo)
             {
@@ -30,7 +37,7 @@ namespace Backend.Controllers
             }
 
             return await query
-                .OrderBy(p => p.Fecha).ThenBy(p => p.Hora) // Asumo que tienes una propiedad Hora
+                .OrderBy(p => p.Fecha).ThenBy(p => p.Hora) 
                 .ToListAsync();
         }
 

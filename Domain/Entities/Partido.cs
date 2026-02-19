@@ -18,7 +18,7 @@ namespace Domain.Entities
         public string ClaveBorrado { get; set; } = string.Empty;
         public string Deporte { get; set; } = string.Empty;
         public string Lugar { get; set; } = string.Empty;
-
+        public int UsuarioId { get; set; }
         public List<Inscripcion> Inscripciones { get; set; } = new List<Inscripcion>();
     }
 }
