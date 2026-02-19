@@ -16,7 +16,7 @@ namespace Backend.Controllers
         {
             _context = context;
         }
-        
+
         //MULTICLIENTE
         // 1. ABRIR CAJA 
         [HttpPost("abrir")]
@@ -105,15 +105,15 @@ namespace Backend.Controllers
             caja.TotalGastos = arqueo?.TotalGastos ?? 0; // Plata que salió
             caja.Observaciones = arqueo?.Observaciones; // Notas del encargado
 
-            caja.FechaCierre = DateTime.UtcNow; 
+            caja.FechaCierre = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return Ok(new { mensaje = "Caja cerrada correctamente", caja });
         }
 
-      
+
         //🪄 LÓGICA DE REPORTE
-    
+
         private async Task<dynamic> GenerarReporteCaja(Caja caja)
         {
             // Traemos las reservas vinculadas a esta caja específica
@@ -159,7 +159,8 @@ namespace Backend.Controllers
                         listaVisual.Add(new
                         {
                             Id = item.Id,
-                            Hora = item.FechaInicio,
+                            // 🟢 MAGIA AQUÍ: Usamos FechaCobro (Hora real en que se cobró). Si es vieja y no tiene, usa FechaInicio
+                            Hora = item.FechaCobro ?? item.FechaInicio,
                             Concepto = conceptoDefault,
                             Detalle = item.ClienteNombre,
                             Metodo = (item.CobradoEfectivo > 0 && item.CobradoTransferencia > 0) ? "Mixto" : (item.CobradoTransferencia > 0 ? "Transferencia" : "Efectivo"),

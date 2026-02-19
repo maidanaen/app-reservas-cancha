@@ -47,5 +47,6 @@ namespace Domain.Entities
         [ForeignKey("UsuarioId")]
         public Usuario? Usuario { get; set; }
         public string? GrupoId { get; set; } // Identificador para borrar en lote
+        public DateTime? FechaCobro { get; set; }
     }
 }

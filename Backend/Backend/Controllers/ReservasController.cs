@@ -12,9 +12,8 @@ namespace Backend.Controllers
     {
         private readonly IReservaRepository _repository;
         private readonly AppDbContext _context;
-        private readonly INotificacionService _telegramService; //  Agregamos el servicio
+        private readonly INotificacionService _telegramService;
 
-        // Modificamos el constructor para recibir el servicio de Telegram
         public ReservasController(IReservaRepository repository, AppDbContext context, INotificacionService telegramService)
         {
             _repository = repository;
@@ -22,7 +21,6 @@ namespace Backend.Controllers
             _telegramService = telegramService;
         }
 
-        // GET: api/Reservas?fecha=2026-01-31
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Reserva>>> GetReservas([FromQuery] int usuarioId, [FromQuery] DateTime? fecha)
         {
@@ -41,7 +39,6 @@ namespace Backend.Controllers
             return Ok(reservas);
         }
 
-        // GET: api/Reservas/ocupadas
         [HttpGet("ocupadas")]
         public async Task<ActionResult<IEnumerable<string>>> GetHorariosOcupados(int canchaId, DateTime fecha)
         {
@@ -68,7 +65,6 @@ namespace Backend.Controllers
             return Ok(horariosBloqueados.Distinct());
         }
 
-        // GET: api/Reservas/cancha/1
         [HttpGet("cancha/{canchaId}")]
         public async Task<ActionResult<List<Reserva>>> VerTurnos(int canchaId, [FromQuery] DateTime? fecha)
         {
@@ -105,7 +101,6 @@ namespace Backend.Controllers
         {
             try
             {
-                
                 var cancha = await _context.Canchas
                     .Include(c => c.Usuario)
                     .FirstOrDefaultAsync(c => c.Id == reserva.CanchaId);
@@ -123,6 +118,9 @@ namespace Backend.Controllers
 
                 if (reserva.Estado == "Pagado" || reserva.CobradoEfectivo > 0 || reserva.CobradoTransferencia > 0)
                 {
+                    // 🟢 Si se cobra al momento de crearla, guardamos la hora actual
+                    reserva.FechaCobro = DateTime.UtcNow;
+
                     var cajaAbierta = await _context.Cajas
                         .FirstOrDefaultAsync(c => c.UsuarioId == reserva.UsuarioId && c.FechaCierre == null);
 
@@ -132,34 +130,27 @@ namespace Backend.Controllers
                     }
                 }
 
-                // Guardamos en la base de datos
                 var nueva = await _repository.AddAsync(reserva);
 
-                // NOTIFICACIÓN DE TELEGRAM 
                 try
                 {
-                    // Verificamos si el dueño de la cancha vinculo su Telegram
                     if (cancha.Usuario != null && !string.IsNullOrEmpty(cancha.Usuario.TelegramChatId))
                     {
-                        
+
                         string msj = $"🚨 *NUEVA RESERVA RECIBIDA*\n\n" +
                                      $"🏟 *Cancha:* {cancha.Nombre}\n" +
                                      $"👤 *Cliente:* {nueva.ClienteNombre ?? "Anónimo"}\n" +
                                      $"📱 *Tel:* {nueva.ClienteTelefono ?? "-"}\n" +
                                      $"📅 *Día:* {nueva.FechaInicio:dd/MM/yyyy}\n" +
-                                     $"⏰ *Hora:* {nueva.FechaInicio:HH:mm} hs\n" +
-                                     $"💰 *Abonado:* ${nueva.CobradoEfectivo + nueva.CobradoTransferencia}";
+                                     $"⏰ *Hora:* {nueva.FechaInicio:HH:mm} hs\n";
 
-                        // Disparamos el mensaje sin frenar la ejecución de la app
                         _ = _telegramService.EnviarMensaje(cancha.Usuario.TelegramChatId, msj);
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Si Telegram falla, la reserva igual se guarda (evitamos que el cliente vea un error)
                     Console.WriteLine($"Error al enviar Telegram: {ex.Message}");
                 }
-                
 
                 return CreatedAtAction(nameof(VerTurnos), new { canchaId = nueva.CanchaId }, nueva);
             }
@@ -216,6 +207,8 @@ namespace Backend.Controllers
             if (totalPagado > 0)
             {
                 reserva.Estado = "Pagado";
+                // 🟢 REGISTRAMOS LA HORA EXACTA DEL COBRO
+                reserva.FechaCobro = DateTime.UtcNow;
 
                 if (cobro.CobradoEfectivo > 0 && cobro.CobradoTransferencia > 0)
                     reserva.MetodoPago = "Mixto";
@@ -257,7 +250,9 @@ namespace Backend.Controllers
                     Estado = "Pagado",
                     UsuarioId = dto.UsuarioId,
                     CobradoEfectivo = dto.CobradoEfectivo,
-                    CobradoTransferencia = dto.CobradoTransferencia
+                    CobradoTransferencia = dto.CobradoTransferencia,
+                    // 🟢 REGISTRAMOS LA HORA EXACTA DEL COBRO DE CANTINA
+                    FechaCobro = DateTime.UtcNow
                 };
 
                 var cajaAbierta = await _context.Cajas
