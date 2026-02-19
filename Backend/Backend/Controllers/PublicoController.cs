@@ -24,6 +24,7 @@ namespace Backend.Controllers
             // Así no necesitamos que la clase Usuario tenga la lista de canchas.
             var sedes = await _context.Canchas
                 .Include(c => c.Usuario)
+                .Where(c => c.Usuario != null && c.Usuario.Activo == true)
                 .GroupBy(c => c.Usuario)
                 .Select(g => new
                 {
