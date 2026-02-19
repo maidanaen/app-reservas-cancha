@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Users, Plus, UserPlus, Calendar, Trash2, MessageCircle, CheckCircle, MapPin, Trophy, AlertCircle, X } from "lucide-react";
+import { Users, Plus, UserPlus, Calendar, Trash2, MessageCircle, CheckCircle, MapPin, Trophy, AlertCircle, X, Lock } from "lucide-react";
 import { API_URL } from '@/utils/config';
+import Swal from 'sweetalert2'; // 🟢 Importamos SweetAlert
 
 interface Inscripcion {
     id: number;
@@ -28,7 +29,7 @@ export default function PartidosPage() {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [cargando, setCargando] = useState(false);
 
-  // 🟢 NUEVOS ESTADOS PARA SEDES
+  // NUEVOS ESTADOS PARA SEDES
   const [sedes, setSedes] = useState<any[]>([]);
   const [clubSeleccionado, setClubSeleccionado] = useState<string>("");
   const [canchaSeleccionada, setCanchaSeleccionada] = useState<string>("");
@@ -48,7 +49,7 @@ export default function PartidosPage() {
   const [nuevaClave, setNuevaClave] = useState("");
   const [nuevoDeporte, setNuevoDeporte] = useState("Padel");
 
-  // 🟢 SISTEMA DE NOTIFICACIONES (TOAST)
+  // SISTEMA DE NOTIFICACIONES (TOAST)
   const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
 
   const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
@@ -71,7 +72,7 @@ export default function PartidosPage() {
 
   useEffect(() => { cargarDatos(); }, []);
 
-  // 🟢 FUNCIÓN INTELIGENTE PARA GENERAR LINK DE WHATSAPP
+  // FUNCIÓN INTELIGENTE PARA GENERAR LINK DE WHATSAPP
   const generarLinkWhatsApp = (numero: string, nombreOrg: string, deporte: string) => {
       if (!numero) return "#";
       let limpio = numero.replace(/\D/g, "");
@@ -83,14 +84,12 @@ export default function PartidosPage() {
   const crearSala = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validaciones
     if (!nuevaClave.trim()) { mostrarMensaje('error', "Crea una clave para poder borrar la sala después."); return; }
     if (!clubSeleccionado || !canchaSeleccionada) { mostrarMensaje('error', "Debes seleccionar un Club y una Cancha."); return; }
 
     setCargando(true);
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     
-    // Armar nombre del lugar y obtener el ID del dueño
     const clubObj = sedes.find(s => s.clubId === Number(clubSeleccionado));
     const canchaObj = clubObj?.canchas.find((c: any) => c.id === Number(canchaSeleccionada));
     const lugarFinal = `${canchaObj.nombre} - ${clubObj.nombreClub}`;
@@ -104,7 +103,6 @@ export default function PartidosPage() {
         claveBorrado: nuevaClave,
         deporte: nuevoDeporte, 
         lugar: lugarFinal,
-        // 🟢 SOLUCIÓN MÁGICA: Le mandamos el UsuarioId (Dueño del club) al backend
         usuarioId: clubObj.clubId 
     };
 
@@ -151,8 +149,26 @@ export default function PartidosPage() {
       }
   };
 
+  // 🟢 SWEETALERT CON INPUT PARA BORRAR SALA
   const borrarSalaPropia = async (id: number) => {
-      const claveIngresada = prompt("🔒 Clave de borrado:");
+      const { value: claveIngresada } = await Swal.fire({
+          title: '¿Borrar partido?',
+          text: 'Ingresa la clave que creaste al momento de publicarlo:',
+          input: 'password', // Tipo password para que salgan puntitos
+          inputPlaceholder: 'Ingresa tu clave...',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#94a3b8',
+          confirmButtonText: 'Sí, borrar',
+          cancelButtonText: 'Cancelar',
+          inputValidator: (value) => {
+              if (!value) {
+                  return '¡Debes ingresar una clave!';
+              }
+          }
+      });
+
       if (!claveIngresada) return;
 
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -161,10 +177,17 @@ export default function PartidosPage() {
       });
 
       if (res.ok) {
-          mostrarMensaje('exito', "🗑️ Sala eliminada.");
+          Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: 'Sala eliminada correctamente',
+              showConfirmButton: false,
+              timer: 2500
+          });
           cargarDatos();
       } else {
-          mostrarMensaje('error', "⛔ Clave incorrecta.");
+          Swal.fire('Error', '⛔ La clave ingresada es incorrecta.', 'error');
       }
   };
 
@@ -319,7 +342,7 @@ export default function PartidosPage() {
                                     {iconoDeporte} {p.deporte}
                                 </span>
                              </div>
-                            <button onClick={() => borrarSalaPropia(p.id)} className="text-gray-300 hover:text-red-500 transition"><Trash2 size={18} /></button>
+                            <button onClick={() => borrarSalaPropia(p.id)} className="text-gray-300 hover:text-red-500 transition" title="Borrar Partido"><Trash2 size={18} /></button>
                         </div>
 
                         <div className="flex items-center gap-2 mb-2">

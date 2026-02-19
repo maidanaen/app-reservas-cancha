@@ -7,6 +7,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { API_URL } from '@/utils/config';
+import Swal from 'sweetalert2'; // 🟢 Importamos SweetAlert
 
 // --- TIPOS DE DATOS ---
 interface Mesa {
@@ -59,13 +60,13 @@ export default function GestionMesasPage() {
   const [catActiva, setCatActiva] = useState("Bebidas");
   const [nuevaMesaNombre, setNuevaMesaNombre] = useState("");
 
-  // 🟢 ESTADOS DE COBRO
+  // ESTADOS DE COBRO
   const [pagando, setPagando] = useState(false);
   const [pagoTransferencia, setPagoTransferencia] = useState(""); 
   const [pagaConEfectivo, setPagaConEfectivo] = useState("");   
   const [procesandoPago, setProcesandoPago] = useState(false);
 
-  // 🟢 SISTEMA DE NOTIFICACIONES (TOAST)
+  // SISTEMA DE NOTIFICACIONES (TOAST)
   const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
 
   const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
@@ -105,7 +106,10 @@ export default function GestionMesasPage() {
   const crearMesa = async () => {
     if(!nuevaMesaNombre) return;
     const userId = localStorage.getItem("usuarioId");
-    if (!userId) return alert("Error de sesión. Recarga la página.");
+    if (!userId) {
+        Swal.fire('Error', 'Error de sesión. Recarga la página.', 'error');
+        return;
+    }
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     await fetch(`${API_URL}/api/Mesas`, {
@@ -120,17 +124,35 @@ export default function GestionMesasPage() {
     cargarMesas();
   };
 
-  // 3. BORRAR MESA
+  // 3. BORRAR MESA (🟢 SWEETALERT AÑADIDO)
   const borrarMesa = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation(); 
-    if (!confirm("¿Seguro que quieres eliminar esta mesa?")) return;
+    
+    const result = await Swal.fire({
+        title: '¿Eliminar mesa?',
+        text: "La mesa desaparecerá del salón.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (!result.isConfirmed) return;
+
     const userId = localStorage.getItem("usuarioId");
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    const res = await fetch(`${API_URL}/api/Mesas/${id}?usuarioId=${userId}`, { method: "DELETE" });
-    if (res.ok) {
-        cargarMesas(); 
-        if (mesaSeleccionada?.id === id) setMesaSeleccionada(null); 
+    try {
+        const res = await fetch(`${API_URL}/api/Mesas/${id}?usuarioId=${userId}`, { method: "DELETE" });
+        if (res.ok) {
+            cargarMesas(); 
+            if (mesaSeleccionada?.id === id) setMesaSeleccionada(null); 
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Mesa eliminada', showConfirmButton: false, timer: 2000 });
+        }
+    } catch (error) {
+        Swal.fire('Error', 'No se pudo eliminar la mesa.', 'error');
     }
   };
 
@@ -162,7 +184,6 @@ export default function GestionMesasPage() {
         clickMesa({ ...mesaSeleccionada, estaOcupada: true, reservaActualId: data.reservaId });
         mostrarMensaje('exito', "✅ Mesa abierta correctamente");
     } else {
-        // 🟢 AQUÍ MOSTRAMOS EL MENSAJE DEL BACKEND (CAJA CERRADA) EN EL TOAST
         const errorData = await res.text();
         mostrarMensaje('error', errorData); 
     }
@@ -236,11 +257,26 @@ export default function GestionMesasPage() {
     if (!reservaActiva || !mesaSeleccionada) return;
     const userId = localStorage.getItem("usuarioId");
     
-    if (!userId) return alert("Error de sesión");
+    if (!userId) {
+        Swal.fire('Error', 'Error de sesión. Recarga la página.', 'error');
+        return;
+    }
 
     const totalCubierto = transferencia + (billeteCliente >= efectivoAPagar ? efectivoAPagar : billeteCliente);
+    
+    // 🟢 SWEETALERT PARA PAGO INCOMPLETO
     if (totalCubierto < totalCuenta - 100) { 
-        if(!confirm(`⚠️ Faltan $${(totalCuenta - totalCubierto).toLocaleString()}. ¿Cerrar igual?`)) return;
+        const result = await Swal.fire({
+            title: 'Pago Incompleto',
+            text: `Faltan $${(totalCuenta - totalCubierto).toLocaleString()}. ¿Quieres cerrar la mesa igual?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3b82f6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, cerrar mesa',
+            cancelButtonText: 'Revisar montos'
+        });
+        if (!result.isConfirmed) return;
     }
 
     setProcesandoPago(true);
@@ -275,7 +311,10 @@ export default function GestionMesasPage() {
         } else {
             mostrarMensaje('error', "Error al procesar el cobro.");
         }
-    } catch (error) { console.error(error); mostrarMensaje('error', "Error de conexión"); } 
+    } catch (error) { 
+        console.error(error); 
+        mostrarMensaje('error', "Error de conexión"); 
+    } 
     finally { setProcesandoPago(false); }
   };
 
@@ -307,8 +346,8 @@ export default function GestionMesasPage() {
             <h1 className="text-2xl font-bold text-gray-800">Salón</h1>
         </div>
         <div className="bg-white p-4 rounded-xl shadow-sm flex gap-2">
-            <input type="text" placeholder="Nombre (ej: Mesa 5)" className="flex-1 p-2 border rounded-lg bg-gray-50 text-sm" value={nuevaMesaNombre} onChange={e => setNuevaMesaNombre(e.target.value)}/>
-            <button onClick={crearMesa} className="bg-black text-white p-2 rounded-lg hover:bg-gray-800"><Plus/></button>
+            <input type="text" placeholder="Nombre (ej: Mesa 5)" className="flex-1 p-2 border rounded-lg bg-gray-50 text-sm outline-none focus:border-slate-900" value={nuevaMesaNombre} onChange={e => setNuevaMesaNombre(e.target.value)}/>
+            <button onClick={crearMesa} className="bg-black text-white p-2 rounded-lg hover:bg-gray-800 transition"><Plus/></button>
         </div>
         <div className="grid grid-cols-2 gap-4">
             {mesas.map(mesa => (
@@ -326,13 +365,13 @@ export default function GestionMesasPage() {
         {!mesaSeleccionada ? (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-400"><Utensils size={64} className="mb-4 opacity-20"/><p>Selecciona una mesa</p></div>
         ) : !mesaSeleccionada.estaOcupada ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center animate-in zoom-in-95">
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">{mesaSeleccionada.nombre}</h2>
                 <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold mb-8">Disponible</span>
-                <button onClick={abrirMesa} className="bg-black text-white px-8 py-4 rounded-2xl font-bold text-xl hover:bg-gray-800 shadow-lg flex items-center gap-3"><Utensils/> ABRIR MESA</button>
+                <button onClick={abrirMesa} className="bg-black text-white px-8 py-4 rounded-2xl font-bold text-xl hover:bg-gray-800 transition shadow-lg flex items-center gap-3 active:scale-95"><Utensils/> ABRIR MESA</button>
             </div>
         ) : (
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full animate-in fade-in">
                 <div className="p-6 border-b flex justify-between items-center bg-gray-50">
                     <div><h2 className="text-2xl font-bold text-gray-800">{mesaSeleccionada.nombre}</h2><p className="text-sm text-gray-500">Cuenta Abierta</p></div>
                     <div className="text-right"><p className="text-xs font-bold text-gray-400 uppercase">Total Actual</p><p className="text-3xl font-bold text-gray-900">${totalCuenta.toLocaleString()}</p></div>
@@ -341,8 +380,8 @@ export default function GestionMesasPage() {
                 <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                     {/* PRODUCTOS (Izquierda) */}
                     <div className="w-full md:w-1/2 p-4 border-r overflow-y-auto bg-gray-50/50">
-                        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">{CATEGORIAS.map(c => <button key={c} onClick={() => setCatActiva(c)} className={`px-3 py-1 rounded-full text-xs font-bold border ${catActiva === c ? 'bg-black text-white' : 'bg-white text-gray-600'}`}>{c}</button>)}</div>
-                        <div className="grid grid-cols-2 gap-2">{productosFiltrados.map(p => <button key={p.id} onClick={() => agregarProducto(p)} className="bg-white p-3 rounded-xl border hover:border-orange-400 hover:shadow-md transition text-left"><p className="font-bold text-gray-800 text-sm truncate">{p.nombre}</p><p className="text-green-600 font-bold text-xs mt-1">${p.precio}</p></button>)}</div>
+                        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">{CATEGORIAS.map(c => <button key={c} onClick={() => setCatActiva(c)} className={`px-3 py-1 rounded-full text-xs font-bold border transition ${catActiva === c ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}>{c}</button>)}</div>
+                        <div className="grid grid-cols-2 gap-2">{productosFiltrados.map(p => <button key={p.id} onClick={() => agregarProducto(p)} className="bg-white p-3 rounded-xl border hover:border-orange-400 hover:shadow-md transition text-left active:scale-95"><p className="font-bold text-gray-800 text-sm truncate">{p.nombre}</p><p className="text-green-600 font-bold text-xs mt-1">${p.precio}</p></button>)}</div>
                     </div>
 
                     {/* TICKET (Derecha) */}
@@ -350,7 +389,7 @@ export default function GestionMesasPage() {
                         <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Coffee size={18}/> Consumos</h3>
                         
                         {/* LISTA AGRUPADA */}
-                        <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2">
+                        <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2 custom-scrollbar">
                             {consumosAgrupados.map((item, index) => (
                                 <div key={index} className="group flex justify-between items-center text-sm border-b border-gray-100 pb-2 hover:bg-red-50 transition rounded px-2">
                                     <div className="flex flex-col">
@@ -378,12 +417,12 @@ export default function GestionMesasPage() {
                         {/* ZONA DE COBRO */}
                         <div className="mt-auto pt-4 border-t border-gray-100">
                             {!pagando ? (
-                                <button onClick={iniciarCobro} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-lg hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2"><DollarSign/> CERRAR Y COBRAR</button>
+                                <button onClick={iniciarCobro} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-lg hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2 active:scale-95"><DollarSign/> CERRAR Y COBRAR</button>
                             ) : (
                                 <div className="animate-in slide-in-from-bottom-10 fade-in duration-300 h-full space-y-4">
                                     <div className="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
                                         <h4 className="font-bold text-gray-800 flex items-center gap-2"><Calculator size={18}/> Cerrar Mesa</h4>
-                                        <button onClick={() => setPagando(false)} className="text-xs font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded">Cancelar</button>
+                                        <button onClick={() => setPagando(false)} className="text-xs font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded transition">Cancelar</button>
                                     </div>
                                     
                                     <div className="bg-violet-50 p-3 rounded-xl border border-violet-100">
@@ -413,7 +452,7 @@ export default function GestionMesasPage() {
                                         </div>
                                     </div>
 
-                                    <button disabled={procesandoPago} onClick={confirmarCobroFinal} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg disabled:opacity-50 mt-2">
+                                    <button disabled={procesandoPago} onClick={confirmarCobroFinal} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg disabled:opacity-50 mt-2 active:scale-95">
                                         {procesandoPago ? "Procesando..." : "CONFIRMAR CIERRE"}
                                     </button>
                                 </div>

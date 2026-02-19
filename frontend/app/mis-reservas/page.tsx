@@ -141,13 +141,6 @@ export default function MisReservasPage() {
                     </div>
                 </div>
 
-                {/* Precio y Estado */}
-                <div className="text-right pl-2">
-                    <p className="text-xl font-black text-slate-900">${reserva.precio?.toLocaleString()}</p>
-                    <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-md bg-slate-100 text-slate-600">
-                        {reserva.estado}
-                    </span>
-                </div>
             </div>
         ))}
 

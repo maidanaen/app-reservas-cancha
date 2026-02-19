@@ -1,10 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation"; // 🟢 Para redireccionar
 import { 
     Search, ShoppingCart, Trash2, CreditCard, 
     Package, X, Plus, Tag, Pencil, DollarSign, Calculator, Wallet, AlertTriangle 
 } from "lucide-react";
 import { API_URL } from '@/utils/config';
+import Swal from 'sweetalert2'; // 🟢 SweetAlert importado
 
 // --- INTERFACES ---
 interface Producto {
@@ -28,6 +30,8 @@ interface VentaHistorial {
 }
 
 export default function CantinaPage() {
+    const router = useRouter(); // 🟢 Inicializamos el router
+
     // --- ESTADOS ---
     const [productos, setProductos] = useState<Producto[]>([]);
     const [cargandoProductos, setCargandoProductos] = useState(true);
@@ -37,7 +41,7 @@ export default function CantinaPage() {
     const [categoriaActiva, setCategoriaActiva] = useState("Todas");
     
     // Estados de Caja
-    const [cajaAbierta, setCajaAbierta] = useState(false); // 🟢 Nuevo estado para saber si está abierta
+    const [cajaAbierta, setCajaAbierta] = useState(false); 
     const [totalEfectivo, setTotalEfectivo] = useState(0);
     const [totalTransferencia, setTotalTransferencia] = useState(0);
     const [historialVentas, setHistorialVentas] = useState<VentaHistorial[]>([]);
@@ -54,14 +58,14 @@ export default function CantinaPage() {
     const [procesando, setProcesando] = useState(false);
     
 
-    // --- CARGA INICIAL ROBUSTA (La solución al error rojo) ---
+    // --- CARGA INICIAL ROBUSTA ---
     const cargarTodo = async () => {
         const userId = localStorage.getItem("usuarioId");
         if (!userId) return;
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         
-        // 1. CARGAMOS PRODUCTOS (Bloque independiente)
+        // 1. CARGAMOS PRODUCTOS 
         try {
             const resProd = await fetch(`${API_URL}/api/Productos?usuarioId=${userId}`);
             if (resProd.ok) {
@@ -73,24 +77,21 @@ export default function CantinaPage() {
             setCargandoProductos(false);
         }
 
-        // 2. CARGAMOS CAJA (Bloque independiente)
+        // 2. CARGAMOS CAJA 
         try {
             const resCaja = await fetch(`${API_URL}/api/Cajas/actual?usuarioId=${userId}`);
             
             if (resCaja.ok) {
-                // ✅ SI HAY CAJA ABIERTA
                 const data = await resCaja.json();
                 setCajaAbierta(true);
                 setTotalEfectivo(data.resumen?.detalle?.barra?.efectivo || 0);
                 setTotalTransferencia(data.resumen?.detalle?.barra?.transferencia || 0);
             } else {
-                // 🔴 SI DA 404 (CAJA CERRADA) -> ES NORMAL
                 setCajaAbierta(false);
                 setTotalEfectivo(0);
                 setTotalTransferencia(0);
             }
         } catch (error) {
-            // Si hay error de red, asumimos cerrada para no romper nada
             console.log("Caja cerrada o inalcanzable.");
             setCajaAbierta(false);
         }
@@ -129,15 +130,40 @@ export default function CantinaPage() {
         const userId = localStorage.getItem("usuarioId");
         if (carrito.length === 0 || !userId) return;
         
-        // 🟢 VALIDACIÓN DE CAJA: Si está cerrada, avisamos.
+        // 🟢 ALERTA PRO DE CAJA CERRADA
         if (!cajaAbierta) {
-            alert("⚠️ ¡Atención! La caja está CERRADA. Debes abrirla en la sección 'Caja' para poder cobrar.");
+            Swal.fire({
+                title: '¡Caja Cerrada!',
+                text: "No puedes registrar ventas de cantina sin antes abrir la caja del día.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f97316', // Naranja
+                cancelButtonColor: '#94a3b8',  // Gris
+                confirmButtonText: 'Ir a abrir Caja',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    router.push('/admin'); // 👈 Te lleva al Dashboard donde está la caja
+                }
+            });
             return;
         }
 
         const totalCubierto = transferencia + (billeteCliente >= efectivoAPagar ? efectivoAPagar : billeteCliente);
+        
+        // 🟢 ALERTA PRO DE PAGO INCOMPLETO
         if (totalCubierto < totalCarrito - 1) {
-             if(!confirm(`⚠️ Faltan $${(totalCarrito - totalCubierto).toLocaleString()}. ¿Cobrar igual?`)) return;
+             const result = await Swal.fire({
+                 title: 'Pago Incompleto',
+                 text: `Faltan $${(totalCarrito - totalCubierto).toLocaleString()}. ¿Quieres registrar la venta igual?`,
+                 icon: 'question',
+                 showCancelButton: true,
+                 confirmButtonColor: '#3b82f6',
+                 cancelButtonColor: '#d33',
+                 confirmButtonText: 'Sí, cobrar igual',
+                 cancelButtonText: 'Revisar montos'
+             });
+             if (!result.isConfirmed) return;
         }
 
         setProcesando(true);
@@ -168,11 +194,18 @@ export default function CantinaPage() {
                 setCarrito([]);
                 setModoCobro(false);
                 await cargarTodo(); 
+                // Opcional: un Toast chiquito de éxito
+                Swal.fire({
+                    toast: true, position: 'top-end', icon: 'success', 
+                    title: 'Venta registrada', showConfirmButton: false, timer: 2000
+                });
             } else { 
                 const text = await res.text();
-                alert("Error al procesar venta: " + text);
+                Swal.fire('Error', "No se pudo procesar la venta: " + text, 'error');
             }
-        } catch (error) { console.error(error); } 
+        } catch (error) { 
+            Swal.fire('Error', "Error de conexión", 'error'); 
+        } 
         finally { setProcesando(false); }
     };
 
@@ -184,7 +217,19 @@ export default function CantinaPage() {
         if (!idEdicion) return;
         const userId = localStorage.getItem("usuarioId");
 
-        if (confirm("⚠️ ¿Eliminar de Base de Datos?")) {
+        // 🟢 ALERTA PRO ELIMINAR PRODUCTO
+        const result = await Swal.fire({
+            title: '¿Eliminar producto?',
+            text: "Ya no aparecerá en el catálogo.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
             try {
                 await fetch(`${API_URL}/api/Productos/${idEdicion}?usuarioId=${userId}`, { 
@@ -192,13 +237,19 @@ export default function CantinaPage() {
                 });
                 cargarTodo(); 
                 setShowModalProducto(false);
-            } catch (error) { alert("Error al eliminar"); }
+                Swal.fire('¡Eliminado!', 'El producto fue borrado.', 'success');
+            } catch (error) { 
+                Swal.fire('Error', 'No se pudo eliminar el producto.', 'error');
+            }
         }
     };
 
     const guardarProducto = async () => {
         const userId = localStorage.getItem("usuarioId");
-        if (!formProd.nombre || !formProd.precio || !userId) return alert("Completa los datos");
+        if (!formProd.nombre || !formProd.precio || !userId) {
+            Swal.fire('Faltan datos', 'Por favor completa el nombre y precio del producto.', 'warning');
+            return;
+        }
 
         const productoData = { 
             id: idEdicion || 0, 
@@ -225,7 +276,14 @@ export default function CantinaPage() {
             
             cargarTodo(); 
             setShowModalProducto(false);
-        } catch (error) { alert("Error al guardar"); }
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'success', 
+                title: idEdicion ? 'Producto actualizado' : 'Producto creado', 
+                showConfirmButton: false, timer: 2000
+            });
+        } catch (error) { 
+            Swal.fire('Error', 'Hubo un problema al guardar', 'error'); 
+        }
     };
 
     const productosFiltrados = productos.filter(p => (categoriaActiva === "Todas" || p.categoria === categoriaActiva) && p.nombre.toLowerCase().includes(filtro.toLowerCase()));
