@@ -28,11 +28,10 @@ namespace Backend.Controllers
                 .GroupBy(c => c.Usuario)
                 .Select(g => new
                 {
-                    ClubId = g.Key.Id,
-                    // Usamos NombreNegocio como nombre del club
+                    CClubId = g.Key.Id,
                     NombreClub = g.Key.NombreNegocio ?? "Club Sin Nombre",
-                    // Como NO tienes dirección en la BD, no la enviamos o mandamos vacío
-                    Direccion = "",
+                    Telefono = g.Key.Telefono,
+                    LinkUbicacion = g.Key.LinkUbicacion,
                     LogoUrl = g.Key.LogoUrl,
                     FotoUrl = g.Key.FotoUrl,
                     Canchas = g.Select(c => new

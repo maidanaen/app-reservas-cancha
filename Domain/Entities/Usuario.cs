@@ -20,5 +20,7 @@ namespace Domain.Entities
         public string? FotoUrl { get; set; }
         public string? TelegramChatId { get; set; }
         public string? TelegramConnectionToken { get; set; }
+        public string? Telefono { get; set; } // telefono del club
+        public string? LinkUbicacion { get; set; } 
     }
 }

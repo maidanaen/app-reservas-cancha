@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { 
-    Users, Plus, Lock, Unlock, Trash2, Edit, X, Save, Image as ImageIcon, LogOut, CheckCircle, AlertTriangle 
+    Users, Plus, Lock, Unlock, Trash2, Edit, X, Save, Image as ImageIcon, LogOut, CheckCircle, AlertTriangle, Phone, MapPin 
 } from "lucide-react";
 // Importamos la acción de cerrar sesión (asegúrate de tenerla en actions.ts)
 import { logoutMaster } from "../../actions"; 
@@ -13,6 +13,8 @@ interface Cliente {
     nombreNegocio: string;
     logoUrl: string;
     fotoUrl: string;
+    telefono?: string;       
+    linkUbicacion?: string;
     activo: boolean;
     fechaAlta: string;
 }
@@ -25,6 +27,8 @@ export default function SuperAdminPanel() {
     const [newUser, setNewUser] = useState("");
     const [newPass, setNewPass] = useState("");
     const [newBusiness, setNewBusiness] = useState("");
+    const [newPhone, setNewPhone] = useState(""); 
+    const [newMapLink, setNewMapLink] = useState("");
     
     // Estados para editar
     const [editingClient, setEditingClient] = useState<Cliente | null>(null);
@@ -59,7 +63,7 @@ export default function SuperAdminPanel() {
         e.preventDefault(); 
         
         if (!newUser || !newPass || !newBusiness) {
-            mostrarMensaje('error', 'Debes completar todos los campos.');
+            mostrarMensaje('error', 'Debes completar todos los campos obligatorios.');
             return;
         }
 
@@ -68,11 +72,17 @@ export default function SuperAdminPanel() {
             const res = await fetch(`${API_URL}/api/Auth/register`, { 
                 method: "POST", 
                 headers: { "Content-Type": "application/json" }, 
-                body: JSON.stringify({ username: newUser, password: newPass, nombreNegocio: newBusiness }) 
+                body: JSON.stringify({ 
+                    username: newUser, 
+                    password: newPass, 
+                    nombreNegocio: newBusiness,
+                    telefono: newPhone,
+                    linkUbicacion: newMapLink
+                }) 
             }); 
             
             if (res.ok) {
-                setNewUser(""); setNewPass(""); setNewBusiness(""); 
+                setNewUser(""); setNewPass(""); setNewBusiness(""); setNewPhone(""); setNewMapLink("");
                 cargarClientes(); 
                 mostrarMensaje('exito', "✅ Cliente creado con éxito.");
             } else {
@@ -131,6 +141,8 @@ export default function SuperAdminPanel() {
                     nombreNegocio: editingClient.nombreNegocio, 
                     logoUrl: editingClient.logoUrl, 
                     fotoUrl: editingClient.fotoUrl,
+                    telefono: editingClient.telefono,
+                    linkUbicacion: editingClient.linkUbicacion,
                     password: editPass 
                 }) 
             }); 
@@ -186,18 +198,31 @@ export default function SuperAdminPanel() {
                     {/* CREAR NUEVO */}
                     <div className="bg-slate-800 p-6 rounded-3xl border border-slate-700 h-fit shadow-xl">
                         <h3 className="font-bold text-lg mb-6 flex items-center gap-2"><Plus size={20} className="text-green-400"/> Nuevo Cliente</h3>
-                        <form onSubmit={crearCliente} className="space-y-5">
+                        <form onSubmit={crearCliente} className="space-y-4">
                             <div>
-                                <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 block">Negocio</label>
-                                <input type="text" className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition" value={newBusiness} onChange={e => setNewBusiness(e.target.value)} placeholder="Ej: Padel Club"/>
+                                <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 block">Negocio *</label>
+                                <input type="text" required className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500" value={newBusiness} onChange={e => setNewBusiness(e.target.value)} placeholder="Ej: Padel Club"/>
+                            </div>
+                            
+                            {/* 🟢 NUEVOS CAMPOS EN PARALELO */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><Phone size={12}/> Teléfono</label>
+                                    <input type="text" className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 text-sm" value={newPhone} onChange={e => setNewPhone(e.target.value)} placeholder="Ej: 3794..."/>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><MapPin size={12}/> Mapa (URL)</label>
+                                    <input type="text" className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 text-sm" value={newMapLink} onChange={e => setNewMapLink(e.target.value)} placeholder="https://maps..."/>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 block">Usuario Admin *</label>
+                                <input type="text" required className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500" value={newUser} onChange={e => setNewUser(e.target.value)} placeholder="usuario123"/>
                             </div>
                             <div>
-                                <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 block">Usuario</label>
-                                <input type="text" className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition" value={newUser} onChange={e => setNewUser(e.target.value)} placeholder="usuario123"/>
-                            </div>
-                            <div>
-                                <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 block">Contraseña</label>
-                                <input type="text" className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="********"/>
+                                <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 block">Contraseña *</label>
+                                <input type="password" required className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500" value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="********"/>
                             </div>
                             <button className="w-full bg-blue-600 hover:bg-blue-500 py-3.5 rounded-xl font-bold transition shadow-lg shadow-blue-900/50 mt-2 active:scale-95">Dar de Alta</button>
                         </form>
@@ -224,11 +249,7 @@ export default function SuperAdminPanel() {
                                                 <td className="p-5">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-600 overflow-hidden flex-shrink-0 flex items-center justify-center shadow-inner">
-                                                            {c.logoUrl ? (
-                                                                <img src={c.logoUrl} alt="Logo" className="w-full h-full object-cover"/>
-                                                            ) : (
-                                                                <span className="text-sm font-black text-slate-500">{c.nombreNegocio ? c.nombreNegocio.substring(0,2).toUpperCase() : "CN"}</span>
-                                                            )}
+                                                            {c.logoUrl ? <img src={c.logoUrl} className="w-full h-full object-cover"/> : <span className="text-sm font-black text-slate-500">{c.nombreNegocio ? c.nombreNegocio.substring(0,2).toUpperCase() : "CN"}</span>}
                                                         </div>
                                                         <div>
                                                             <div className="font-bold text-white text-base">{c.nombreNegocio || "Sin nombre"}</div>
@@ -279,7 +300,7 @@ export default function SuperAdminPanel() {
                 </div>
             )}
 
-            {/* MODAL DE EDICIÓN (Sin Cambios Visuales) */}
+            {/* MODAL DE EDICIÓN */}
             {editingClient && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in">
                     <div className="bg-slate-800 p-8 rounded-3xl w-full max-w-md border border-slate-700 shadow-2xl">
@@ -289,8 +310,20 @@ export default function SuperAdminPanel() {
                         </div>
                         <div className="space-y-4">
                             <div><label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 block">Negocio</label><input type="text" className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white font-bold outline-none focus:border-blue-500" value={editingClient.nombreNegocio} onChange={e => setEditingClient({...editingClient, nombreNegocio: e.target.value})}/></div>
-                            <div><label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 block">Usuario</label><input type="text" className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white outline-none focus:border-blue-500" value={editingClient.userName} onChange={e => setEditingClient({...editingClient, userName: e.target.value})}/></div>
+                            <div><label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 block">Usuario Admin</label><input type="text" className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white outline-none focus:border-blue-500" value={editingClient.userName} onChange={e => setEditingClient({...editingClient, userName: e.target.value})}/></div>
                             
+                            {/* 🟢 CAMPOS NUEVOS EN EDICIÓN */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><Phone size={12}/> Teléfono</label>
+                                    <input type="text" className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white outline-none focus:border-blue-500 text-sm" value={editingClient.telefono || ""} onChange={e => setEditingClient({...editingClient, telefono: e.target.value})} placeholder="Ej: 3794..."/>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><MapPin size={12}/> URL Maps</label>
+                                    <input type="text" className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white outline-none focus:border-blue-500 text-sm" value={editingClient.linkUbicacion || ""} onChange={e => setEditingClient({...editingClient, linkUbicacion: e.target.value})} placeholder="https://maps..."/>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="text-xs text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1 mb-1"><ImageIcon size={12}/> URL Logo</label>
                                 <div className="flex gap-2">
@@ -302,7 +335,7 @@ export default function SuperAdminPanel() {
                             </div>
                             
                             <div className="mt-4">
-                                <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><ImageIcon size={12}/> URL Foto Portada</label>
+                                <label className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><ImageIcon size={12}/> URL Portada</label>
                                 <div className="flex gap-2">
                                     <input type="text" className="w-full p-3 bg-slate-900 border border-slate-600 rounded-xl text-white text-xs font-mono outline-none focus:border-blue-500" value={editingClient.fotoUrl || ""} onChange={e => setEditingClient({...editingClient, fotoUrl: e.target.value})} placeholder="https://..."/>
                                     <div className="w-16 h-12 bg-slate-900 rounded-xl border border-slate-600 overflow-hidden flex-shrink-0 flex items-center justify-center">
@@ -313,7 +346,7 @@ export default function SuperAdminPanel() {
 
                             <div className="bg-blue-900/20 p-4 rounded-xl border border-blue-500/30 mt-6">
                                 <label className="text-xs text-blue-400 uppercase font-bold tracking-wider flex items-center gap-1"><Lock size={12}/> Resetear Contraseña</label>
-                                <input type="text" className="w-full p-3 bg-slate-900 border border-blue-900/50 rounded-xl text-white mt-2 outline-none focus:border-blue-500 text-sm" placeholder="Dejar en blanco para no cambiar..." value={editPass} onChange={e => setEditPass(e.target.value)}/>
+                                <input type="password" className="w-full p-3 bg-slate-900 border border-blue-900/50 rounded-xl text-white mt-2 outline-none focus:border-blue-500 text-sm" placeholder="Dejar en blanco para no cambiar..." value={editPass} onChange={e => setEditPass(e.target.value)}/>
                             </div>
                             <button onClick={guardarEdicion} className="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold transition flex items-center justify-center gap-2 mt-6 shadow-lg shadow-blue-900/50 active:scale-95"><Save size={18}/> Guardar Cambios</button>
                         </div>

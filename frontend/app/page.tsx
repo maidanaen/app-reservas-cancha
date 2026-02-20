@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { 
   Search, MapPin, ArrowRight, Star, 
-  Trophy, Filter, Zap, Users
+  Trophy, Filter, Zap, Users, Phone
 } from "lucide-react";
 import { API_URL } from '@/utils/config';
 
@@ -14,16 +14,17 @@ interface Cancha {
   horaApertura: number;
   horaCierre: number;
 }
-     
-
-
+      
 interface Club {
-  clubId: number;        // 🟢 Ojo: El endpoint nuevo usa 'clubId', no 'id'
-  nombreClub: string;    // 🟢 'nombreClub', no 'nombreNegocio'
+  clubId: number;        
+  nombreClub: string;    
   direccion?: string;
-  canchas: Cancha[];     // 🟢 Ahora sí tenemos las canchas con horarios
+  canchas: Cancha[];     
   logoUrl?: string; 
   fotoUrl?: string; 
+  // 🟢 NUEVOS CAMPOS AÑADIDOS
+  telefono?: string;
+  linkUbicacion?: string;
 }
 
 export default function HomePage() {
@@ -35,7 +36,6 @@ export default function HomePage() {
     const cargarClubes = async () => {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
       try {
-        // 🟢 USAMOS EL ENDPOINT NUEVO QUE TRAE HORARIOS
         const res = await fetch(`${API_URL}/api/Publico/sedes`);
         if (res.ok) {
           const data = await res.json();
@@ -56,18 +56,15 @@ export default function HomePage() {
     if (!canchas || canchas.length === 0) return { texto: "SIN DATOS", color: "bg-gray-400" };
 
     const ahora = new Date();
-    const horaActual = ahora.getHours(); // Ej: 14, 20, 23...
+    const horaActual = ahora.getHours(); 
 
-    // Un club está abierto si AL MENOS UNA de sus canchas está operativa
     const estaAbierto = canchas.some((c) => {
-        const apertura = c.horaApertura; // Ej: 14
-        const cierre = c.horaCierre;     // Ej: 23 (o 2 si cierra de madrugada)
+        const apertura = c.horaApertura; 
+        const cierre = c.horaCierre;    
 
         if (cierre < apertura) {
-            // Caso especial: Cierra después de medianoche (Ej: Abre 18, Cierra 02)
             return horaActual >= apertura || horaActual < cierre;
         } else {
-            // Caso normal: (Ej: Abre 09, Cierra 22)
             return horaActual >= apertura && horaActual < cierre;
         }
     });
@@ -75,6 +72,14 @@ export default function HomePage() {
     return estaAbierto 
         ? { texto: "ABIERTO", color: "bg-green-500" } 
         : { texto: "CERRADO", color: "bg-red-500" };
+  };
+
+  // 🟢 FUNCIÓN WHATSAPP
+  const generarLinkWhatsApp = (telefono?: string) => {
+      if (!telefono) return "#";
+      const limpio = telefono.replace(/\D/g, "");
+      const numeroFinal = limpio.length === 10 ? `549${limpio}` : limpio;
+      return `https://wa.me/${numeroFinal}?text=Hola,%20quisiera%20hacer%20una%20consulta`;
   };
 
   return (
@@ -131,7 +136,6 @@ export default function HomePage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {clubesFiltrados.map((club) => {
                     
-                    // 🟢 CALCULAMOS EL ESTADO REAL
                     const estado = obtenerEstadoClub(club.canchas);
 
                     const logoUrl = club.logoUrl && club.logoUrl.trim() !== "" 
@@ -140,7 +144,6 @@ export default function HomePage() {
                     
                     const tienePortada = club.fotoUrl && club.fotoUrl.trim() !== "";
 
-                    // Obtenemos lista única de deportes
                     const deportesUnicos = Array.from(new Set(club.canchas.map(c => c.deporte)));
 
                     return (
@@ -160,13 +163,11 @@ export default function HomePage() {
                                     </div>
                                 )}
                                 
-                                {/* 🟢 BADGE ESTADO DINÁMICO */}
                                 <div className={`absolute top-4 right-4 ${estado.color} text-white backdrop-blur border border-white/20 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm z-10`}>
                                     <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
                                     <span className="text-[10px] font-bold uppercase tracking-wider">{estado.texto}</span>
                                 </div>
 
-                                {/* LOGO CIRCULAR */}
                                 <div className="absolute -bottom-10 left-6 z-10">
                                     <img 
                                         src={logoUrl} 
@@ -180,21 +181,32 @@ export default function HomePage() {
                             <div className="p-6 pt-12 flex flex-col flex-1">
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
-                                        <h3 className="text-2xl font-black text-slate-900 leading-tight">
+                                        <h3 className="text-2xl font-black text-slate-900 leading-tight mb-2">
                                             {club.nombreClub}
                                         </h3>
-                                        <p className="text-slate-500 text-sm mt-1 flex items-center gap-1 font-medium">
-                                            <MapPin size={14} className="text-orange-500"/>
-                                            Corrientes Capital
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                                        <Star size={14} className="text-yellow-400 fill-yellow-400"/>
-                                        <span className="text-sm font-bold text-slate-800">5.0</span>
+                                        
+                                        {/* 🟢 NUEVOS DATOS DE CONTACTO */}
+                                        <div className="flex flex-col gap-1.5">
+                                            {club.linkUbicacion ? (
+                                                <a href={club.linkUbicacion} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-slate-500 text-xs font-bold uppercase hover:text-blue-600 transition w-fit">
+                                                    <MapPin size={14} className="text-blue-500"/> Ubicación en Mapa
+                                                </a>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 text-slate-400 text-xs font-bold uppercase">
+                                                    <MapPin size={14}/> Sin ubicación
+                                                </div>
+                                            )}
+                                            
+                                            {club.telefono && (
+                                                <a href={generarLinkWhatsApp(club.telefono)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-slate-500 text-xs font-bold uppercase hover:text-green-600 transition w-fit">
+                                                    <Phone size={14} className="text-green-500"/> {club.telefono}
+                                                </a>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2 mt-3 mb-6 flex-wrap">
+                                <div className="flex gap-2 mt-4 mb-6 flex-wrap">
                                     {deportesUnicos.length > 0 ? deportesUnicos.map(d => (
                                         <span key={d} className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wide rounded-md">{d}</span>
                                     )) : (

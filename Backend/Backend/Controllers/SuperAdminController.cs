@@ -79,6 +79,8 @@ namespace Backend.Controllers
                     u.UltimoPago,
                     u.LogoUrl,
                     u.FotoUrl,
+                    u.Telefono,
+                    u.LinkUbicacion,
                     TotalReservas = _context.Reservas.Count(r => r.UsuarioId == u.Id)
                 })
                 .ToListAsync();
@@ -158,6 +160,8 @@ namespace Backend.Controllers
             usuario.NombreNegocio = request.nombreNegocio;
             usuario.LogoUrl = request.logoUrl;
             usuario.FotoUrl = request.fotoUrl;
+            usuario.Telefono = request.telefono;
+            usuario.LinkUbicacion = request.linkUbicacion;
 
             if (!string.IsNullOrEmpty(request.password))
             {
@@ -203,5 +207,7 @@ namespace Backend.Controllers
         public string? logoUrl { get; set; }
         public string? fotoUrl { get; set; }
         public string? password { get; set; }
+        public string? telefono { get; set; }
+        public string? linkUbicacion { get; set; }
     }
 }
