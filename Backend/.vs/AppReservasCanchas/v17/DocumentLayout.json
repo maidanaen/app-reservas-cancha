@@ -32,19 +32,6 @@
           "SelectedChildIndex": 3,
           "Children": [
             {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "SuperAdminController.cs",
-              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\SuperAdminController.cs",
-              "RelativeDocumentMoniker": "Backend\\Controllers\\SuperAdminController.cs",
-              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\SuperAdminController.cs",
-              "RelativeToolTip": "Backend\\Controllers\\SuperAdminController.cs",
-              "ViewState": "AgIAAH4AAAAAAAAAAAAUwNIAAAAyAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-20T14:26:59.768Z",
-              "EditorCaption": ""
-            },
-            {
               "$type": "Bookmark",
               "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
             },
@@ -54,13 +41,25 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "SuperAdminController.cs",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\SuperAdminController.cs",
+              "RelativeDocumentMoniker": "Backend\\Controllers\\SuperAdminController.cs",
+              "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\SuperAdminController.cs",
+              "RelativeToolTip": "Backend\\Controllers\\SuperAdminController.cs",
+              "ViewState": "AgIAAH4AAAAAAAAAAAAUwNIAAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-20T14:26:59.768Z"
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 0,
               "Title": "PublicoController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\PublicoController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\PublicoController.cs",
               "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\PublicoController.cs",
               "RelativeToolTip": "Backend\\Controllers\\PublicoController.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAACYAAAAdAAAAAAAAAA==",
+              "ViewState": "AgIAABgAAAAAAAAAAAAowC0AAAAfAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-02-19T21:31:29.251Z",
               "EditorCaption": ""

@@ -28,7 +28,7 @@ namespace Backend.Controllers
                 .GroupBy(c => c.Usuario)
                 .Select(g => new
                 {
-                    CClubId = g.Key.Id,
+                    ClubId = g.Key.Id,
                     NombreClub = g.Key.NombreNegocio ?? "Club Sin Nombre",
                     Telefono = g.Key.Telefono,
                     LinkUbicacion = g.Key.LinkUbicacion,

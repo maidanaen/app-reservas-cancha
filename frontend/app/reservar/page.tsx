@@ -20,7 +20,6 @@ interface Club {
   canchas: Cancha[];     
   logoUrl?: string; 
   fotoUrl?: string;
-  // 🟢 NUEVOS CAMPOS AÑADIDOS
   telefono?: string;
   linkUbicacion?: string;
 }
@@ -72,7 +71,7 @@ function ListaDeClubes() {
         : { texto: "CERRADO", color: "bg-red-500" };
   };
 
-  // 🟢 FUNCIÓN WHATSAPP
+  // FUNCIÓN WHATSAPP
   const generarLinkWhatsApp = (telefono?: string) => {
       if (!telefono) return "#";
       const limpio = telefono.replace(/\D/g, "");
@@ -133,7 +132,7 @@ function ListaDeClubes() {
                                             {club.nombreClub}
                                         </h3>
                                         
-                                        {/* 🟢 NUEVOS DATOS DE CONTACTO */}
+                                        {/*DATOS DE CONTACTO */}
                                         <div className="flex flex-col gap-1.5">
                                             {club.linkUbicacion ? (
                                                 <a 
@@ -187,7 +186,7 @@ function ListaDeClubes() {
   );
 }
 
-// 🟢 EXPORTACIÓN PRINCIPAL (Necesaria para Next.js con useSearchParams)
+// EXPORTACIÓN PRINCIPAL (Necesaria para Next.js con useSearchParams)
 export default function ReservarPage() {
   return (
     <div className="bg-slate-50 min-h-screen pt-0"> 

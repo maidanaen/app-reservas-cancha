@@ -22,7 +22,6 @@ interface Club {
   canchas: Cancha[];     
   logoUrl?: string; 
   fotoUrl?: string; 
-  // 🟢 NUEVOS CAMPOS AÑADIDOS
   telefono?: string;
   linkUbicacion?: string;
 }
@@ -74,7 +73,7 @@ export default function HomePage() {
         : { texto: "CERRADO", color: "bg-red-500" };
   };
 
-  // 🟢 FUNCIÓN WHATSAPP
+ 
   const generarLinkWhatsApp = (telefono?: string) => {
       if (!telefono) return "#";
       const limpio = telefono.replace(/\D/g, "");
@@ -185,7 +184,7 @@ export default function HomePage() {
                                             {club.nombreClub}
                                         </h3>
                                         
-                                        {/* 🟢 NUEVOS DATOS DE CONTACTO */}
+                                        {/* DATOS DE CONTACTO */}
                                         <div className="flex flex-col gap-1.5">
                                             {club.linkUbicacion ? (
                                                 <a href={club.linkUbicacion} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-slate-500 text-xs font-bold uppercase hover:text-blue-600 transition w-fit">
@@ -215,6 +214,7 @@ export default function HomePage() {
                                 </div>
 
                                 <div className="mt-auto pt-4 border-t border-slate-50">
+                                    
                                     <Link 
                                         href={`/reservar/?userId=${club.clubId}`}
                                         className="flex items-center justify-between w-full bg-slate-900 text-white py-3.5 px-6 rounded-xl font-bold hover:bg-orange-600 transition group-hover:shadow-lg group-hover:shadow-orange-500/20"
