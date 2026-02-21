@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -7,9 +7,27 @@ import ConditionalNavbar from "@/components/ConditionalNavbar";
 
 const inter = Inter({ subsets: ["latin"] });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#0f172a",
+};
 export const metadata: Metadata = {
-  title: "Nexus Sport Complex", // Aproveché para ponerle un título mejor
-  description: "Sistema de gestión de canchas deportivas",
+  title: "Nexus Sport - Reservas",
+  description: "Tu próximo partido empieza aquí.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192.png", // Android y Web
+    apple: "/icon-180.png", // iPhone exclusivo
+  },
+  //  ESTO OBLIGA A iPHONE/ANDROID A COMPORTARSE COMO APP NATIVA
+  appleWebApp: {
+    capable: true,
+    title: "Nexus Sport",
+    statusBarStyle: "black-translucent",
+  },
+  applicationName: "Nexus Sport",
 };
 
 export default function RootLayout({
