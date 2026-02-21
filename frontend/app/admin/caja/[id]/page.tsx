@@ -113,14 +113,14 @@ export default function DetalleCajaPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 print:bg-white print:p-0 font-sans">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-6 print:bg-white print:p-0 font-sans">
             
             {/* HEADER NAVEGACIÓN */}
-            <div className="max-w-4xl mx-auto flex justify-between items-center mb-8 print:hidden">
-                <Link href="/admin/caja/historial" className="flex items-center gap-2 text-gray-500 hover:text-slate-900 font-bold transition">
+            <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 mb-8 print:hidden">
+                <Link href="/admin/caja/historial" className="flex items-center gap-2 text-gray-500 hover:text-slate-900 font-bold transition self-start md:self-auto">
                     <ArrowLeft size={20}/> Volver al Historial
                 </Link>
-                <button onClick={() => window.print()} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-700 transition shadow-xl">
+                <button onClick={() => window.print()} className="w-full md:w-auto bg-slate-900 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 transition shadow-xl">
                     <Printer size={18}/> Imprimir Reporte
                 </button>
             </div>
@@ -128,14 +128,14 @@ export default function DetalleCajaPage() {
             {/* REPORTE PRINCIPAL */}
             <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden print:shadow-none print:border-none print:w-full">
                 
-                {/* ENCABEZADO */}
-                <div className="p-8 border-b border-gray-100 bg-slate-50 print:bg-white print:border-b-2 print:border-black">
-                    <div className="flex justify-between items-start">
+                {/* ENCABEZADO RESPONSIVO */}
+                <div className="p-6 md:p-8 border-b border-gray-100 bg-slate-50 print:bg-white print:border-b-2 print:border-black">
+                    <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                         <div>
-                            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">REPORTE DE CIERRE #{caja.id}</h1>
+                            <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tight">REPORTE DE CIERRE #{caja.id}</h1>
                             <p className="text-gray-500 font-medium mt-1">NEXUS SPORT - Panel Administrativo</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left md:text-right w-full md:w-auto border-t border-gray-200 md:border-none pt-4 md:pt-0">
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Recaudado (Real)</p>
                             <p className="text-4xl font-black text-slate-900">${totalReal.toLocaleString()}</p>
                         </div>
@@ -152,7 +152,7 @@ export default function DetalleCajaPage() {
                                 </p>
                             </div>
                         </div>
-                        <div className="text-gray-300 rotate-90 sm:rotate-0 print:hidden">➜</div>
+                        <div className="text-gray-300 rotate-90 sm:rotate-0 print:hidden hidden sm:block">➜</div>
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-red-100 text-red-700 rounded-lg print:hidden"><Lock size={20}/></div>
                             <div>
@@ -166,7 +166,7 @@ export default function DetalleCajaPage() {
                 </div>
 
                 {/* COMPARATIVA ARQUEO */}
-                <div className="p-8 grid md:grid-cols-2 gap-8 print:grid-cols-2 print:gap-4 print:py-4">
+                <div className="p-6 md:p-8 grid md:grid-cols-2 gap-4 md:gap-8 print:grid-cols-2 print:gap-4 print:py-4">
                     {/* EFECTIVO */}
                     <div className="bg-green-50/50 p-6 rounded-2xl border border-green-100 print:border print:border-gray-300 print:bg-white">
                         <h3 className="text-green-800 font-black uppercase tracking-wider mb-4 flex items-center gap-2"><Banknote size={20}/> Arqueo Efectivo</h3>
@@ -191,40 +191,42 @@ export default function DetalleCajaPage() {
                     </div>
                 </div>
 
-                {/* DESGLOSE POR ACTIVIDAD */}
-                <div className="px-8 pb-8">
+                {/* DESGLOSE POR ACTIVIDAD CON SCROLL */}
+                <div className="px-4 md:px-8 pb-8">
                     <h3 className="font-black text-slate-900 mb-4 flex items-center gap-2 uppercase tracking-wide border-b border-gray-100 pb-2">
                         <TrendingUp size={20}/> Desglose por Actividad
                     </h3>
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-gray-50 text-gray-500 font-bold uppercase print:bg-gray-100">
-                            <tr><th className="p-3 pl-4">Concepto</th><th className="p-3 text-right">Efectivo</th><th className="p-3 text-right">Transf.</th><th className="p-3 text-right pr-4">Total</th></tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {[
-                                { label: "Alquiler Canchas", data: resumen.detalle.canchas },
-                                { label: "Restaurante", data: resumen.detalle.mesas },
-                                { label: "Cantina Express", data: resumen.detalle.barra }
-                            ].map((row, i) => (
-                                <tr key={i}>
-                                    <td className="p-3 pl-4 font-bold text-slate-700">{row.label}</td>
-                                    <td className="p-3 text-right text-green-600">+${row.data.efectivo.toLocaleString()}</td>
-                                    <td className="p-3 text-right text-violet-600">+${row.data.transferencia.toLocaleString()}</td>
-                                    <td className="p-3 text-right pr-4 font-black text-slate-900">${(row.data.efectivo + row.data.transferencia).toLocaleString()}</td>
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-sm text-left min-w-[500px]">
+                            <thead className="bg-gray-50 text-gray-500 font-bold uppercase print:bg-gray-100">
+                                <tr><th className="p-3 pl-4 whitespace-nowrap">Concepto</th><th className="p-3 text-right whitespace-nowrap">Efectivo</th><th className="p-3 text-right whitespace-nowrap">Transf.</th><th className="p-3 text-right pr-4 whitespace-nowrap">Total</th></tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {[
+                                    { label: "Alquiler Canchas", data: resumen.detalle.canchas },
+                                    { label: "Restaurante", data: resumen.detalle.mesas },
+                                    { label: "Cantina Express", data: resumen.detalle.barra }
+                                ].map((row, i) => (
+                                    <tr key={i}>
+                                        <td className="p-3 pl-4 font-bold text-slate-700 whitespace-nowrap">{row.label}</td>
+                                        <td className="p-3 text-right text-green-600 whitespace-nowrap">+${row.data.efectivo.toLocaleString()}</td>
+                                        <td className="p-3 text-right text-violet-600 whitespace-nowrap">+${row.data.transferencia.toLocaleString()}</td>
+                                        <td className="p-3 text-right pr-4 font-black text-slate-900 whitespace-nowrap">${(row.data.efectivo + row.data.transferencia).toLocaleString()}</td>
+                                    </tr>
+                                ))}
+                                <tr className="bg-yellow-50 print:bg-gray-50">
+                                    <td className="p-3 pl-4 font-bold text-yellow-800 whitespace-nowrap">Fondo Inicial</td>
+                                    <td className="p-3 text-right font-bold text-yellow-800 whitespace-nowrap">${caja.montoInicial.toLocaleString()}</td>
+                                    <td className="p-3 text-right whitespace-nowrap">-</td>
+                                    <td className="p-3 text-right pr-4 font-bold text-yellow-800 whitespace-nowrap">${caja.montoInicial.toLocaleString()}</td>
                                 </tr>
-                            ))}
-                            <tr className="bg-yellow-50 print:bg-gray-50">
-                                <td className="p-3 pl-4 font-bold text-yellow-800">Fondo Inicial</td>
-                                <td className="p-3 text-right font-bold text-yellow-800">${caja.montoInicial.toLocaleString()}</td>
-                                <td className="p-3 text-right">-</td>
-                                <td className="p-3 text-right pr-4 font-bold text-yellow-800">${caja.montoInicial.toLocaleString()}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 {/* BOTÓN PARA VER MOVIMIENTOS */}
-                <div className="p-8 border-t border-gray-100 bg-gray-50 print:bg-white print:border-t-2 print:border-black">
+                <div className="p-6 md:p-8 border-t border-gray-100 bg-gray-50 print:bg-white print:border-t-2 print:border-black">
                     <button 
                         onClick={() => setShowModalMovimientos(true)}
                         className="w-full bg-white border-2 border-slate-200 text-slate-700 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 hover:border-slate-300 transition print:hidden"
@@ -243,78 +245,80 @@ export default function DetalleCajaPage() {
                 </div>
             </div>
 
-            {/* MODAL DE MOVIMIENTOS */}
+            {/* MODAL DE MOVIMIENTOS CON SCROLL */}
             {showModalMovimientos && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setShowModalMovimientos(false)}>
                     <div className="bg-white w-full max-w-4xl h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
                         
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                        <div className="p-4 md:p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                             <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
                                 <List size={24} className="text-gray-400"/> Detalle de Movimientos
                             </h3>
                             <button onClick={() => setShowModalMovimientos(false)} className="text-gray-400 hover:text-red-500 transition bg-white p-2 rounded-full shadow-sm"><X size={24}/></button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6">
                             <div className="border border-gray-200 rounded-2xl overflow-hidden">
-                                <table className="w-full text-left">
-                                    <thead className="bg-gray-50 text-[10px] uppercase font-bold text-gray-500 sticky top-0 z-10">
-                                        <tr>
-                                            <th className="p-4 pl-6 bg-gray-50">Hora</th>
-                                            <th className="p-4 bg-gray-50">Concepto</th>
-                                            <th className="p-4 bg-gray-50">Detalle</th>
-                                            <th className="p-4 text-center bg-gray-50">Método</th>
-                                            <th className="p-4 text-right bg-gray-50">Monto</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 text-sm">
-                                        {movimientos.map((m) => (
-                                            <tr key={m.id} className="hover:bg-slate-50 transition break-inside-avoid">
-                                                <td className="p-4 pl-6 font-mono text-xs text-gray-500 align-top">
-                                                    {new Date(m.hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-                                                </td>
-                                                <td className="p-4 font-bold text-slate-700 flex items-center gap-2 align-top">
-                                                    {getIconoConcepto(m.concepto)}{m.concepto}
-                                                </td>
-                                                <td className="p-4 text-gray-600 text-xs align-top">
-                                                    <div className="font-bold mb-1 text-slate-800">{m.detalle}</div>
-                                                    
-                                                    {m.items && m.items.length > 0 && (
-                                                        <div className="space-y-1 mt-2 pl-2 border-l-2 border-gray-100">
-                                                            {(() => {
-                                                                const esAlquiler = (n:string) => n.toLowerCase().includes('alquiler') || n.toLowerCase().includes('pista');
-                                                                const itemsRaw = m.items.filter(i => !esAlquiler(i.producto) && i.precio > 0);
-                                                                
-                                                                const agrupados = itemsRaw.reduce((acc: any[], curr) => {
-                                                                    const existe = acc.find((i:any) => i.producto === curr.producto);
-                                                                    const qty = curr.cantidad || 1;
-                                                                    if (existe) { existe.cantidad += qty; } 
-                                                                    else { acc.push({ producto: curr.producto, cantidad: qty }); }
-                                                                    return acc;
-                                                                }, []);
-
-                                                                return agrupados.map((item, idx) => (
-                                                                    <div key={idx} className="flex gap-2 text-[11px]">
-                                                                        <span className={item.cantidad > 1 ? "text-blue-600 font-bold bg-blue-50 px-1 rounded" : "text-gray-400 font-bold"}>
-                                                                            {item.cantidad}x
-                                                                        </span>
-                                                                        <span className="text-gray-600">{item.producto}</span>
-                                                                    </div>
-                                                                ));
-                                                            })()}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="p-4 text-center align-top">
-                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide border ${m.metodo.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-100' : 'bg-violet-50 text-violet-700 border-violet-100'}`}>
-                                                        {m.metodo}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 text-right font-black text-slate-900 align-top">${m.monto.toLocaleString()}</td>
+                                <div className="overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-left min-w-[800px]">
+                                        <thead className="bg-gray-50 text-[10px] uppercase font-bold text-gray-500 sticky top-0 z-10">
+                                            <tr>
+                                                <th className="p-4 pl-6 bg-gray-50 whitespace-nowrap">Hora</th>
+                                                <th className="p-4 bg-gray-50 whitespace-nowrap">Concepto</th>
+                                                <th className="p-4 bg-gray-50">Detalle</th>
+                                                <th className="p-4 text-center bg-gray-50 whitespace-nowrap">Método</th>
+                                                <th className="p-4 text-right bg-gray-50 whitespace-nowrap">Monto</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 text-sm">
+                                            {movimientos.map((m) => (
+                                                <tr key={m.id} className="hover:bg-slate-50 transition break-inside-avoid">
+                                                    <td className="p-4 pl-6 font-mono text-xs text-gray-500 align-top whitespace-nowrap">
+                                                        {new Date(m.hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                                                    </td>
+                                                    <td className="p-4 font-bold text-slate-700 flex items-center gap-2 align-top whitespace-nowrap">
+                                                        {getIconoConcepto(m.concepto)}{m.concepto}
+                                                    </td>
+                                                    <td className="p-4 text-gray-600 text-xs align-top min-w-[200px]">
+                                                        <div className="font-bold mb-1 text-slate-800">{m.detalle}</div>
+                                                        
+                                                        {m.items && m.items.length > 0 && (
+                                                            <div className="space-y-1 mt-2 pl-2 border-l-2 border-gray-100">
+                                                                {(() => {
+                                                                    const esAlquiler = (n:string) => n.toLowerCase().includes('alquiler') || n.toLowerCase().includes('pista');
+                                                                    const itemsRaw = m.items.filter(i => !esAlquiler(i.producto) && i.precio > 0);
+                                                                    
+                                                                    const agrupados = itemsRaw.reduce((acc: any[], curr) => {
+                                                                        const existe = acc.find((i:any) => i.producto === curr.producto);
+                                                                        const qty = curr.cantidad || 1;
+                                                                        if (existe) { existe.cantidad += qty; } 
+                                                                        else { acc.push({ producto: curr.producto, cantidad: qty }); }
+                                                                        return acc;
+                                                                    }, []);
+
+                                                                    return agrupados.map((item, idx) => (
+                                                                        <div key={idx} className="flex gap-2 text-[11px]">
+                                                                            <span className={item.cantidad > 1 ? "text-blue-600 font-bold bg-blue-50 px-1 rounded" : "text-gray-400 font-bold"}>
+                                                                                {item.cantidad}x
+                                                                            </span>
+                                                                            <span className="text-gray-600">{item.producto}</span>
+                                                                        </div>
+                                                                    ));
+                                                                })()}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-4 text-center align-top whitespace-nowrap">
+                                                        <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide border ${m.metodo.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-100' : 'bg-violet-50 text-violet-700 border-violet-100'}`}>
+                                                            {m.metodo}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-right font-black text-slate-900 align-top whitespace-nowrap">${m.monto.toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                         

@@ -262,41 +262,45 @@ export default function CajaPage() {
             {reporteActual && (
                 <>
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden mb-10">
-                        <div className="p-6 border-b border-gray-100">
+                        <div className="p-4 md:p-6 border-b border-gray-100">
                             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                 <TrendingUp size={20} className="text-slate-900"/> DESGLOSE POR ACTIVIDAD
                             </h3>
                         </div>
-                        <div className="p-6">
-                            <div className="grid grid-cols-4 text-xs font-bold text-gray-400 uppercase mb-4 px-4">
-                                <div>Concepto</div>
-                                <div className="text-right">Efectivo</div>
-                                <div className="text-right">Transferencia</div>
-                                <div className="text-right text-slate-800">Subtotal</div>
-                            </div>
-                            <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
-                                <span className="font-bold text-slate-700 flex items-center gap-2">Alquiler de Canchas</span>
-                                <span className="text-right font-medium text-green-600">+ ${resumen.detalle.canchas.efectivo.toLocaleString()}</span>
-                                <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.canchas.transferencia.toLocaleString()}</span>
-                                <span className="text-right font-black text-slate-900">${(resumen.detalle.canchas.efectivo + resumen.detalle.canchas.transferencia).toLocaleString()}</span>
-                            </div>
-                            <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
-                                <span className="font-bold text-slate-700">Restaurante (Mesas)</span>
-                                <span className="text-right font-medium text-green-600">+ ${resumen.detalle.mesas.efectivo.toLocaleString()}</span>
-                                <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.mesas.transferencia.toLocaleString()}</span>
-                                <span className="text-right font-black text-slate-900">${(resumen.detalle.mesas.efectivo + resumen.detalle.mesas.transferencia).toLocaleString()}</span>
-                            </div>
-                            <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
-                                <span className="font-bold text-slate-700">Cantina Express</span>
-                                <span className="text-right font-medium text-green-600">+ ${resumen.detalle.barra.efectivo.toLocaleString()}</span>
-                                <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.barra.transferencia.toLocaleString()}</span>
-                                <span className="text-right font-black text-slate-900">${(resumen.detalle.barra.efectivo + resumen.detalle.barra.transferencia).toLocaleString()}</span>
-                            </div>
-                            <div className="grid grid-cols-4 text-sm py-3 px-4 bg-yellow-50/50 rounded-lg mt-2 border border-yellow-100">
-                                <span className="font-bold text-yellow-700 flex items-center gap-2">● Fondo Inicial (Cambio)</span>
-                                <span className="text-right font-bold text-yellow-700">$ {caja.montoInicial.toLocaleString()}</span>
-                                <span className="text-right text-gray-300">-</span>
-                                <span className="text-right font-black text-yellow-800">$ {caja.montoInicial.toLocaleString()}</span>
+                        
+                        {/* 🟢 MAGIA AQUÍ: Contenedor con Scroll Horizontal para el desglose */}
+                        <div className="p-4 md:p-6 overflow-x-auto custom-scrollbar">
+                            <div className="min-w-[550px]"> {/* Fuerza el ancho mínimo para que no se aplaste */}
+                                <div className="grid grid-cols-4 text-xs font-bold text-gray-400 uppercase mb-4 px-4">
+                                    <div>Concepto</div>
+                                    <div className="text-right">Efectivo</div>
+                                    <div className="text-right">Transferencia</div>
+                                    <div className="text-right text-slate-800">Subtotal</div>
+                                </div>
+                                <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
+                                    <span className="font-bold text-slate-700 flex items-center gap-2">Alquiler de Canchas</span>
+                                    <span className="text-right font-medium text-green-600">+ ${resumen.detalle.canchas.efectivo.toLocaleString()}</span>
+                                    <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.canchas.transferencia.toLocaleString()}</span>
+                                    <span className="text-right font-black text-slate-900">${(resumen.detalle.canchas.efectivo + resumen.detalle.canchas.transferencia).toLocaleString()}</span>
+                                </div>
+                                <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
+                                    <span className="font-bold text-slate-700">Restaurante (Mesas)</span>
+                                    <span className="text-right font-medium text-green-600">+ ${resumen.detalle.mesas.efectivo.toLocaleString()}</span>
+                                    <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.mesas.transferencia.toLocaleString()}</span>
+                                    <span className="text-right font-black text-slate-900">${(resumen.detalle.mesas.efectivo + resumen.detalle.mesas.transferencia).toLocaleString()}</span>
+                                </div>
+                                <div className="grid grid-cols-4 text-sm py-3 border-b border-gray-50 px-4 hover:bg-gray-50 rounded-lg transition-colors">
+                                    <span className="font-bold text-slate-700">Cantina Express</span>
+                                    <span className="text-right font-medium text-green-600">+ ${resumen.detalle.barra.efectivo.toLocaleString()}</span>
+                                    <span className="text-right font-medium text-violet-600">+ ${resumen.detalle.barra.transferencia.toLocaleString()}</span>
+                                    <span className="text-right font-black text-slate-900">${(resumen.detalle.barra.efectivo + resumen.detalle.barra.transferencia).toLocaleString()}</span>
+                                </div>
+                                <div className="grid grid-cols-4 text-sm py-3 px-4 bg-yellow-50/50 rounded-lg mt-2 border border-yellow-100">
+                                    <span className="font-bold text-yellow-700 flex items-center gap-2">● Fondo Inicial (Cambio)</span>
+                                    <span className="text-right font-bold text-yellow-700">$ {caja.montoInicial.toLocaleString()}</span>
+                                    <span className="text-right text-yellow-300">-</span>
+                                    <span className="text-right font-black text-yellow-800">$ {caja.montoInicial.toLocaleString()}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -305,38 +309,43 @@ export default function CajaPage() {
                     <div>
                         <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2"><List size={24} className="text-gray-400"/> Movimientos del Turno</h3>
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-                            <table className="w-full text-left">
-                                <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-500 border-b border-gray-100">
-                                    <tr>
-                                        <th className="p-5 pl-8">Hora</th>
-                                        <th className="p-5">Concepto</th>
-                                        <th className="p-5">Detalle / Cliente</th>
-                                        <th className="p-5 text-center">Método</th>
-                                        <th className="p-5 text-right">Monto</th>
-                                        <th className="p-5 text-center">Ticket</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50 text-sm">
-                                    {movimientos.length === 0 ? (
-                                        <tr><td colSpan={6} className="p-10 text-center text-gray-400">No hay movimientos.</td></tr>
-                                    ) : (
-                                        movimientos.map((m: Movimiento) => (
-                                            <tr key={m.id} className="hover:bg-blue-50/30 transition group">
-                                                <td className="p-4 pl-8 font-mono text-gray-500">
-                                                    {formatearHoraLocal(m.hora)}
-                                                </td>
-                                                <td className="p-4 font-bold text-slate-700 flex items-center gap-2">{getIconoConcepto(m.concepto)}{m.concepto}</td>
-                                                <td className="p-4 text-gray-600 font-medium">{m.detalle}</td>
-                                                <td className="p-4 text-center">
-                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide border ${m.metodo.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-100' : 'bg-violet-50 text-violet-700 border-violet-100'}`}>{m.metodo}</span>
-                                                </td>
-                                                <td className="p-4 text-right font-black text-slate-900">${m.monto.toLocaleString()}</td>
-                                                <td className="p-4 text-center"><button onClick={() => setMovimientoSeleccionado(m)} className="text-gray-300 hover:text-blue-600 transition"><Eye size={18}/></button></td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                            
+                            {/* 🟢 MAGIA AQUÍ: Contenedor con Scroll Horizontal para la tabla */}
+                            <div className="overflow-x-auto custom-scrollbar">
+                                {/* Le damos un min-w a la tabla para que no se aplaste nunca */}
+                                <table className="w-full text-left min-w-[800px]">
+                                    <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-500 border-b border-gray-100">
+                                        <tr>
+                                            <th className="p-5 pl-8 whitespace-nowrap">Hora</th>
+                                            <th className="p-5 whitespace-nowrap">Concepto</th>
+                                            <th className="p-5">Detalle / Cliente</th>
+                                            <th className="p-5 text-center whitespace-nowrap">Método</th>
+                                            <th className="p-5 text-right whitespace-nowrap">Monto</th>
+                                            <th className="p-5 text-center whitespace-nowrap">Ticket</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50 text-sm">
+                                        {movimientos.length === 0 ? (
+                                            <tr><td colSpan={6} className="p-10 text-center text-gray-400">No hay movimientos.</td></tr>
+                                        ) : (
+                                            movimientos.map((m: Movimiento) => (
+                                                <tr key={m.id} className="hover:bg-blue-50/30 transition group">
+                                                    <td className="p-4 pl-8 font-mono text-gray-500 whitespace-nowrap">
+                                                        {formatearHoraLocal(m.hora)}
+                                                    </td>
+                                                    <td className="p-4 font-bold text-slate-700 flex items-center gap-2 whitespace-nowrap">{getIconoConcepto(m.concepto)}{m.concepto}</td>
+                                                    <td className="p-4 text-gray-600 font-medium min-w-[200px]">{m.detalle}</td>
+                                                    <td className="p-4 text-center whitespace-nowrap">
+                                                        <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide border ${m.metodo.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-100' : 'bg-violet-50 text-violet-700 border-violet-100'}`}>{m.metodo}</span>
+                                                    </td>
+                                                    <td className="p-4 text-right font-black text-slate-900 whitespace-nowrap">${m.monto.toLocaleString()}</td>
+                                                    <td className="p-4 text-center"><button onClick={() => setMovimientoSeleccionado(m)} className="text-gray-400 hover:text-blue-600 transition"><Eye size={20}/></button></td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </>
@@ -456,7 +465,7 @@ export default function CajaPage() {
                             <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
                                 <div className="flex justify-between items-center">
                                     <div className="flex flex-col">
-                                        <span className="text-[10px] uppercase font-bold text-gray-400">Cliente / Detalle</span>
+                                        <span className="text-[10px] uppercase font-bold text-gray-400">Detalle</span>
                                         <span className="font-bold text-slate-800 text-sm">{movimientoSeleccionado.detalle}</span>
                                     </div>
                                     <div className="text-right">

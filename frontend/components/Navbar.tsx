@@ -112,21 +112,21 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t border-gray-100 p-4 space-y-2 shadow-lg">
             {isAdmin ? (
                 <>
-                    <Link href="/admin" className="block p-3 rounded-xl bg-gray-50 font-bold">🎛️ Panel</Link>
-                    <Link href="/admin/reservas" className="block p-3 rounded-xl hover:bg-gray-50 font-bold">📅 Agenda</Link>
-                    <Link href="/admin/canchas" className="block p-3 rounded-xl hover:bg-gray-50 font-bold">🎾 Canchas</Link>
-                    <Link href="/admin/mesas" className="block p-3 rounded-xl hover:bg-gray-50 font-bold">🍽️ Mesas</Link>
-                    <Link href="/admin/cantina" className="block p-3 rounded-xl hover:bg-gray-50 font-bold">🏪 Cantina</Link>
-                    <Link href="/admin/caja" className="block p-3 rounded-xl hover:bg-gray-50 font-bold">💰 Caja</Link>
-                    <Link href="/admin/noticias" className="block p-3 rounded-xl hover:bg-gray-50 font-bold">📢 Eventos</Link>
-                    <button onClick={handleLogout} className="w-full text-left block p-3 rounded-xl bg-red-50 text-red-600 font-bold">🚪 Salir</button>
+                    <Link href="/admin" onClick={() => setMenuAbierto(false)} className="block p-3 rounded-xl bg-gray-50 font-bold">🎛️ Panel</Link>
+                    <Link href="/admin/reservas" onClick={() => setMenuAbierto(false)} className="block p-3 rounded-xl hover:bg-gray-50 font-bold">📅 Agenda</Link>
+                    <Link href="/admin/canchas" onClick={() => setMenuAbierto(false)} className="block p-3 rounded-xl hover:bg-gray-50 font-bold">🎾 Canchas</Link>
+                    <Link href="/admin/mesas" onClick={() => setMenuAbierto(false)} className="block p-3 rounded-xl hover:bg-gray-50 font-bold">🍽️ Mesas</Link>
+                    <Link href="/admin/cantina" onClick={() => setMenuAbierto(false)} className="block p-3 rounded-xl hover:bg-gray-50 font-bold">🏪 Cantina</Link>
+                    <Link href="/admin/caja" onClick={() => setMenuAbierto(false)} className="block p-3 rounded-xl hover:bg-gray-50 font-bold">💰 Caja</Link>
+                    <Link href="/admin/noticias" onClick={() => setMenuAbierto(false)} className="block p-3 rounded-xl hover:bg-gray-50 font-bold">📢 Eventos</Link>
+                    <button onClick={() => { handleLogout(); setMenuAbierto(false); }} className="w-full text-left block p-3 rounded-xl bg-red-50 text-red-600 font-bold">🚪 Salir</button>
                 </>
             ) : (
                 <>
-                    <Link href="/reservar" className="block p-3 rounded-xl bg-blue-50 text-blue-700 font-bold">📅 Reservar</Link>
-                    <Link href="/mis-reservas" className="block p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-bold">👤 Mis Turnos</Link>
-                    <Link href="/partidos" className="block p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-bold">👥 Partidos</Link>
-                    <Link href="/torneos" className="block p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-bold">🏆 Noticias</Link>
+                    <Link href="/reservar" onClick={() => setMenuAbierto(false)} className="block p-3 rounded-xl bg-blue-50 text-blue-700 font-bold">📅 Reservar</Link>
+                    <Link href="/mis-reservas" onClick={() => setMenuAbierto(false)} className="block p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-bold">👤 Mis Turnos</Link>
+                    <Link href="/partidos" onClick={() => setMenuAbierto(false)} className="block p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-bold">👥 Partidos</Link>
+                    <Link href="/torneos" onClick={() => setMenuAbierto(false)} className="block p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-bold">🏆 Noticias</Link>
                 </>
             )}
         </div>

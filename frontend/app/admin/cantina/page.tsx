@@ -260,7 +260,7 @@ export default function CantinaPage() {
     const categorias = ["Todas", "Bebidas", "Comidas", "Accesorios", "General"];
 
     return (
-        <div className="flex h-[calc(100vh-theme(spacing.24))] gap-6 font-sans relative m-4">
+        <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-theme(spacing.24))] gap-6 font-sans relative m-2 md:m-4 pb-12 lg:pb-0">
             
             {/* 🔔 NOTIFICACIÓN FLOTANTE */}
             {notificacion && (
@@ -277,17 +277,17 @@ export default function CantinaPage() {
             )}
 
             {/* IZQUIERDA: CATÁLOGO */}
-            <div className="flex-1 flex flex-col gap-6">
+            <div className="flex-1 flex flex-col gap-6 lg:overflow-hidden">
                 {/* Header */}
-                <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                    <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2"><Package className="text-blue-600"/> Cantina Express</h1>
-                    <div className="flex items-center gap-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <h1 className="text-xl md:text-2xl font-black text-slate-900 flex items-center gap-2"><Package className="text-blue-600"/> Cantina Express</h1>
+                    <div className="flex flex-wrap items-center justify-between w-full md:w-auto gap-4">
                         {/* 🟡 AVISO VISUAL DEL ESTADO DE CAJA */}
                         {cajaAbierta ? (
                             <div className="flex gap-4">
-                                <div className="flex flex-col text-right"><span className="text-[10px] font-bold text-green-600 uppercase">Efectivo</span><span className="text-xl font-black text-slate-900">${totalEfectivo.toLocaleString()}</span></div>
+                                <div className="flex flex-col text-right"><span className="text-[10px] font-bold text-green-600 uppercase">Efectivo</span><span className="text-lg md:text-xl font-black text-slate-900">${totalEfectivo.toLocaleString()}</span></div>
                                 <div className="w-px bg-gray-200"></div>
-                                <div className="flex flex-col text-right"><span className="text-[10px] font-bold text-violet-600 uppercase">Transfer</span><span className="text-xl font-black text-slate-900">${totalTransferencia.toLocaleString()}</span></div>
+                                <div className="flex flex-col text-right"><span className="text-[10px] font-bold text-violet-600 uppercase">Transfer</span><span className="text-lg md:text-xl font-black text-slate-900">${totalTransferencia.toLocaleString()}</span></div>
                             </div>
                         ) : (
                             <div className="flex items-center gap-2 bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg border border-orange-200">
@@ -296,44 +296,44 @@ export default function CantinaPage() {
                             </div>
                         )}
                         
-                        <button onClick={abrirModalNuevo} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-800 transition shadow-lg shadow-slate-200"><Plus size={16}/> <span className="hidden md:inline">Nuevo Producto</span></button>
+                        <button onClick={abrirModalNuevo} className="bg-slate-900 text-white px-4 py-3 w-full sm:w-auto justify-center rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-800 transition shadow-lg shadow-slate-200"><Plus size={16}/> <span>Nuevo Producto</span></button>
                     </div>
                 </div>
 
                 {/* Filtros */}
-                <div className="flex justify-between items-center gap-4">
-                     <div className="flex gap-2 overflow-x-auto pb-1">
+                <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+                     <div className="flex gap-2 overflow-x-auto pb-2 w-full custom-scrollbar">
                         {categorias.map(cat => (
-                            <button key={cat} onClick={() => setCategoriaActiva(cat)} className={`px-4 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap ${categoriaActiva === cat ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-gray-500 hover:bg-gray-100'}`}>{cat}</button>
+                            <button key={cat} onClick={() => setCategoriaActiva(cat)} className={`px-4 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap border ${categoriaActiva === cat ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-100'}`}>{cat}</button>
                         ))}
                     </div>
-                    <div className="relative w-64">
+                    <div className="relative w-full md:w-64 shrink-0">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                        <input type="text" placeholder="Buscar..." className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" value={filtro} onChange={(e) => setFiltro(e.target.value)}/>
+                        <input type="text" placeholder="Buscar..." className="w-full pl-10 pr-4 py-3 md:py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" value={filtro} onChange={(e) => setFiltro(e.target.value)}/>
                     </div>
                 </div>
 
                 {/* Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto pr-2 pb-20 content-start">
-                    {cargandoProductos ? <p className="col-span-full text-center text-gray-400">Cargando...</p> : productosFiltrados.map(prod => (
-                        <div key={prod.id} onClick={() => agregarAlCarrito(prod)} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition text-left flex flex-col justify-between group h-32 animate-in zoom-in-95 duration-200 relative cursor-pointer">
-                            <button onClick={(e) => abrirModalEditar(e, prod)} className="absolute top-2 right-2 p-1.5 bg-gray-100 text-gray-400 rounded-lg hover:bg-orange-100 hover:text-orange-600 transition opacity-0 group-hover:opacity-100 z-10"><Pencil size={14}/></button>
-                            <div><span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{prod.categoria}</span><h3 className="font-bold text-slate-800 leading-tight mt-1 group-hover:text-blue-600 transition line-clamp-2 pr-6">{prod.nombre}</h3></div>
-                            <div className="flex justify-between items-end mt-2"><span className="text-lg font-black text-slate-900">${prod.precio.toLocaleString()}</span><div className="bg-blue-50 text-blue-600 p-1.5 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition"><ShoppingCart size={16}/></div></div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto pr-2 pb-6 content-start flex-1 min-h-[40vh] lg:min-h-0">
+                    {cargandoProductos ? <p className="col-span-full text-center text-gray-400 font-bold py-10">Cargando productos...</p> : productosFiltrados.map(prod => (
+                        <div key={prod.id} onClick={() => agregarAlCarrito(prod)} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition text-left flex flex-col justify-between group h-32 animate-in zoom-in-95 duration-200 relative cursor-pointer active:scale-95">
+                            <button onClick={(e) => abrirModalEditar(e, prod)} className="absolute top-2 right-2 p-1.5 bg-gray-100 text-gray-400 rounded-lg hover:bg-orange-100 hover:text-orange-600 transition md:opacity-0 group-hover:opacity-100 z-10"><Pencil size={14}/></button>
+                            <div><span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{prod.categoria}</span><h3 className="font-bold text-slate-800 leading-tight mt-1 md:group-hover:text-blue-600 transition line-clamp-2 pr-6">{prod.nombre}</h3></div>
+                            <div className="flex justify-between items-end mt-2"><span className="text-lg font-black text-slate-900">${prod.precio.toLocaleString()}</span><div className="bg-blue-50 text-blue-600 p-1.5 rounded-lg md:group-hover:bg-blue-600 md:group-hover:text-white transition"><ShoppingCart size={16}/></div></div>
                         </div>
                     ))}
                 </div>
             </div>
 
             {/* DERECHA: TICKET Y COBRO */}
-            <div className="w-96 bg-white rounded-3xl shadow-xl border border-gray-200 flex flex-col overflow-hidden">
+            <div className="w-full lg:w-96 bg-white rounded-3xl shadow-xl border border-gray-200 flex flex-col overflow-hidden shrink-0 h-[60vh] lg:h-full mt-4 lg:mt-0">
                 <div className="p-5 border-b border-gray-100 bg-slate-50 flex justify-between items-center">
                     <h2 className="font-black text-slate-900 flex items-center gap-2"><ShoppingCart size={20}/> Ticket Actual</h2>
                     {carrito.length > 0 && <button onClick={() => setCarrito([])} className="text-xs font-bold text-red-500 hover:text-red-700">Vaciar</button>}
                 </div>
                 
                 {/* LISTA CARRITO */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                     {carrito.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-gray-300 space-y-2"><ShoppingCart size={48} className="opacity-20"/><p className="text-sm font-bold">Carrito vacío</p></div>
                     ) : (
@@ -351,7 +351,7 @@ export default function CantinaPage() {
                     {!modoCobro ? (
                         <div className="animate-in fade-in slide-in-from-bottom-4">
                              <div className="flex justify-between items-end mb-4"><span className="text-sm font-bold text-gray-400">Total a Pagar</span><span className="text-3xl font-black text-slate-900">${totalCarrito.toLocaleString()}</span></div>
-                             <button disabled={carrito.length === 0} onClick={iniciarCobro} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                             <button disabled={carrito.length === 0} onClick={iniciarCobro} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95">
                                 <DollarSign size={20}/> COBRAR
                              </button>
                         </div>
@@ -359,7 +359,7 @@ export default function CantinaPage() {
                         <div className="animate-in fade-in slide-in-from-bottom-4 space-y-4">
                             <div className="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
                                 <h3 className="font-bold text-slate-800 flex items-center gap-2"><Calculator size={18}/> Cerrar Venta</h3>
-                                <button onClick={() => setModoCobro(false)} className="text-xs font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded">Cancelar</button>
+                                <button onClick={() => setModoCobro(false)} className="text-xs font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded transition">Cancelar</button>
                             </div>
                             
                             <div className="bg-violet-50 p-3 rounded-xl border border-violet-100">
@@ -392,7 +392,7 @@ export default function CantinaPage() {
                             <button 
                                 disabled={procesando}
                                 onClick={confirmarCobro}
-                                className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
                             >
                                 {procesando ? "Procesando..." : "CONFIRMAR PAGO"}
                             </button>
@@ -417,7 +417,6 @@ export default function CantinaPage() {
                             </div>
                         </div>
                         <div className="mt-8 flex items-center gap-3">
-                            {/* 🟢 AQUÍ CAMBIA EL BOTÓN: AHORA ABRE EL MODAL ROJO DE CONFIRMACIÓN */}
                             {idEdicion && <button type="button" onClick={iniciarEliminacion} className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 hover:text-red-600 transition" title="Eliminar"><Trash2 size={20}/></button>}
                             
                             <div className="flex-1"></div>
@@ -428,7 +427,7 @@ export default function CantinaPage() {
                 </div>
             )}
 
-            {/* 🟢 NUEVO MODAL DE CONFIRMACIÓN DE ELIMINACIÓN (Estilo Imagen) */}
+            {/* 🟢 NUEVO MODAL DE CONFIRMACIÓN DE ELIMINACIÓN */}
             {mostrarModalEliminar && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-red-500">
