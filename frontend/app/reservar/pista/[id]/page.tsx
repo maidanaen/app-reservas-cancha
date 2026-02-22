@@ -273,7 +273,7 @@ export default function ReservarPage() {
                 <div className="md:w-7/12 p-6 md:p-8 bg-white h-full overflow-y-auto">
                     
                     {/* Filtros */}
-                    <div className="flex gap-4 mb-8 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                    <div className="flex flex-col sm:flex-row gap-4 mb-8 bg-gray-50 p-3 rounded-2xl border border-gray-100">
                         <div className="flex-1 relative">
                             <input 
                                 type="date" 

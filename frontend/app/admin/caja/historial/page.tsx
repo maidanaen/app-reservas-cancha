@@ -15,7 +15,7 @@ interface CajaCerrada {
     montoRealTransferencia: number;
     gastosRegistrados?: number;
     comentarios?: string;
-    bitacora?: string; 
+    totalGastos?: number; 
     observaciones?: string;
 }
 
@@ -89,8 +89,7 @@ export default function HistorialCajaPage() {
                                 const totalReal = caja.montoFinal + caja.montoRealTransferencia;
                                 const difTotal = totalReal - totalSistema;
                                 
-                                // ✅ Soportamos comentarios, bitacora u observaciones
-                                const textoBitacora = caja.comentarios || caja.bitacora || caja.observaciones;
+                                const textoBitacora = caja.observaciones;
 
                                 return (
                                     <tr key={caja.id} className="hover:bg-blue-50/30 transition group">
@@ -114,8 +113,9 @@ export default function HistorialCajaPage() {
 
                                         <td className="p-5 text-left max-w-[250px]">
                                             <div className="flex flex-col gap-1">
-                                                {caja.gastosRegistrados ? (
-                                                    <span className="text-[10px] font-bold text-red-600 uppercase">Gasto Extra: -${caja.gastosRegistrados}</span>
+                                                {/*  Usamos totalGastos */}
+                                                {caja.totalGastos ? (
+                                                    <span className="text-[10px] font-bold text-red-600 uppercase">Gasto Extra: -${caja.totalGastos.toLocaleString()}</span>
                                                 ) : null}
                                                 
                                                 {textoBitacora ? (

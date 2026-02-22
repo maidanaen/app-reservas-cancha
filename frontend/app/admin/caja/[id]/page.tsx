@@ -31,9 +31,8 @@ interface ReporteCaja {
         montoInicial: number;
         montoFinal?: number;            
         montoRealTransferencia?: number; 
-        // 🟢 NUEVOS CAMPOS
-        gastosRegistrados?: number;
-        comentarios?: string;
+        totalGastos?: number;
+        observaciones?: string;
     };
     resumen: {
         totalEfectivo: number;      
@@ -203,27 +202,27 @@ export default function DetalleCajaPage() {
                     </div>
                 </div>
 
-                {/* 🟢 SECCIÓN BITÁCORA Y GASTOS (NUEVA) */}
-                {((caja.gastosRegistrados && caja.gastosRegistrados > 0) || caja.comentarios) && (
+                {/* 🟢 SECCIÓN BITÁCORA Y GASTOS (CORREGIDA) */}
+                {((caja.totalGastos && caja.totalGastos > 0) || caja.observaciones) && (
                     <div className="p-6 md:p-8 bg-orange-50/50 border-t border-b border-orange-100 print:bg-white print:border-t-2 print:border-black">
                         <h3 className="text-orange-800 font-black uppercase tracking-wider mb-4 flex items-center gap-2">
                             <MessageSquare size={20}/> Observaciones y Gastos Extra
                         </h3>
                         <div className="grid md:grid-cols-2 gap-6">
-                            {caja.gastosRegistrados ? (
+                            {caja.totalGastos ? (
                                 <div className="bg-white p-4 rounded-xl border border-orange-200 shadow-sm flex items-center gap-4 print:border-gray-300">
                                     <div className="p-3 bg-red-100 text-red-600 rounded-full print:hidden"><TrendingDown size={24}/></div>
                                     <div>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase">Salidas de Caja (Gastos)</p>
-                                        <p className="text-2xl font-black text-red-600">-$ {caja.gastosRegistrados.toLocaleString()}</p>
+                                        <p className="text-2xl font-black text-red-600">-$ {caja.totalGastos.toLocaleString()}</p>
                                     </div>
                                 </div>
                             ) : <div></div>}
                             
-                            {caja.comentarios && (
+                            {caja.observaciones && (
                                 <div className="bg-white p-4 rounded-xl border border-orange-200 shadow-sm flex-1 print:border-gray-300">
                                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Notas del Operador</p>
-                                    <p className="text-sm font-medium text-slate-700 italic">"{caja.comentarios}"</p>
+                                    <p className="text-sm font-medium text-slate-700 italic">"{caja.observaciones}"</p>
                                 </div>
                             )}
                         </div>

@@ -62,8 +62,8 @@ export default function CajaPage() {
     const [arqueoTransf, setArqueoTransf] = useState("");
 
     // ESTADOS PARA LA BITÁCORA DE CIERRE
-    const [gastos, setGastos] = useState("");
-    const [comentarios, setComentarios] = useState("");
+    const [totalGastos, setTotalGastos] = useState(""); 
+    const [observaciones, setObservaciones] = useState("");
 
     // Modal Detalle
     const [movimientoSeleccionado, setMovimientoSeleccionado] = useState<Movimiento | null>(null);
@@ -137,8 +137,8 @@ export default function CajaPage() {
         const dto = { 
             efectivoReal: Number(arqueoEfectivo), 
             transferenciaReal: Number(arqueoTransf),
-            gastosRegistrados: Number(gastos), 
-            comentarios: comentarios
+            totalGastos: Number(totalGastos), // Coincide con C#
+            observaciones: observaciones
         };
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -151,7 +151,7 @@ export default function CajaPage() {
             setShowConfirmacionFinal(false); 
             
             setArqueoEfectivo(""); setArqueoTransf(""); 
-            setGastos(""); setComentarios("");
+            setTotalGastos(""); setObservaciones("");
 
             cargarDatos();
             mostrarMensaje('exito', "🔒 Caja cerrada correctamente");
@@ -411,8 +411,8 @@ export default function CajaPage() {
                                             type="number" 
                                             placeholder="0"
                                             className="w-full p-3 pl-8 text-sm font-bold bg-red-50 border border-red-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-red-700"
-                                            value={gastos} 
-                                            onChange={e => setGastos(e.target.value)}
+                                            value={totalGastos} 
+                                            onChange={e => setTotalGastos(e.target.value)}
                                         />
                                     </div>
                                     <p className="text-[10px] text-gray-400">Dinero retirado durante el turno (Proveedores, Insumos, Retiros).</p>
@@ -426,8 +426,8 @@ export default function CajaPage() {
                                         rows={3}
                                         placeholder="Ej: Faltaron $500 por error en vuelto. Se pagó hielo..."
                                         className="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-slate-500 outline-none resize-none"
-                                        value={comentarios} 
-                                        onChange={e => setComentarios(e.target.value)}
+                                        value={observaciones} 
+                                        onChange={e => setObservaciones(e.target.value)}
                                     />
                                 </div>
                             </div>
