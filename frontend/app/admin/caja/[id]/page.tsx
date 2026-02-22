@@ -186,7 +186,7 @@ export default function DetalleCajaPage() {
                 <div className="p-6 md:p-8 border-b border-gray-100 bg-slate-50 print:bg-white print:border-b-2 print:border-black">
                     <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tight">REPORTE DE CIERRE #{caja.id}</h1>
+                            <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tight">REPORTE DE CIERRE </h1>
                             <p className="text-gray-500 font-medium mt-1">NEXUS SPORT - Panel Administrativo</p>
                         </div>
                         <div className="text-left md:text-right w-full md:w-auto border-t border-gray-200 md:border-none pt-4 md:pt-0">
