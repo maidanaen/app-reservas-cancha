@@ -318,7 +318,7 @@ export default function CajaPage() {
                                         <tr>
                                             <th className="p-5 pl-8 whitespace-nowrap">Hora</th>
                                             <th className="p-5 whitespace-nowrap">Concepto</th>
-                                            <th className="p-5">Detalle / Cliente</th>
+                                            <th className="p-5">Detalle</th>
                                             <th className="p-5 text-center whitespace-nowrap">Método</th>
                                             <th className="p-5 text-right whitespace-nowrap">Monto</th>
                                             <th className="p-5 text-center whitespace-nowrap">Ticket</th>

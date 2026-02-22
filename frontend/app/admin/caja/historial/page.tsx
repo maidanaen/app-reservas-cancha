@@ -1,48 +1,60 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Eye } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, MessageSquare, ClipboardList } from "lucide-react"; // Añadí ClipboardList
 import { API_URL } from '@/utils/config';
+
 interface CajaCerrada {
     id: number;
     fechaApertura: string;
     fechaCierre: string;
     montoInicial: number;
-    
-    // Totales del Sistema (Teórico)
     totalEfectivo: number;
     totalTransferencia: number;
-    
-    // Totales Reales (Arqueo)
-    montoFinal: number; // Efectivo Real
-    montoRealTransferencia: number; // Transferencia Real
+    montoFinal: number; 
+    montoRealTransferencia: number;
+    gastosRegistrados?: number;
+    comentarios?: string;
 }
 
 export default function HistorialCajaPage() {
     const [historial, setHistorial] = useState<CajaCerrada[]>([]);
     const [cargando, setCargando] = useState(true);
 
+    // Formateo simple: Si el horario viene mal, quita el .endsWith('Z') para que use la hora del servidor tal cual
+    const formatearHoraLocal = (fechaString?: string) => {
+        if (!fechaString) return "---";
+        const fecha = new Date(fechaString);
+        return fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatearFechaLocal = (fechaString?: string) => {
+        if (!fechaString) return "---";
+        return new Date(fechaString).toLocaleDateString();
+    };
+
     useEffect(() => {
         const cargarHistorial = async () => {
-            // 🟢 1. RECUPERAR ID
             const userId = localStorage.getItem("usuarioId");
             if (!userId) return;
 
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
             try {
-                // 🟢 2. ENVIAR ID EN LA URL (Filtrar historial por dueño)
                 const res = await fetch(`${API_URL}/api/Cajas/historial?usuarioId=${userId}`);
-                if (res.ok) setHistorial(await res.json());
-            } catch (error) { console.error(error); } 
-            finally { setCargando(false); }
+                if (res.ok) {
+                    const data = await res.json();
+                    setHistorial(data);
+                }
+            } catch (error) { 
+                console.error("Error cargando historial:", error); 
+            } finally { 
+                setCargando(false); 
+            }
         };
         cargarHistorial();
     }, []);
 
     return (
         <main className="max-w-7xl mx-auto p-4 md:p-6 font-sans bg-gray-50 min-h-screen">
-            
-            {/* HEADER */}
             <div className="flex items-center gap-4 mb-8">
                 <Link href="/admin/caja" className="p-2 bg-white rounded-xl border border-gray-200 hover:bg-gray-100 transition text-slate-600">
                     <ArrowLeft size={20}/>
@@ -53,100 +65,87 @@ export default function HistorialCajaPage() {
                 </div>
             </div>
 
-            {/* TABLA CON SCROLL HORIZONTAL */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto custom-scrollbar">
-                    <table className="w-full text-left min-w-[1000px]">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left min-w-[1100px]">
                         <thead className="bg-gray-50 text-xs uppercase font-bold text-gray-400 border-b border-gray-100">
                             <tr>
-                                <th className="p-5 pl-8 whitespace-nowrap">Fecha Apertura</th>
-                                <th className="p-5 pl-8 whitespace-nowrap">Fecha Cierre</th>
-                                <th className="p-5 text-right whitespace-nowrap">Sistema (Total)</th>
-                                <th className="p-5 text-right whitespace-nowrap">Real (Arqueo)</th>
-                                <th className="p-5 text-center whitespace-nowrap">Dif. Efectivo</th>
-                                <th className="p-5 text-center whitespace-nowrap">Dif. Transf.</th>
-                                <th className="p-5 text-center whitespace-nowrap">Ver</th>
+                                <th className="p-5 pl-8">Apertura</th>
+                                <th className="p-5">Cierre</th>
+                                <th className="p-5 text-right">Sistema</th>
+                                <th className="p-5 text-right">Real (Arqueo)</th>
+                                <th className="p-5 text-center">Dif. Efectivo</th>
+                                <th className="p-5 text-center">Dif. Transf.</th>
+                                <th className="p-5 text-center">Gastos / Bitácora</th> {/* 🟢 TÍTULO CORREGIDO */}
+                                <th className="p-5 text-center">Ver</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 text-sm">
                             {cargando ? (
-                                <tr><td colSpan={7} className="p-10 text-center font-bold text-gray-400">Cargando historial...</td></tr>
-                            ) : historial.length === 0 ? (
-                                <tr><td colSpan={7} className="p-10 text-center text-gray-400">No hay cierres registrados.</td></tr>
-                            ) : (
-                                historial.map((caja) => {
-                                    const totalSistema = caja.totalEfectivo + caja.totalTransferencia;
-                                    const totalReal = caja.montoFinal + caja.montoRealTransferencia;
-                                    const difEfectivo = caja.montoFinal - caja.totalEfectivo;
-                                    const difTransf = caja.montoRealTransferencia - caja.totalTransferencia;
-                                    
-                                    return (
-                                        <tr key={caja.id} className="hover:bg-blue-50/30 transition group">
-                                            <td className="p-5 pl-8 whitespace-nowrap">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-gray-100 text-gray-500 rounded-lg">
-                                                        <Calendar size={18}/>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-slate-700">{new Date(caja.fechaApertura).toLocaleDateString()}</p>
-                                                        <p className="text-xs text-gray-400">{new Date(caja.fechaApertura).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}hs</p>
-                                                    </div>
-                                                </div>                                            
-                                            </td>
-                                            <td className="p-5 pl-8 whitespace-nowrap">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-gray-100 text-gray-500 rounded-lg">
-                                                        <Calendar size={18}/>
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-slate-700">{new Date(caja.fechaCierre).toLocaleDateString()}</p>
-                                                        <p className="text-xs text-gray-400">{new Date(caja.fechaCierre).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}hs</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            
-                                            <td className="p-5 text-right font-medium text-slate-500 whitespace-nowrap">
-                                                ${totalSistema.toLocaleString()}
-                                            </td>
-                                            
-                                            <td className="p-5 text-right font-black text-slate-900 whitespace-nowrap">
-                                                ${totalReal.toLocaleString()}
-                                            </td>
+                                <tr><td colSpan={8} className="p-10 text-center font-bold text-gray-400">Cargando historial...</td></tr>
+                            ) : historial.map((caja) => {
+                                const totalSistema = caja.totalEfectivo + caja.totalTransferencia;
+                                const totalReal = caja.montoFinal + caja.montoRealTransferencia;
+                                const difEfectivo = caja.montoFinal - caja.totalEfectivo;
+                                const difTransf = caja.montoRealTransferencia - caja.totalTransferencia;
+                                
+                                return (
+                                    <tr key={caja.id} className="hover:bg-blue-50/30 transition group">
+                                        {/* APERTURA */}
+                                        <td className="p-5 pl-8">
+                                            <p className="font-bold text-slate-700">{formatearFechaLocal(caja.fechaApertura)}</p>
+                                            <p className="text-xs text-gray-400">{formatearHoraLocal(caja.fechaApertura)}hs</p>
+                                        </td>
+                                        {/* CIERRE */}
+                                        <td className="p-5">
+                                            <p className="font-bold text-slate-700">{formatearFechaLocal(caja.fechaCierre)}</p>
+                                            <p className="text-xs text-gray-400">{formatearHoraLocal(caja.fechaCierre)}hs</p>
+                                        </td>
+                                        
+                                        <td className="p-5 text-right text-slate-500">${totalSistema.toLocaleString()}</td>
+                                        <td className="p-5 text-right font-black text-slate-900">${totalReal.toLocaleString()}</td>
 
-                                            {/* DIFERENCIA EFECTIVO */}
-                                            <td className="p-5 text-center whitespace-nowrap">
-                                                <span className={`px-3 py-1 rounded-lg text-xs font-black border ${
-                                                    difEfectivo === 0 ? 'bg-gray-100 text-gray-500 border-transparent' :
-                                                    difEfectivo > 0 ? 'bg-green-100 text-green-700 border-green-200' :
-                                                    'bg-red-100 text-red-600 border-red-200'
-                                                }`}>
-                                                    {difEfectivo > 0 ? '+' : ''}{difEfectivo.toLocaleString()}
-                                                </span>
-                                            </td>
+                                        {/* DIFERENCIAS */}
+                                        <td className="p-5 text-center">
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${difEfectivo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {difEfectivo > 0 ? '+' : ''}{difEfectivo.toLocaleString()}
+                                            </span>
+                                        </td>
+                                        <td className="p-5 text-center">
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${difTransf >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {difTransf > 0 ? '+' : ''}{difTransf.toLocaleString()}
+                                            </span>
+                                        </td>
 
-                                            {/* DIFERENCIA TRANSFERENCIA */}
-                                            <td className="p-5 text-center whitespace-nowrap">
-                                                <span className={`px-3 py-1 rounded-lg text-xs font-black border ${
-                                                    difTransf === 0 ? 'bg-gray-100 text-gray-500 border-transparent' :
-                                                    difTransf > 0 ? 'bg-green-100 text-green-700 border-green-200' :
-                                                    'bg-red-100 text-red-600 border-red-200'
-                                                }`}>
-                                                    {difTransf > 0 ? '+' : ''}{difTransf.toLocaleString()}
-                                                </span>
-                                            </td>
+                                        {/* 🟢 COLUMNA DE BITÁCORA / GASTOS */}
+                                        <td className="p-5 text-center">
+                                            <div className="flex flex-col items-center gap-1">
+                                                {caja.gastosRegistrados ? (
+                                                    <span className="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded border border-red-100">
+                                                        Gastos: ${caja.gastosRegistrados}
+                                                    </span>
+                                                ) : null}
+                                                {caja.comentarios ? (
+                                                    <div className="flex items-center gap-1 text-orange-500" title={caja.comentarios}>
+                                                        <MessageSquare size={14} />
+                                                        <span className="text-[10px] font-medium">Con Bitácora</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-300">-</span>
+                                                )}
+                                            </div>
+                                        </td>
 
-                                            {/* BOTÓN VER DETALLE */}
-                                            <td className="p-5 text-center whitespace-nowrap">
-                                                <Link href={`/admin/caja/${caja.id}`}>
-                                                    <button className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-slate-900 hover:text-white transition shadow-sm text-gray-400">
-                                                        <Eye size={18}/>
-                                                    </button>
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
+                                        <td className="p-5 text-center">
+                                            <Link href={`/admin/caja/${caja.id}`}>
+                                                <button className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-slate-900 hover:text-white transition">
+                                                    <Eye size={18}/>
+                                                </button>
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

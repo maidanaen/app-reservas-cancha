@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Printer, Unlock, Lock, Banknote, Smartphone, Calendar, Activity, Utensils, ShoppingBag, List, X, TrendingUp } from "lucide-react";
+import { ArrowLeft, Printer, Unlock, Lock, Banknote, Smartphone, Calendar, Activity, Utensils, ShoppingBag, List, X, TrendingUp, MessageSquare, TrendingDown } from "lucide-react";
 import { API_URL } from '@/utils/config';
+
 // --- INTERFACES ---
 interface DetalleMetodos {
     efectivo: number;
@@ -30,6 +31,9 @@ interface ReporteCaja {
         montoInicial: number;
         montoFinal?: number;            
         montoRealTransferencia?: number; 
+        // 🟢 NUEVOS CAMPOS
+        gastosRegistrados?: number;
+        comentarios?: string;
     };
     resumen: {
         totalEfectivo: number;      
@@ -52,13 +56,24 @@ export default function DetalleCajaPage() {
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState("");
     
-    // Estado para el Modal de Movimientos
     const [showModalMovimientos, setShowModalMovimientos] = useState(false);
+
+    // 🟢 FUNCIONES PARA CORREGIR ZONA HORARIA
+    const formatearHoraLocal = (fechaString?: string) => {
+        if (!fechaString) return "---";
+        const utcString = fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`;
+        return new Date(utcString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatearFechaLocal = (fechaString?: string) => {
+        if (!fechaString) return "---";
+        const utcString = fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`;
+        return new Date(utcString).toLocaleDateString();
+    };
 
     useEffect(() => {
         if (!id) return;
         const cargar = async () => {
-            // 🟢 1. RECUPERAR ID
             const userId = localStorage.getItem("usuarioId");
             if (!userId) {
                 setError("Sesión no válida");
@@ -68,7 +83,6 @@ export default function DetalleCajaPage() {
 
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
             try {
-                // 🟢 2. ENVIAR ID EN URL (Para verificar que la caja es mía)
                 const res = await fetch(`${API_URL}/api/Cajas/${id}?usuarioId=${userId}`);
                 
                 if (res.ok) {
@@ -148,7 +162,7 @@ export default function DetalleCajaPage() {
                             <div>
                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-wide">Inicio</p>
                                 <p className="text-sm font-bold text-slate-900">
-                                    {new Date(caja.fechaApertura).toLocaleDateString()} {new Date(caja.fechaApertura).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}hs
+                                    {formatearFechaLocal(caja.fechaApertura)} {formatearHoraLocal(caja.fechaApertura)}hs
                                 </p>
                             </div>
                         </div>
@@ -158,7 +172,7 @@ export default function DetalleCajaPage() {
                             <div>
                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-wide">Cierre</p>
                                 <p className="text-sm font-bold text-slate-900">
-                                    {caja.fechaCierre ? `${new Date(caja.fechaCierre).toLocaleDateString()} ${new Date(caja.fechaCierre).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}hs` : "---"}
+                                    {caja.fechaCierre ? `${formatearFechaLocal(caja.fechaCierre)} ${formatearHoraLocal(caja.fechaCierre)}hs` : "---"}
                                 </p>
                             </div>
                         </div>
@@ -167,7 +181,6 @@ export default function DetalleCajaPage() {
 
                 {/* COMPARATIVA ARQUEO */}
                 <div className="p-6 md:p-8 grid md:grid-cols-2 gap-4 md:gap-8 print:grid-cols-2 print:gap-4 print:py-4">
-                    {/* EFECTIVO */}
                     <div className="bg-green-50/50 p-6 rounded-2xl border border-green-100 print:border print:border-gray-300 print:bg-white">
                         <h3 className="text-green-800 font-black uppercase tracking-wider mb-4 flex items-center gap-2"><Banknote size={20}/> Arqueo Efectivo</h3>
                         <div className="space-y-2 text-sm">
@@ -178,7 +191,6 @@ export default function DetalleCajaPage() {
                             </div>
                         </div>
                     </div>
-                    {/* TRANSFERENCIA */}
                     <div className="bg-violet-50/50 p-6 rounded-2xl border border-violet-100 print:border print:border-gray-300 print:bg-white">
                         <h3 className="text-violet-800 font-black uppercase tracking-wider mb-4 flex items-center gap-2"><Smartphone size={20}/> Banco / MP</h3>
                         <div className="space-y-2 text-sm">
@@ -191,8 +203,35 @@ export default function DetalleCajaPage() {
                     </div>
                 </div>
 
+                {/* 🟢 SECCIÓN BITÁCORA Y GASTOS (NUEVA) */}
+                {((caja.gastosRegistrados && caja.gastosRegistrados > 0) || caja.comentarios) && (
+                    <div className="p-6 md:p-8 bg-orange-50/50 border-t border-b border-orange-100 print:bg-white print:border-t-2 print:border-black">
+                        <h3 className="text-orange-800 font-black uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <MessageSquare size={20}/> Observaciones y Gastos Extra
+                        </h3>
+                        <div className="grid md:grid-cols-2 gap-6">
+                            {caja.gastosRegistrados ? (
+                                <div className="bg-white p-4 rounded-xl border border-orange-200 shadow-sm flex items-center gap-4 print:border-gray-300">
+                                    <div className="p-3 bg-red-100 text-red-600 rounded-full print:hidden"><TrendingDown size={24}/></div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase">Salidas de Caja (Gastos)</p>
+                                        <p className="text-2xl font-black text-red-600">-$ {caja.gastosRegistrados.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            ) : <div></div>}
+                            
+                            {caja.comentarios && (
+                                <div className="bg-white p-4 rounded-xl border border-orange-200 shadow-sm flex-1 print:border-gray-300">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Notas del Operador</p>
+                                    <p className="text-sm font-medium text-slate-700 italic">"{caja.comentarios}"</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* DESGLOSE POR ACTIVIDAD CON SCROLL */}
-                <div className="px-4 md:px-8 pb-8">
+                <div className="px-4 md:px-8 py-8">
                     <h3 className="font-black text-slate-900 mb-4 flex items-center gap-2 uppercase tracking-wide border-b border-gray-100 pb-2">
                         <TrendingUp size={20}/> Desglose por Actividad
                     </h3>
@@ -245,7 +284,7 @@ export default function DetalleCajaPage() {
                 </div>
             </div>
 
-            {/* MODAL DE MOVIMIENTOS CON SCROLL */}
+            {/* MODAL DE MOVIMIENTOS CON SCROLL Y HORA CORREGIDA */}
             {showModalMovimientos && (
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setShowModalMovimientos(false)}>
                     <div className="bg-white w-full max-w-4xl h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
@@ -274,7 +313,7 @@ export default function DetalleCajaPage() {
                                             {movimientos.map((m) => (
                                                 <tr key={m.id} className="hover:bg-slate-50 transition break-inside-avoid">
                                                     <td className="p-4 pl-6 font-mono text-xs text-gray-500 align-top whitespace-nowrap">
-                                                        {new Date(m.hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                                                        {formatearHoraLocal(m.hora)}hs
                                                     </td>
                                                     <td className="p-4 font-bold text-slate-700 flex items-center gap-2 align-top whitespace-nowrap">
                                                         {getIconoConcepto(m.concepto)}{m.concepto}

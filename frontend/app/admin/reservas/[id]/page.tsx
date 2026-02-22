@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { 
     ArrowLeft, Save, Plus, Trash2, DollarSign, Wallet, User, 
     ShoppingBag, Beer, CheckCircle, Calculator, Users, Search, 
-    AlertCircle, X // 🟢 Iconos nuevos para notificaciones
+    AlertCircle, X 
 } from "lucide-react";
 import { API_URL } from '@/utils/config';
 
@@ -55,6 +55,10 @@ export default function DetalleReservaPage() {
 
   const [sugerencias, setSugerencias] = useState<Producto[]>([]);
   const [mostrarMenu, setMostrarMenu] = useState(false);
+
+  // 🟢 ESTADOS MODAL ELIMINAR
+  const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
+  const [consumoAEliminar, setConsumoAEliminar] = useState<number | null>(null);
 
   // 🟢 SISTEMA DE NOTIFICACIONES (TOAST)
   const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
@@ -128,7 +132,6 @@ export default function DetalleReservaPage() {
         });
 
         if (res.ok) {
-            // 🟢 Usamos la notificación bonita en lugar de alert()
             if (!reservaActualizada) mostrarMensaje('exito', "✅ Caja y Pagos actualizados correctamente"); 
             cargarDatos();
         } else {
@@ -179,7 +182,6 @@ export default function DetalleReservaPage() {
               body: JSON.stringify(consumoData)
           });
 
-          // 🟢 Notificación de éxito
           mostrarMensaje('exito', `Cobro registrado a ${jugador}`);
           await cargarDatos();
 
@@ -235,11 +237,25 @@ export default function DetalleReservaPage() {
       postConsumo(nombreItem, parte, jugador);
   };
 
-  const borrarConsumo = async (consumoId: number) => {
-    if(!confirm("¿Eliminar este ítem?")) return;
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    await fetch(`${API_URL}/api/Consumos/${consumoId}`, { method: "DELETE" });
-    cargarDatos();
+  // 🟢 NUEVAS FUNCIONES PARA EL MODAL DE ELIMINAR
+  const iniciarEliminacion = (consumoId: number) => {
+      setConsumoAEliminar(consumoId);
+      setMostrarModalEliminar(true);
+  };
+
+  const confirmarEliminacion = async () => {
+      if (!consumoAEliminar) return;
+      try {
+          process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+          await fetch(`${API_URL}/api/Consumos/${consumoAEliminar}`, { method: "DELETE" });
+          mostrarMensaje('exito', '🗑️ Ítem eliminado correctamente.');
+          cargarDatos();
+      } catch (error) {
+          mostrarMensaje('error', 'No se pudo eliminar el ítem.');
+      } finally {
+          setMostrarModalEliminar(false);
+          setConsumoAEliminar(null);
+      }
   };
 
   const cargarParaJugador = (nombre: string) => {
@@ -521,7 +537,7 @@ export default function DetalleReservaPage() {
                                             </span>
                                             <div className="flex items-center gap-4">
                                                 <span className="text-gray-900 font-bold">${item.precio}</span>
-                                                <button onClick={() => borrarConsumo(item.id)} className="text-gray-300 hover:text-red-500 p-1"><Trash2 size={14}/></button>
+                                                <button onClick={() => iniciarEliminacion(item.id)} className="text-gray-300 hover:text-red-500 p-1 transition"><Trash2 size={14}/></button>
                                             </div>
                                         </div>
                                     ))}
@@ -532,8 +548,25 @@ export default function DetalleReservaPage() {
                 )}
             </div>
         </div>
-
       </div>
+
+      {/* 🟢 NUEVO MODAL DE CONFIRMACIÓN DE ELIMINACIÓN */}
+      {mostrarModalEliminar && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+              <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-red-500">
+                  <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+                      <Trash2 size={32}/>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 mb-2">¿Eliminar Ítem?</h3>
+                  <p className="text-gray-500 mb-6 text-sm">Estás a punto de borrar este consumo de la cuenta. Esta acción descontará el precio del total.</p>
+                  <div className="flex gap-3">
+                      <button onClick={() => setMostrarModalEliminar(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                      <button onClick={confirmarEliminacion} className="flex-1 py-3 text-white font-bold bg-red-600 hover:bg-red-700 rounded-xl shadow-lg transition">Sí, Borrar</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
     </main>
   );
 }
