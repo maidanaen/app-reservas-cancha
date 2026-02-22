@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Eye, MessageSquare, AlertCircle } from "lucide-react";
+import { ArrowLeft, Eye, MessageSquare } from "lucide-react";
 import { API_URL } from '@/utils/config';
 
 interface CajaCerrada {
@@ -14,7 +14,6 @@ interface CajaCerrada {
     montoFinal: number; 
     montoRealTransferencia: number;
     gastosRegistrados?: number;
-    // Aseguramos que soporte ambos nombres posibles de la base de datos
     comentarios?: string;
     bitacora?: string; 
     observaciones?: string;
@@ -24,16 +23,17 @@ export default function HistorialCajaPage() {
     const [historial, setHistorial] = useState<CajaCerrada[]>([]);
     const [cargando, setCargando] = useState(true);
 
-    // ✅ HORARIOS CORREGIDOS (Igual que en tu reporte de cierre)
+    // ✅ LÓGICA DE TIEMPO IGUAL A TU REPORTE DETALLADO
     const formatearHoraLocal = (fechaString?: string) => {
         if (!fechaString) return "---";
-        const fecha = new Date(fechaString);
-        return fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        const utcString = fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`;
+        return new Date(utcString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     };
 
     const formatearFechaLocal = (fechaString?: string) => {
         if (!fechaString) return "---";
-        return new Date(fechaString).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const utcString = fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`;
+        return new Date(utcString).toLocaleDateString();
     };
 
     useEffect(() => {
@@ -57,7 +57,6 @@ export default function HistorialCajaPage() {
 
     return (
         <main className="max-w-7xl mx-auto p-4 md:p-6 font-sans bg-gray-50 min-h-screen">
-            {/* HEADER */}
             <div className="flex items-center gap-4 mb-8">
                 <Link href="/admin/caja" className="p-2 bg-white rounded-xl border border-gray-200 hover:bg-gray-100 transition text-slate-600">
                     <ArrowLeft size={20}/>
@@ -78,7 +77,7 @@ export default function HistorialCajaPage() {
                                 <th className="p-5 text-right">Sistema</th>
                                 <th className="p-5 text-right">Arqueo Real</th>
                                 <th className="p-5 text-center">Diferencias</th>
-                                <th className="p-5 text-left">Bitácora / Comentarios</th> {/* 🟢 COLUMNA AMPLIADA */}
+                                <th className="p-5 text-left">Bitácora / Comentarios</th>
                                 <th className="p-5 text-center">Ver</th>
                             </tr>
                         </thead>
@@ -90,7 +89,7 @@ export default function HistorialCajaPage() {
                                 const totalReal = caja.montoFinal + caja.montoRealTransferencia;
                                 const difTotal = totalReal - totalSistema;
                                 
-                                // ✅ Detectar el texto de la bitácora sin importar el nombre del campo
+                                // ✅ Soportamos comentarios, bitacora u observaciones
                                 const textoBitacora = caja.comentarios || caja.bitacora || caja.observaciones;
 
                                 return (
@@ -113,11 +112,10 @@ export default function HistorialCajaPage() {
                                             </span>
                                         </td>
 
-                                        {/* 🟢 BITÁCORA VISIBLE DIRECTAMENTE EN LA TABLA */}
                                         <td className="p-5 text-left max-w-[250px]">
                                             <div className="flex flex-col gap-1">
                                                 {caja.gastosRegistrados ? (
-                                                    <span className="text-[10px] font-bold text-red-600">Gastos: -${caja.gastosRegistrados}</span>
+                                                    <span className="text-[10px] font-bold text-red-600 uppercase">Gasto Extra: -${caja.gastosRegistrados}</span>
                                                 ) : null}
                                                 
                                                 {textoBitacora ? (
@@ -135,7 +133,7 @@ export default function HistorialCajaPage() {
 
                                         <td className="p-5 text-center">
                                             <Link href={`/admin/caja/${caja.id}`}>
-                                                <button className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-slate-900 hover:text-white transition shadow-sm group-hover:border-slate-300">
+                                                <button className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-slate-900 hover:text-white transition shadow-sm">
                                                     <Eye size={18}/>
                                                 </button>
                                             </Link>
