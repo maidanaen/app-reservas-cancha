@@ -254,9 +254,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-slate-50 py-10 text-center border-t border-slate-200">
-            <p className="text-slate-400 font-bold text-sm">© 2026 NEXUS SPORT. Hecho con pasión en San Luis del Palmar, Corrientes.</p>
+      {/* FOOTER ACTUALIZADO */}
+      <footer className="bg-slate-50 py-12 text-center border-t border-slate-200">
+          <div className="max-w-6xl mx-auto px-6 flex flex-col items-center gap-4">
+            
+            {/* Texto Principal */}
+            <p className="text-slate-400 font-bold text-sm tracking-wide">
+              © 2026 NEXUS SPORT. Hecho con pasión en San Luis del Palmar, Corrientes.
+            </p>
+
+            {/* Botón de Acceso Admin - Discreto y Profesional */}
+            <Link 
+              href="/admin" 
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-400 text-[11px] font-black uppercase tracking-tighter hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all duration-300 group"
+            >
+              <Zap size={12} className="group-hover:fill-orange-500 group-hover:text-orange-500 transition-colors"/>
+              Acceso Administrativo
+            </Link>
+
+          </div>
       </footer>
     </div>
   );
