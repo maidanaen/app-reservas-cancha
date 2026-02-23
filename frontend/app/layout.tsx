@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-// 👇 CAMBIO 1: Importamos el Condicional en lugar del Navbar directo
 import ConditionalNavbar from "@/components/ConditionalNavbar"; 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -13,15 +12,40 @@ export const viewport: Viewport = {
   maximumScale: 1,
   themeColor: "#0f172a",
 };
+
 export const metadata: Metadata = {
   title: "Nexus Sport - Reservas",
-  description: "Tu próximo partido empieza aquí.",
+  description: "Administra tu cantina y reservas de forma rápida y profesional.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon-192.png", // Android y Web
-    apple: "/icon-180.png", // iPhone exclusivo
+    icon: "/icon-192.png", 
+    apple: "/icon-180.png", 
   },
-  //  ESTO OBLIGA A iPHONE/ANDROID A COMPORTARSE COMO APP NATIVA
+  // --- ETIQUETAS PARA COMPARTIR (LOGO EN WHATSAPP/REDES) ---
+  openGraph: {
+    title: "Nexus Sport - Gestión Deportiva",
+    description: "Tu próximo partido empieza aquí. Control de turnos y cantina.",
+    url: "https://nexussport.vercel.app",
+    siteName: "Nexus Sport",
+    images: [
+      {
+        url: "https://nexussport.vercel.app/opengraph-image.png", // Asegúrate que este archivo exista en /public
+        width: 1200,
+        height: 630,
+        alt: "Nexus Sport Logo Preview",
+      },
+    ],
+    locale: "es_AR",
+    type: "website",
+  },
+  // --- CONFIGURACIÓN TWITTER/X ---
+  twitter: {
+    card: "summary_large_image",
+    title: "Nexus Sport",
+    description: "Gestión inteligente para complejos deportivos.",
+    images: ["https://nexussport.vercel.app/opengraph-image.png"],
+  },
+  // --- COMPORTAMIENTO APP NATIVA ---
   appleWebApp: {
     capable: true,
     title: "Nexus Sport",
@@ -36,15 +60,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-       className={inter.className} style={{ backgroundColor: 'white' }}
-      >
+    <html lang="es" suppressHydrationWarning>
+      <body className={inter.className} style={{ backgroundColor: 'white' }}>
         <Providers>
-        {/* 👇 CAMBIO 2: Usamos el componente inteligente */}
-        <ConditionalNavbar />
-        
-        {children}
+          <ConditionalNavbar />
+          {children}
         </Providers>
       </body>
     </html>
