@@ -71,7 +71,7 @@ export default function LoginPage() {
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20}/>
                     <input 
                         type="text" 
-                        placeholder="Ej: Usuarionuevo" 
+                        placeholder="Ej: UsuarioNuevo" 
                         className="w-full pl-12 p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition font-bold text-slate-900"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}

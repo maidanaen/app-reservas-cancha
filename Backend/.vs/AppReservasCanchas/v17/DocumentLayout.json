@@ -7,6 +7,9 @@
       "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\cajascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{E4D3E07F-E3A7-4055-8D48-7ECEC9BD375B}|..\\Infrastructure\\Infrastructure.csproj|d:\\appreservascanchas\\infrastructure\\infrastructure.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\publicocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\publicocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -29,7 +32,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 5,
           "Children": [
             {
               "$type": "Bookmark",
@@ -41,7 +44,19 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
+              "Title": "Infrastructure",
+              "DocumentMoniker": "D:\\AppReservasCanchas\\Infrastructure\\Infrastructure.csproj",
+              "RelativeDocumentMoniker": "..\\Infrastructure\\Infrastructure.csproj",
+              "ToolTip": "D:\\AppReservasCanchas\\Infrastructure\\Infrastructure.csproj",
+              "RelativeToolTip": "..\\Infrastructure\\Infrastructure.csproj",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-02-25T03:12:21.374Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "SuperAdminController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\SuperAdminController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\SuperAdminController.cs",
@@ -53,7 +68,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "PublicoController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\PublicoController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\PublicoController.cs",
@@ -61,8 +76,7 @@
               "RelativeToolTip": "Backend\\Controllers\\PublicoController.cs",
               "ViewState": "AgIAABUAAAAAAAAAAAAowC0AAAAfAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-19T21:31:29.251Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-19T21:31:29.251Z"
             },
             {
               "$type": "Document",
@@ -72,14 +86,14 @@
               "RelativeDocumentMoniker": "Backend\\Controllers\\CajasController.cs",
               "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\CajasController.cs",
               "RelativeToolTip": "Backend\\Controllers\\CajasController.cs",
-              "ViewState": "AgIAAEcAAAAAAAAAAAAuwNIAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAJ8AAAAAAAAAAAAkwNIAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-02-19T18:16:07.773Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "Reserva.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Domain\\Entities\\Reserva.cs",
               "RelativeDocumentMoniker": "..\\Domain\\Entities\\Reserva.cs",
@@ -91,7 +105,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "ReservasController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\ReservasController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\ReservasController.cs",

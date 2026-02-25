@@ -3,16 +3,16 @@
   "WorkspaceRootPath": "D:\\AppReservasCanchas\\Backend\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\cajascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\cajascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\publicocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\publicocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\superadmincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\superadmincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\cajascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|solutionrelative:backend\\controllers\\cajascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CF1C45A8-C993-4E22-86B5-7A477D225EB9}|Backend\\Backend.csproj|d:\\appreservascanchas\\backend\\backend\\controllers\\reservascontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -29,7 +29,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Bookmark",
@@ -41,7 +41,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "SuperAdminController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\SuperAdminController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\SuperAdminController.cs",
@@ -53,7 +53,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "PublicoController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\PublicoController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\PublicoController.cs",
@@ -61,20 +61,20 @@
               "RelativeToolTip": "Backend\\Controllers\\PublicoController.cs",
               "ViewState": "AgIAABUAAAAAAAAAAAAowC0AAAAfAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-19T21:31:29.251Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-19T21:31:29.251Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "CajasController.cs",
               "DocumentMoniker": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\CajasController.cs",
               "RelativeDocumentMoniker": "Backend\\Controllers\\CajasController.cs",
               "ToolTip": "D:\\AppReservasCanchas\\Backend\\Backend\\Controllers\\CajasController.cs",
               "RelativeToolTip": "Backend\\Controllers\\CajasController.cs",
-              "ViewState": "AgIAAKgAAAAAAAAAAAAkwNIAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAEcAAAAAAAAAAAAuwNIAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-19T18:16:07.773Z"
+              "WhenOpened": "2026-02-19T18:16:07.773Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
