@@ -21,14 +21,27 @@ namespace Backend.Controllers
 
         // GET: api/Productos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Producto>>> GetProductos()
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<Producto>>> GetProductos([FromQuery] int? usuarioId)
         {
-            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            if (usuarioId == 0) return Unauthorized();
+            // 1. Si se pasa usuarioId (público), mostramos los productos de ese club
+            if (usuarioId.HasValue && usuarioId.Value > 0)
+            {
+                return await _context.Productos
+                    .Where(p => p.Activo && p.UsuarioId == usuarioId.Value)
+                    .ToListAsync();
+            }
 
-            return await _context.Productos
-                .Where(p => p.Activo && p.UsuarioId == usuarioId) //  SOLO SUS PRODUCTOS
-                .ToListAsync();
+            // 2. Si no, usamos el token (Admin)
+            int tokenUsuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (tokenUsuarioId > 0)
+            {
+                return await _context.Productos
+                    .Where(p => p.Activo && p.UsuarioId == tokenUsuarioId) 
+                    .ToListAsync();
+            }
+
+            return Unauthorized("Debe especificar un usuarioId o estar autenticado.");
         }
 
         // POST: api/Productos

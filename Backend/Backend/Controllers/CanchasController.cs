@@ -19,19 +19,27 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Cancha>>> ObtenerTodas()
+        [AllowAnonymous]
+        public async Task<ActionResult<List<Cancha>>> ObtenerTodas([FromQuery] int? usuarioId)
         {
-            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            if (usuarioId <= 0)
+            // 1. Si se proporciona usuarioId en la query, devolvemos las canchas de ese club (Público)
+            if (usuarioId.HasValue && usuarioId.Value > 0)
             {
-                return Unauthorized("⚠️ Error de seguridad: Token inválido.");
+                var todasLasCanchas = await _repository.GetAllAsync();
+                var canchasDelClub = todasLasCanchas.Where(c => c.UsuarioId == usuarioId.Value).ToList();
+                return Ok(canchasDelClub);
             }
 
-            // Traemos todas y filtramos (Idealmente esto se hace en el repositorio, pero así funciona rápido)
-            var todasLasCanchas = await _repository.GetAllAsync();
-            var misCanchas = todasLasCanchas.Where(c => c.UsuarioId == usuarioId).ToList();
+            // 2. Si no hay query param, intentamos obtener el ID del usuario autenticado (Panel Admin)
+            int tokenUsuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (tokenUsuarioId > 0)
+            {
+                var todasLasCanchas = await _repository.GetAllAsync();
+                var misCanchas = todasLasCanchas.Where(c => c.UsuarioId == tokenUsuarioId).ToList();
+                return Ok(misCanchas);
+            }
 
-            return Ok(misCanchas);
+            return Unauthorized("⚠️ No se especificó un club y no hay un token válido.");
         }
 
         [HttpPost]
@@ -52,6 +60,7 @@ namespace Backend.Controllers
 
         // GET: api/Canchas/5
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<ActionResult<Cancha>> ObtenerPorId(int id)
         {
             var cancha = await _repository.GetByIdAsync(id);

@@ -53,7 +53,18 @@ namespace Backend.Controllers
             if (metodo == "EFECTIVO") reserva.CobradoEfectivo += montoAPagar;
             else if (metodo == "TRANSFERENCIA") reserva.CobradoTransferencia += montoAPagar;
 
-            // 5. Marcamos el consumo como pagado
+            // 5. Vínculo con Caja: Si la reserva no tiene Caja asignada aún, buscamos la caja abierta del club
+            if (reserva.CajaId == null)
+            {
+                var cajaAbierta = await _context.Cajas
+                    .FirstOrDefaultAsync(c => c.UsuarioId == reserva.UsuarioId && c.FechaCierre == null);
+                if (cajaAbierta != null)
+                {
+                    reserva.CajaId = cajaAbierta.Id;
+                }
+            }
+
+            // 6. Marcamos el consumo como pagado
             consumo.MetodoPago = metodo;
 
             await _context.SaveChangesAsync();

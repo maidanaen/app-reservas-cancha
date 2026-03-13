@@ -67,9 +67,11 @@ export default function ReservarPage() {
 
   // 1. Cargar Cancha
   useEffect(() => {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     fetch(`${API_URL}/api/Canchas/${id}`)
-      .then((res) => res.json())
+      .then((res) => {
+          if (!res.ok) throw new Error("Error al obtener la cancha");
+          return res.json();
+      })
       .then((data) => setCancha(data))
       .catch((err) => console.error(err));
   }, [id]);
@@ -77,11 +79,13 @@ export default function ReservarPage() {
   // 2. Cargar Disponibilidad
   useEffect(() => {
     if (id && fechaSeleccionada) {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         fetch(`${API_URL}/api/Reservas/ocupadas?canchaId=${id}&fecha=${fechaSeleccionada}`)
-            .then((res) => res.json())
-            .then((data: string[]) => {
-                setHorariosOcupados(data); 
+            .then((res) => {
+                if (!res.ok) throw new Error("Error al cargar disponibilidad");
+                return res.json();
+            })
+            .then((data) => {
+                if (Array.isArray(data)) setHorariosOcupados(data);
             })
             .catch((err) => {
                 console.error(err);

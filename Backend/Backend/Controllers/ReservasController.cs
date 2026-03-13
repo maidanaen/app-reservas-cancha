@@ -356,6 +356,7 @@ namespace Backend.Controllers
         }
 
         [HttpGet("buscar/{telefono}")]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<object>>> BuscarPorTelefono(string telefono)
         {
             if (string.IsNullOrWhiteSpace(telefono)) return BadRequest("Teléfono requerido");

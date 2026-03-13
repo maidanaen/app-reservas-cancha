@@ -22,24 +22,30 @@ namespace Backend.Controllers
         // 1. VER PARTIDOS
         [HttpGet]
         [AllowAnonymous] // 🟢 PÚBLICO
-        public async Task<ActionResult<IEnumerable<Partido>>> GetPartidos([FromQuery] bool todo = false)
+        public async Task<ActionResult<IEnumerable<Partido>>> GetPartidos([FromQuery] int? usuarioId, [FromQuery] bool todo = false)
         {
             var query = _context.Partidos
                 .Include(p => p.Inscripciones)
                 .AsQueryable();
 
-            int? usuarioId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int id) ? id : null;
-
-            //  Si está logueado como Admin (tiene token), filtramos por su ID en el panel Admin
-            // Si entra el público no hay token, no filtra por usuarioId y ve todo
+            // 1. Si se pasa usuarioId por query (público), filtramos por ese club
             if (usuarioId.HasValue && usuarioId.Value > 0)
             {
-                
                 query = query.Where(p => p.UsuarioId == usuarioId.Value);
+            }
+            else
+            {
+                // 2. Si no, intentamos obtenerlo del token (Admin)
+                int tokenUsuarioId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int id) ? id : 0;
+                if (tokenUsuarioId > 0)
+                {
+                    query = query.Where(p => p.UsuarioId == tokenUsuarioId);
+                }
             }
 
             if (!todo)
             {
+                // Mostramos partidos de hoy en adelante
                 query = query.Where(p => p.Fecha >= DateTime.Today);
             }
 
@@ -53,9 +59,12 @@ namespace Backend.Controllers
         [AllowAnonymous] // 🟢 PÚBLICO
         public async Task<ActionResult<Partido>> CrearPartido(Partido partido)
         {
+            // Si el partido viene sin UsuarioId, es un error (necesitamos saber de qué club es)
+            if (partido.UsuarioId <= 0) return BadRequest("Debe especificar el ID del Club (UsuarioId) para crear el partido.");
+
             _context.Partidos.Add(partido);
             await _context.SaveChangesAsync();
-            return CreatedAtAction("GetPartidos", new { id = partido.Id }, partido);
+            return CreatedAtAction(nameof(GetPartidos), new { id = partido.Id }, partido);
         }
 
         // 3. EDITAR SALA (Admin)

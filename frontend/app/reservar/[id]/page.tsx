@@ -25,15 +25,28 @@ export default function ClubProfilePage() {
   useEffect(() => {
     if (!clubId) return;
 
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    fetch(`${API_URL}/api/Canchas?usuarioId=${clubId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        // 🟢 CAMBIO: Ya no filtramos, guardamos TODAS (activas e inactivas)
-        setCanchas(data);
-      })
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
+    const fetchCanchas = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/Canchas?usuarioId=${clubId}`);
+        if (!res.ok) {
+          throw new Error(`Error al cargar canchas: ${res.statusText}`);
+        }
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setCanchas(data);
+        } else {
+          console.error("Data recibida no es un array:", data);
+          setCanchas([]);
+        }
+      } catch (err) {
+        console.error(err);
+        setCanchas([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCanchas();
   }, [clubId]);
 
   return (
