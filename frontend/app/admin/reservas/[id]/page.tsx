@@ -346,8 +346,11 @@ export default function DetalleReservaPage() {
   const estado = getEstadoCaja();
 
   return (
-    <main className="max-w-7xl mx-auto p-6 font-sans bg-gray-50 min-h-screen relative">
+    <main className="max-w-7xl mx-auto p-6 flex flex-col font-sans bg-gray-50 min-h-screen relative print:p-0 print:bg-white">
       
+      {/* 🟢 CONTENEDOR NORMAL DE LA PÁGINA (SE OCULTA AL IMPRIMIR) */}
+      <div className="print:hidden">
+
       {/* 🔔 NOTIFICACIÓN FLOTANTE (TOAST) */}
       {notificacion && (
           <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
@@ -672,16 +675,16 @@ export default function DetalleReservaPage() {
           </div>
       )}
 
+      </div> {/* FIN DEL CONTENEDOR NORMAL */}
+
       {/* 🟢 TICKET DE IMPRESIÓN IMPRIMIBLE (OCULTO EN PANTALLA, VISIBLE EN IMPRESIÓN) */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-            body * { visibility: hidden; }
-            #ticket-impresion, #ticket-impresion * { visibility: visible; }
-            #ticket-impresion { position: absolute; left: 0; top: 0; width: 58mm; padding: 0mm; margin: 0; font-family: 'Courier New', monospace; font-size: 11px; color: black; }
             @page { size: 58mm auto; margin: 0; }
+            body, html { margin: 0; padding: 0; background-color: white; }
         }
       `}} />
-      <div id="ticket-impresion" className="hidden">
+      <div className="hidden print:block w-[58mm] m-0 p-2 font-mono text-[11px] text-black bg-white">
           <div style={{ textAlign: 'center', marginBottom: '10px', borderBottom: '1px dashed black', paddingBottom: '10px' }}>
               <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>NEXUS SPORT</h1>
               <p style={{ margin: '2px 0 0 0', fontSize: '10px' }}>Reserva #{reserva.id}</p>
@@ -723,7 +726,7 @@ export default function DetalleReservaPage() {
               </tbody>
           </table>
 
-          <div style={{ textAlign: 'center', marginTop: '15px' }}>
+          <div style={{ textAlign: 'center', marginTop: '15px', paddingBottom: '20px' }}>
               <p style={{ margin: 0 }}>----------------</p>
               <p style={{ margin: '5px 0 0 0', fontSize: '10px' }}>¡Gracias por tu visita!</p>
           </div>
