@@ -694,7 +694,7 @@ export default function DetalleReservaPage() {
                 <table className="w-full mb-4 border-b-2 border-dashed border-black pb-3 text-[12px]">
                     <thead>
                         <tr className="border-b border-black text-left">
-                            <th className="pb-1 font-bold">CANT DESCRIPCION</th>
+                            <th className="pb-1 font-bold">DESCRIPCION DE CUENTA</th>
                             <th className="pb-1 text-right font-bold">TOTAL</th>
                         </tr>
                     </thead>

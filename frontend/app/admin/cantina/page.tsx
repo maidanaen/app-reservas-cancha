@@ -40,6 +40,11 @@ export default function CantinaPage() {
     const [pagaConEfectivo, setPagaConEfectivo] = useState("");   
     const [procesando, setProcesando] = useState(false);
     const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
+    const [ticketAImprimir, setTicketAImprimir] = useState<any>(null);
+    const [showModalDescuento, setShowModalDescuento] = useState(false);
+    const [itemDescuento, setItemDescuento] = useState<ItemCarrito | null>(null);
+    const [nuevoPrecio, setNuevoPrecio] = useState("");
+
 
     const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
         setNotificacion({ tipo, msj });
@@ -89,6 +94,22 @@ export default function CantinaPage() {
 
     const totalCarrito = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
 
+    const abrirModalDescuento = (item: ItemCarrito) => {
+        setItemDescuento(item);
+        setNuevoPrecio(item.precio.toString());
+        setShowModalDescuento(true);
+    };
+
+    const guardarDescuento = () => {
+        if (!itemDescuento || !nuevoPrecio) return;
+        const precioParsed = Number(nuevoPrecio);
+        if (isNaN(precioParsed) || precioParsed < 0) return;
+
+        setCarrito(prev => prev.map(i => i.id === itemDescuento.id ? { ...i, precio: precioParsed } : i));
+        setShowModalDescuento(false);
+        setItemDescuento(null);
+    };
+
     const iniciarCobro = () => {
         setModoCobro(true);
         setPagoTransferencia("0");
@@ -129,6 +150,14 @@ export default function CantinaPage() {
                 body: JSON.stringify(ventaDto)
             });
             if (res.ok) {
+                setTicketAImprimir({
+                    items: [...carrito],
+                    total: totalCarrito,
+                    cobroEfectivo: efectivoRealAGuardar,
+                    cobroTransferencia: transferencia,
+                    vuelto: vuelto > 0 ? vuelto : 0,
+                    fecha: new Date().toISOString()
+                });
                 setCarrito([]);
                 setModoCobro(false);
                 await cargarTodo(); 
@@ -174,7 +203,8 @@ export default function CantinaPage() {
     const categorias = ["Todas", "Bebidas", "Comidas", "Accesorios", "General"];
 
     return (
-        <div className="flex flex-col lg:flex-row h-screen lg:h-[calc(100vh-100px)] gap-4 font-sans relative p-2 md:p-4 bg-gray-50 overflow-hidden">
+        <>
+        <div className="flex flex-col lg:flex-row h-screen lg:h-[calc(100vh-100px)] gap-4 font-sans relative p-2 md:p-4 bg-gray-50 overflow-hidden print:hidden">
             
             {/* 🔔 NOTIFICACIÓN */}
             {notificacion && (
@@ -240,7 +270,11 @@ export default function CantinaPage() {
                         carrito.map(item => (
                             <div key={item.id} className="flex justify-between items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
                                 <div className="max-w-[60%]"><p className="text-xs font-bold text-slate-800 truncate">{item.nombre}</p><p className="text-[10px] text-gray-500">{item.cantidad} x ${item.precio}</p></div>
-                                <div className="flex items-center gap-2"><span className="text-xs font-black">${(item.precio * item.cantidad).toLocaleString()}</span><button onClick={() => eliminarDelCarrito(item.id)} className="text-gray-400"><X size={14}/></button></div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-black">${(item.precio * item.cantidad).toLocaleString()}</span>
+                                    <button onClick={() => abrirModalDescuento(item)} className="text-orange-500 hover:text-orange-700 bg-orange-100 p-1 rounded" title="Editar Precio Unitario"><Tag size={12}/></button>
+                                    <button onClick={() => eliminarDelCarrito(item.id)} className="text-gray-400 bg-gray-200 hover:bg-red-100 hover:text-red-500 p-1 rounded" title="Eliminar"><X size={12}/></button>
+                                </div>
                             </div>
                         ))
                     )}
@@ -251,9 +285,16 @@ export default function CantinaPage() {
                     {!modoCobro ? (
                         <div className="space-y-3">
                              <div className="flex justify-between items-end"><span className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Total</span><span className="text-2xl font-black text-slate-900">${totalCarrito.toLocaleString()}</span></div>
-                             <button disabled={carrito.length === 0} onClick={iniciarCobro} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition flex items-center justify-center gap-2 disabled:opacity-50">
-                                <DollarSign size={16}/> COBRAR
-                             </button>
+                             <div className="flex gap-2">
+                                 {ticketAImprimir && (
+                                     <button onClick={() => window.print()} className="flex-1 bg-blue-100 text-blue-700 py-3 rounded-xl font-bold text-sm hover:bg-blue-200 transition flex items-center justify-center gap-2">
+                                        🖨️ Imprimir
+                                     </button>
+                                 )}
+                                 <button disabled={carrito.length === 0} onClick={iniciarCobro} className="flex-[2] bg-slate-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition flex items-center justify-center gap-2 disabled:opacity-50">
+                                    <DollarSign size={16}/> COBRAR
+                                 </button>
+                             </div>
                         </div>
                     ) : (
                         <div className="space-y-3">
@@ -332,5 +373,83 @@ export default function CantinaPage() {
                 </div>
             )}
         </div>
+
+        {/* MODAL DESCUENTO / EDITAR PRECIO DE ITEM */}
+        {showModalDescuento && itemDescuento && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[120] flex items-center justify-center p-4 print:hidden">
+                <div className="bg-white rounded-2xl p-6 max-w-sm w-full animate-in zoom-in-95">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-base font-black text-slate-900 flex items-center gap-2"><Tag size={18} className="text-orange-500"/> Precio Unitario</h3>
+                        <button onClick={() => {setShowModalDescuento(false); setItemDescuento(null);}} className="text-gray-400"><X size={20}/></button>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-4">Ajustar precio final para: <strong className="text-slate-800">{itemDescuento.nombre}</strong></p>
+                    <div className="mb-6">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Nuevo Precio ($)</label>
+                        <input type="number" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold outline-none focus:ring-2 focus:ring-orange-500" value={nuevoPrecio} onChange={e => setNuevoPrecio(e.target.value)} onFocus={e => e.target.select()}/>
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={() => {setShowModalDescuento(false); setItemDescuento(null);}} className="flex-1 py-3 text-slate-500 font-bold text-xs bg-gray-100 hover:bg-gray-200 rounded-xl transition">Cancelar</button>
+                        <button onClick={guardarDescuento} className="flex-1 py-3 text-white font-bold bg-orange-500 hover:bg-orange-600 rounded-xl text-xs shadow-md transition">Aplicar Precio</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* TICKET DE IMPRESIÓN (Oculto en pantalla normal, visible en print) */}
+        {ticketAImprimir && (
+            <div id="ticket-impresion" className="hidden print:block w-[78mm] mx-auto m-0 p-4 font-sans text-black bg-white leading-tight">
+                <div className="text-center mb-4 pb-3 border-b-2 border-dashed border-black">
+                    <h1 className="m-0 text-2xl font-black uppercase tracking-widest">{localStorage.getItem("nombreNegocio") || "COMPLEJO"}</h1>
+                    <p className="m-0 text-[12px] mt-1">Fecha: {new Date(ticketAImprimir.fecha).toLocaleDateString()} {new Date(ticketAImprimir.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="m-0 text-[12px] mt-1 font-bold">VENTA EXPRESS CANTINA</p>
+                </div>
+
+                <table className="w-full mb-4 border-b-2 border-dashed border-black pb-3 text-[12px]">
+                    <thead>
+                        <tr className="border-b border-black text-left">
+                            <th className="pb-1 font-bold">CANT DESCRIPCION</th>
+                            <th className="pb-1 text-right font-bold pr-1">TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {ticketAImprimir.items.map((item: any, idx: number) => (
+                            <tr key={idx}>
+                                <td className="py-1 uppercase pr-2">{item.cantidad} x {item.nombre} <span className="text-[10px] italic font-normal text-gray-700">(${item.precio})</span></td>
+                                <td className="py-1 text-right font-bold pr-1">${(item.precio * item.cantidad).toLocaleString()}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                <div className="flex justify-between items-center mb-1 text-[14px]">
+                    <span className="font-bold">TOTAL VENTA:</span>
+                    <span className="font-black">${ticketAImprimir.total.toLocaleString()}</span>
+                </div>
+                {ticketAImprimir.cobroEfectivo > 0 && (
+                    <div className="flex justify-between items-center text-[12px]">
+                        <span>TOTAL EFECTIVO:</span>
+                        <span>${ticketAImprimir.cobroEfectivo.toLocaleString()}</span>
+                    </div>
+                )}
+                {ticketAImprimir.cobroTransferencia > 0 && (
+                    <div className="flex justify-between items-center text-[12px]">
+                        <span>TOTAL TRANSF.:</span>
+                        <span>${ticketAImprimir.cobroTransferencia.toLocaleString()}</span>
+                    </div>
+                )}
+                {ticketAImprimir.vuelto > 0 && (
+                    <div className="flex justify-between items-center text-[12px] mt-1 font-bold">
+                        <span>VUELTO ENTREGADO:</span>
+                        <span>${ticketAImprimir.vuelto.toLocaleString()}</span>
+                    </div>
+                )}
+
+                <div className="text-center mt-6 pt-3 border-t-2 border-dashed border-black">
+                    <p className="m-0 text-[12px] font-bold">¡Gracias por tu compra!</p>
+                    <p className="m-0 text-[10px] mt-1">No válido como factura</p>
+                </div>
+            </div>
+        )}
+        </>
     );
 }
