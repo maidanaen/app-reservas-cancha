@@ -15,54 +15,83 @@ interface Cancha {
   activa: boolean;
 }
 
+interface Producto {
+    id: number;
+    nombre: string;
+    precio: number;
+    categoria: string;
+}
+
 export default function ClubProfilePage() {
   const params = useParams();
   const clubId = params.id;
 
   const [canchas, setCanchas] = useState<Cancha[]>([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [activeTab, setActiveTab] = useState<'canchas' | 'carta'>('canchas');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!clubId) return;
 
-    const fetchCanchas = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/Canchas?usuarioId=${clubId}`);
-        if (!res.ok) {
-          throw new Error(`Error al cargar canchas: ${res.statusText}`);
+        setLoading(true);
+        // Cargar Canchas
+        const resCanchas = await fetch(`${API_URL}/api/Canchas?usuarioId=${clubId}`);
+        const dataCanchas = await resCanchas.json();
+        if (Array.isArray(dataCanchas)) setCanchas(dataCanchas);
+
+        // Cargar Productos
+        const resProd = await fetch(`${API_URL}/api/Productos?usuarioId=${clubId}`);
+        if (resProd.ok) {
+            const dataProd = await resProd.json();
+            if (Array.isArray(dataProd)) setProductos(dataProd);
         }
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setCanchas(data);
-        } else {
-          console.error("Data recibida no es un array:", data);
-          setCanchas([]);
-        }
+
       } catch (err) {
         console.error(err);
-        setCanchas([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCanchas();
+    fetchData();
   }, [clubId]);
+
+  // Agrupar productos por categoría
+  const categorias = Array.from(new Set(productos.map(p => p.categoria)));
 
   return (
     <main className="max-w-5xl mx-auto p-6 min-h-screen">
-      <div className="mb-8">
-        <Link href="/reservar" className="text-sm text-gray-400 hover:text-gray-600 mb-2 inline-flex items-center gap-1 transition">
-             <ArrowLeft size={14}/> Volver a Clubes
-        </Link>
-        <h1 className="text-3xl font-black text-slate-900">Canchas del Club</h1>
-        <p className="text-gray-500">Selecciona la pista donde quieres jugar.</p>
-      </div>
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+            <Link href="/reservar" className="text-sm text-gray-400 hover:text-gray-600 mb-2 inline-flex items-center gap-1 transition">
+                <ArrowLeft size={14}/> Volver a Clubes
+            </Link>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Panel del Club</h1>
+            <p className="text-gray-500 font-medium">Reserva tu turno o consulta nuestra carta.</p>
+        </div>
 
-      {loading ? (
-        <div className="text-center py-20 text-gray-400">Cargando pistas...</div>
-      ) : (
-        <div className="space-y-6">
+        {/* SELECTOR DE TABS */}
+        <div className="flex bg-gray-100 p-1 rounded-2xl w-fit">
+            <button 
+                onClick={() => setActiveTab('canchas')}
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'canchas' ? 'bg-white text-slate-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+                Canchas
+            </button>
+            <button 
+                onClick={() => setActiveTab('carta')}
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'carta' ? 'bg-white text-slate-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+                Ver Carta 🍔
+            </button>
+        </div>
+      </div>      {loading ? (
+        <div className="text-center py-20 text-gray-400 font-bold animate-pulse">Cargando información...</div>
+      ) : activeTab === 'canchas' ? (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {canchas.length === 0 ? (
                 <div className="p-10 bg-gray-50 rounded-3xl text-center text-gray-400 border border-gray-100">
                     <Info className="mx-auto mb-2 opacity-50" size={32}/>
@@ -144,6 +173,39 @@ export default function ClubProfilePage() {
                 ))
             )}
         </div>
+      ) : (
+          /* VISTA DE LA CARTA */
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {productos.length === 0 ? (
+                    <div className="p-20 text-center bg-white rounded-3xl border border-dashed border-gray-200">
+                        <p className="text-gray-400 font-medium">Este club aún no ha cargado su carta de productos.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-10">
+                        {categorias.map(cat => (
+                            <div key={cat}>
+                                <h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                                    <span className="w-8 h-1 bg-slate-900 rounded-full"></span>
+                                    {cat}
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {productos.filter(p => p.categoria === cat).map(p => (
+                                        <div key={p.id} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex justify-between items-center group hover:border-orange-200 transition-colors">
+                                            <div>
+                                                <h4 className="font-bold text-slate-800">{p.nombre}</h4>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{cat}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-lg font-black text-orange-600">${p.precio.toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+          </div>
       )}
     </main>
   );
