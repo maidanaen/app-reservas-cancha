@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { 
   ArrowLeft, Plus, Users, Utensils, Coffee, 
-  Trash2, DollarSign, CheckCircle, Calculator, CreditCard, Wallet, X, AlertCircle, Tag, Printer, Minus
+  Trash2, DollarSign, CheckCircle, Calculator, CreditCard, Wallet, X, AlertCircle, Tag, Printer, Minus, Search
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -390,7 +390,12 @@ export default function GestionMesasPage() {
     }
   };
 
-  const productosFiltrados = productos.filter(p => p.categoria === catActiva);
+  const [filtroProductos, setFiltroProductos] = useState("");
+
+  const productosFiltrados = productos.filter(p => 
+      p.categoria === catActiva && 
+      p.nombre.toLowerCase().includes(filtroProductos.toLowerCase())
+  );
 
   return (
     <>
@@ -450,9 +455,27 @@ export default function GestionMesasPage() {
 
                 <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                     {/* PRODUCTOS (Izquierda) */}
-                    <div className="w-full md:w-1/2 p-4 border-r overflow-y-auto bg-gray-50/50">
-                        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">{CATEGORIAS.map(c => <button key={c} onClick={() => setCatActiva(c)} className={`px-3 py-1 rounded-full text-xs font-bold border transition ${catActiva === c ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}>{c}</button>)}</div>
-                        <div className="grid grid-cols-2 gap-2">{productosFiltrados.map(p => <button key={p.id} onClick={() => agregarProducto(p)} className="bg-white p-3 rounded-xl border hover:border-orange-400 hover:shadow-md transition text-left active:scale-95"><p className="font-bold text-gray-800 text-sm truncate">{p.nombre}</p><p className="text-green-600 font-bold text-xs mt-1">${p.precio}</p></button>)}</div>
+                    <div className="w-full md:w-1/2 p-4 border-r overflow-y-auto bg-gray-50/50 flex flex-col gap-3">
+                        <div className="flex gap-2 p-1 bg-white rounded-xl border border-gray-200">
+                            <Search className="text-gray-400 ml-2 mt-2" size={18}/>
+                            <input 
+                                type="text" 
+                                placeholder="Buscar producto..." 
+                                className="w-full p-2 bg-transparent text-sm outline-none font-medium"
+                                value={filtroProductos}
+                                onChange={(e) => setFiltroProductos(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                            {CATEGORIAS.map(c => <button key={c} onClick={() => setCatActiva(c)} className={`px-3 py-1 rounded-full text-xs font-bold border transition shrink-0 ${catActiva === c ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'}`}>{c}</button>)}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            {productosFiltrados.length === 0 ? (
+                                <p className="col-span-2 text-center text-gray-400 text-sm mt-4">No se encontraron productos.</p>
+                            ) : (
+                                productosFiltrados.map(p => <button key={p.id} onClick={() => agregarProducto(p)} className="bg-white p-3 rounded-xl border hover:border-orange-400 hover:shadow-md transition text-left active:scale-95"><p className="font-bold text-gray-800 text-sm truncate">{p.nombre}</p><p className="text-green-600 font-bold text-xs mt-1">${p.precio}</p></button>)
+                            )}
+                        </div>
                     </div>
 
                     {/* TICKET (Derecha) */}
