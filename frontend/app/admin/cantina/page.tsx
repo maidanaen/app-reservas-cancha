@@ -1,9 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-    Search, ShoppingCart, Trash2, CreditCard,
-    Package, X, Plus, Tag, Pencil, DollarSign, Calculator, Wallet, AlertTriangle, CheckCircle
+import { 
+    Search, Plus, Package, ShoppingCart, DollarSign, Calculator, Calculator as CalculatorIcon, 
+    CreditCard, Wallet, AlertTriangle, CheckCircle, Tag, Printer, X, Pencil, Minus, Trash2
 } from "lucide-react";
 import { API_URL } from '@/utils/config';
 
@@ -90,6 +90,16 @@ export default function CantinaPage() {
 
     const eliminarDelCarrito = (id: number) => {
         setCarrito(prev => prev.filter(item => item.id !== id));
+    };
+
+    const restarDelCarrito = (id: number) => {
+        setCarrito(prev => {
+            const item = prev.find(i => i.id === id);
+            if (item && item.cantidad > 1) {
+                return prev.map(i => i.id === id ? { ...i, cantidad: i.cantidad - 1 } : i);
+            }
+            return prev.filter(i => i.id !== id);
+        });
     };
 
     const totalCarrito = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
@@ -270,10 +280,12 @@ export default function CantinaPage() {
                             carrito.map(item => (
                                 <div key={item.id} className="flex justify-between items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
                                     <div className="max-w-[60%]"><p className="text-xs font-bold text-slate-800 truncate">{item.nombre}</p><p className="text-[10px] text-gray-500">{item.cantidad} x ${item.precio}</p></div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-black">${(item.precio * item.cantidad).toLocaleString()}</span>
-                                        <button onClick={() => abrirModalDescuento(item)} className="text-orange-500 hover:text-orange-700 bg-orange-100 p-1 rounded" title="Editar Precio Unitario"><Tag size={12} /></button>
-                                        <button onClick={() => eliminarDelCarrito(item.id)} className="text-gray-400 bg-gray-200 hover:bg-red-100 hover:text-red-500 p-1 rounded" title="Eliminar"><X size={12} /></button>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs font-black mr-2">${(item.precio * item.cantidad).toLocaleString()}</span>
+                                        <button onClick={() => agregarAlCarrito(item)} className="text-gray-400 bg-gray-100 hover:bg-green-100 hover:text-green-600 p-1 rounded transition" title="Agregar Uno"><Plus size={12} /></button>
+                                        <button onClick={() => restarDelCarrito(item.id)} className="text-gray-400 bg-gray-100 hover:bg-orange-100 hover:text-orange-500 p-1 rounded transition" title="Restar Uno"><Minus size={12} /></button>
+                                        <button onClick={() => abrirModalDescuento(item)} className="text-orange-500 hover:text-orange-700 bg-orange-100 p-1 rounded transition" title="Editar Precio Unitario"><Tag size={12} /></button>
+                                        <button onClick={() => eliminarDelCarrito(item.id)} className="text-gray-400 bg-gray-200 hover:bg-red-100 hover:text-red-500 p-1 rounded transition ml-1" title="Eliminar de la lista"><X size={12} /></button>
                                     </div>
                                 </div>
                             ))

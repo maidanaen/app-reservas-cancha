@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { 
   ArrowLeft, Plus, Users, Utensils, Coffee, 
-  Trash2, DollarSign, CheckCircle, Calculator, CreditCard, Wallet, X, AlertCircle, Tag, Printer
+  Trash2, DollarSign, CheckCircle, Calculator, CreditCard, Wallet, X, AlertCircle, Tag, Printer, Minus
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -196,7 +196,7 @@ export default function GestionMesasPage() {
     }
   };
 
-  // 6. AGREGAR PRODUCTO (OPTIMISTA)
+  // 6. AGREGAR PRODUCTO (OPTIMISTA DESDE CATÁLOGO)
   const agregarProducto = async (prod: Producto) => {
     if (!reservaActiva || !mesaSeleccionada) return;
     
@@ -207,6 +207,23 @@ export default function GestionMesasPage() {
     await fetch(`${API_URL}/api/Consumos`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reservaId: reservaActiva.id, producto: prod.nombre, precio: prod.precio, cantidad: 1, jugador: "Cliente Mesa" })
+    });
+    
+    const res = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`);
+    if(res.ok) setReservaActiva(await res.json());
+  };
+
+  // 6.5 AGREGAR UNIDAD MANUAL (CON PRECIO ESPECÍFICO)
+  const agregarUnidadManual = async (nombre: string, precioBase: number) => {
+    if (!reservaActiva || !mesaSeleccionada) return;
+    
+    const tempItem = { id: Date.now(), producto: nombre, precio: precioBase, cantidad: 1 };
+    setReservaActiva({ ...reservaActiva, consumos: [...reservaActiva.consumos, tempItem] });
+
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    await fetch(`${API_URL}/api/Consumos`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reservaId: reservaActiva.id, producto: nombre, precio: precioBase, cantidad: 1, jugador: "Cliente Mesa" })
     });
     
     const res = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`);
@@ -227,9 +244,9 @@ export default function GestionMesasPage() {
     }
   };
 
-  // 8. LÓGICA DE AGRUPACIÓN
+  // 8. LÓGICA DE AGRUPACIÓN (AHORA FILTRA POR NOMBRE Y PRECIO)
   const consumosAgrupados: ConsumoAgrupado[] = reservaActiva?.consumos.reduce((acc: ConsumoAgrupado[], curr) => {
-      const existente = acc.find(i => i.nombre === curr.producto);
+      const existente = acc.find(i => i.nombre === curr.producto && i.precioUnitario === curr.precio);
       if (existente) {
           existente.cantidad += 1;
           existente.total += curr.precio;
@@ -456,18 +473,25 @@ export default function GestionMesasPage() {
                                     <div className="flex items-center gap-1">
                                         <span className="font-black text-gray-900 text-lg mr-2">${item.total.toLocaleString()}</span>
                                         <button 
-                                            onClick={() => abrirModalDescuento(item)}
-                                            className="text-orange-400 hover:text-orange-600 hover:bg-orange-50 p-2 rounded-full transition"
-                                            title="Cambiar Precio Unitario"
+                                            onClick={() => agregarUnidadManual(item.nombre, item.precioUnitario)}
+                                            className="text-gray-400 hover:text-green-600 hover:bg-green-50 p-2 rounded-full transition"
+                                            title="Agregar otro igual"
                                         >
-                                            <Tag size={16}/>
+                                            <Plus size={16}/>
                                         </button>
                                         <button 
                                             onClick={() => eliminarProducto(item.ids[item.ids.length - 1])}
-                                            className="text-gray-300 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition"
-                                            title="Quitar uno"
+                                            className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition"
+                                            title="Restar uno"
                                         >
-                                            <Trash2 size={16}/>
+                                            <Minus size={16}/>
+                                        </button>
+                                        <button 
+                                            onClick={() => abrirModalDescuento(item)}
+                                            className="text-orange-400 hover:text-orange-600 hover:bg-orange-50 p-2 rounded-full transition ml-1"
+                                            title="Cambiar Precio Unitario"
+                                        >
+                                            <Tag size={16}/>
                                         </button>
                                     </div>
                                 </div>
