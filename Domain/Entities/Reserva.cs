@@ -1,4 +1,4 @@
-﻿using Backend.Domain.Entities;
+using Backend.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -41,6 +41,11 @@ namespace Domain.Entities
         public decimal CobradoDigital { get; set; }
         // Agrega esta propiedad para saber en qué caja impactó el dinero
         public int? CajaId { get; set; }
+        
+        // 🟢 Novedad: Descuento global en dinero aplicado a toda la reserva/cuenta
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal DescuentoTotalMonto { get; set; } = 0;
+
         public List<Consumo> Consumos { get; set; } = new List<Consumo>();
         public int UsuarioId { get; set; }
 

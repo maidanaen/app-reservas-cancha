@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Domain.Entities;
 using Domain.Interfaces;
@@ -201,6 +201,7 @@ namespace Backend.Controllers
 
             reserva.CobradoEfectivo = cobro.CobradoEfectivo;
             reserva.CobradoTransferencia = cobro.CobradoTransferencia;
+            reserva.DescuentoTotalMonto = cobro.DescuentoTotalMonto;
 
             decimal totalPagado = cobro.CobradoEfectivo + cobro.CobradoTransferencia;
 
@@ -230,6 +231,40 @@ namespace Backend.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { mensaje = "Caja actualizada correctamente" });
+        }
+
+        // 🟢 NUEVO: GESTIÓN DINÁMICA DE AGENDA (EXTENSIÓN DE TURNO)
+        [HttpPost("extender/{id}")]
+        public async Task<IActionResult> ExtenderReserva(int id, [FromBody] int minutosExtra)
+        {
+            if (minutosExtra <= 0) return BadRequest("Los minutos a extender deben ser mayores a 0.");
+
+            var reserva = await _repository.GetByIdAsync(id);
+            if (reserva == null) return NotFound("Reserva no encontrada");
+
+            // Calculamos el nuevo horario de fin
+            var nuevoFin = reserva.FechaFin.AddMinutes(minutosExtra);
+
+            // Validamos que no choque con otra reserva de la misma cancha
+            // que empiece antes de nuestro nuevo fin, pero que sea POSTERIOR a la nuestra actual
+            bool choqueHorario = await _context.Reservas.AnyAsync(r =>
+                r.CanchaId == reserva.CanchaId &&
+                r.Id != reserva.Id && // No comparamos con ella misma
+                r.Estado != "Cancelado" &&
+                r.FechaInicio < nuevoFin &&
+                r.FechaFin > reserva.FechaFin // Que suceda después de la actual
+            );
+
+            if (choqueHorario)
+            {
+                return BadRequest(new { mensaje = "No se puede extender el turno: choca con otra reserva existente en ese horario." });
+            }
+
+            // Actualizamos la fecha fin
+            reserva.FechaFin = nuevoFin;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { mensaje = $"Turno extendido exitosamente hasta las {nuevoFin:HH:mm}.", reserva });
         }
 
         [HttpPost("venta-express")]
@@ -270,13 +305,22 @@ namespace Backend.Controllers
 
                 foreach (var item in dto.Items)
                 {
+                    // Lógica de Descuento
+                    decimal montoDescuento = item.DescuentoMonto;
+                    if (item.DescuentoPorcentaje > 0 && montoDescuento == 0)
+                    {
+                        montoDescuento = (item.Precio * item.Cantidad) * (item.DescuentoPorcentaje / 100m);
+                    }
+
                     var consumo = new Consumo
                     {
                         ReservaId = nuevaReserva.Id,
                         Producto = item.Producto,
                         Precio = item.Precio,
                         Cantidad = item.Cantidad,
-                        Jugador = "Cliente Mostrador"
+                        Jugador = "Cliente Mostrador",
+                        DescuentoPorcentaje = item.DescuentoPorcentaje,
+                        DescuentoMonto = montoDescuento
                     };
                     _context.Consumos.Add(consumo);
                 }
@@ -405,6 +449,7 @@ namespace Backend.Controllers
     {
         public decimal CobradoEfectivo { get; set; }
         public decimal CobradoTransferencia { get; set; }
+        public decimal DescuentoTotalMonto { get; set; } = 0;
     }
 
     public class VentaCantinaDto
@@ -427,6 +472,7 @@ namespace Backend.Controllers
         public decimal CobradoEfectivo { get; set; }
         public decimal CobradoTransferencia { get; set; }
         public string MetodoPago { get; set; }
+        public decimal DescuentoTotalMonto { get; set; } = 0;
         public List<ItemVentaDto> Items { get; set; } = new List<ItemVentaDto>();
     }
 
@@ -435,6 +481,8 @@ namespace Backend.Controllers
         public string Producto { get; set; }
         public decimal Precio { get; set; }
         public int Cantidad { get; set; }
+        public decimal DescuentoPorcentaje { get; set; } = 0;
+        public decimal DescuentoMonto { get; set; } = 0;
     }
 
     public class ReservaFijaDto

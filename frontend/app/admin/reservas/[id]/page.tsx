@@ -26,6 +26,7 @@ interface Reserva {
   cobradoEfectivo: number;
   cobradoTransferencia: number;
   cobradoDigital: number;
+  descuentoTotalMonto: number;
   consumos: Consumo[];
 }
 
@@ -56,9 +57,12 @@ export default function DetalleReservaPage() {
   const [sugerencias, setSugerencias] = useState<Producto[]>([]);
   const [mostrarMenu, setMostrarMenu] = useState(false);
 
-  // 🟢 ESTADOS MODAL ELIMINAR
+  // 🟢 ESTADOS MODAL ELIMINAR Y EXTENDER
   const [mostrarModalEliminar, setMostrarModalEliminar] = useState(false);
   const [consumoAEliminar, setConsumoAEliminar] = useState<number | null>(null);
+
+  const [mostrarModalExtender, setMostrarModalExtender] = useState(false);
+  const [minutosAExtender, setMinutosAExtender] = useState<number>(30);
 
   // 🟢 SISTEMA DE NOTIFICACIONES (TOAST)
   const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
@@ -122,7 +126,8 @@ export default function DetalleReservaPage() {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         const pagos = {
             cobradoEfectivo: dataToSave.cobradoEfectivo,
-            cobradoTransferencia: dataToSave.cobradoTransferencia
+            cobradoTransferencia: dataToSave.cobradoTransferencia,
+            descuentoTotalMonto: dataToSave.descuentoTotalMonto || 0
         };
 
         const res = await fetch(`${API_URL}/api/Reservas/cobrar/${id}`, {
@@ -258,6 +263,33 @@ export default function DetalleReservaPage() {
       }
   };
 
+  // --- EXTENDER RESERVA ---
+  const confirmarExtension = async () => {
+      if (!id) return;
+      setCargando(true);
+      try {
+          process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+          const res = await fetch(`${API_URL}/api/Reservas/extender/${id}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(minutosAExtender)
+          });
+          
+          if (res.ok) {
+              mostrarMensaje('exito', `⏱️ Turno extendido por ${minutosAExtender} min.`);
+              setMostrarModalExtender(false);
+              cargarDatos();
+          } else {
+              const data = await res.json();
+              mostrarMensaje('error', data.mensaje || "Error al extender el turno");
+          }
+      } catch (error) {
+          mostrarMensaje('error', 'Error de conexión.');
+      } finally {
+          setCargando(false);
+      }
+  };
+
   const cargarParaJugador = (nombre: string) => {
       setNuevoConsumo({ ...nuevoConsumo, jugador: nombre, producto: "", precio: "" });
       inputProductoRef.current?.focus();
@@ -268,7 +300,15 @@ export default function DetalleReservaPage() {
   // --- CÁLCULOS FINALES ---
   const consumosReales = reserva.consumos.filter(c => !c.producto.startsWith("Alquiler"));
   const totalCantina = consumosReales.reduce((acc, c) => acc + c.precio, 0);
-  const totalGeneral = precioCancha + totalCantina;
+  
+  // TotalBruto sin descuentos de la cuenta global
+  const totalBruto = precioCancha + totalCantina;
+  
+  // Descuento global
+  const descuentoGlobal = reserva.descuentoTotalMonto || 0;
+  
+  // Total a Pagar Real
+  const totalGeneral = totalBruto - descuentoGlobal;
 
   const totalPagado = reserva.cobradoEfectivo + reserva.cobradoTransferencia + reserva.cobradoDigital;
   const saldoPendiente = totalGeneral - totalPagado;
@@ -333,6 +373,15 @@ export default function DetalleReservaPage() {
             <h1 className="text-2xl font-bold text-gray-900">Gestión de Turno #{reserva.id}</h1>
             <p className="text-gray-500 text-sm font-medium">{reserva.clienteNombre} — {new Date(reserva.fechaInicio).toLocaleDateString()}</p>
         </div>
+        
+        {/* BOTÓN EXTENDER TURNO */}
+        <button 
+            onClick={() => setMostrarModalExtender(true)} 
+            className="ml-4 px-4 py-2 bg-white text-blue-600 border border-blue-200 rounded-lg font-bold text-sm hover:bg-blue-50 transition shadow-sm flex items-center gap-2"
+        >
+            ⏱️ Extender Turno
+        </button>
+
         <div className={`ml-auto px-4 py-2 rounded-lg font-bold text-lg border shadow-sm flex items-center gap-2 ${estado.estilo}`}>
             <span>{estado.icono}</span>
             {estado.texto}
@@ -370,9 +419,27 @@ export default function DetalleReservaPage() {
                         <span className="font-bold text-gray-800">${precioCancha.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-gray-600">
-                        <span>Cantina (Sin contar división cancha)</span>
+                        <span>Cantina (Insumos)</span>
                         <span className="font-bold text-gray-800">${totalCantina.toLocaleString()}</span>
                     </div>
+
+                    {/* SECCIÓN DESCUENTOS GLOBALES */}
+                    <div className="flex items-center justify-between text-orange-600 bg-orange-50 p-2 border border-orange-100 rounded-lg">
+                        <span className="font-bold text-xs">DESCUENTO GLOBAL</span>
+                        <div className="flex items-center gap-1">
+                            <span className="text-orange-500 font-bold">-$</span>
+                            <input 
+                                type="number" 
+                                className="w-16 bg-white p-1 text-right font-bold border border-orange-200 rounded outline-none text-orange-700"
+                                value={reserva.descuentoTotalMonto || 0}
+                                onChange={e => {
+                                    const val = Number(e.target.value);
+                                    setReserva({...reserva, descuentoTotalMonto: val >= 0 ? val : 0});
+                                }}
+                            />
+                        </div>
+                    </div>
+
                     <div className="border-t pt-3 flex justify-between text-xl font-extrabold text-black">
                         <span>TOTAL REAL</span>
                         <span>${totalGeneral.toLocaleString()}</span>
@@ -401,8 +468,11 @@ export default function DetalleReservaPage() {
                             />
                         </div>
                     </div>
-                    <div className="flex justify-end">
-                        <button onClick={() => guardarPagos()} disabled={cargando} className="bg-black text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-800 flex items-center gap-2">
+                    <div className="flex justify-between gap-2">
+                        <button onClick={() => window.print()} className="w-full bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm hover:bg-slate-300 flex items-center justify-center gap-2">
+                            Imprimir Ticket
+                        </button>
+                        <button onClick={() => guardarPagos()} disabled={cargando} className="w-full bg-black text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-800 flex items-center justify-center gap-2">
                             <Save size={16} /> {cargando ? "Guardando..." : "Guardar Cambios"}
                         </button>
                     </div>
@@ -566,6 +636,98 @@ export default function DetalleReservaPage() {
               </div>
           </div>
       )}
+
+      {/* 🟢 MODAL EXTENDER TURNO */}
+      {mostrarModalExtender && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+              <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-blue-500">
+                  <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
+                      ⏱️
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 mb-2">Extender Turno</h3>
+                  <p className="text-gray-500 mb-6 text-sm">Elige el tiempo extra. Se validará si la cancha está libre.</p>
+                  
+                  <div className="flex gap-2 mb-6">
+                      <button 
+                        onClick={() => setMinutosAExtender(30)}
+                        className={`flex-1 py-2 font-bold rounded-lg border ${minutosAExtender === 30 ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                      >
+                          + 30 min
+                      </button>
+                      <button 
+                        onClick={() => setMinutosAExtender(60)}
+                        className={`flex-1 py-2 font-bold rounded-lg border ${minutosAExtender === 60 ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                      >
+                          + 1 hora
+                      </button>
+                  </div>
+
+                  <div className="flex gap-3">
+                      <button onClick={() => setMostrarModalExtender(false)} className="flex-1 py-3 text-slate-600 font-bold hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                      <button onClick={confirmarExtension} disabled={cargando} className="flex-1 py-3 text-white font-bold bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg transition">
+                          {cargando ? 'Validando...' : 'Confirmar'}
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* 🟢 TICKET DE IMPRESIÓN IMPRIMIBLE (OCULTO EN PANTALLA, VISIBLE EN IMPRESIÓN) */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+            body * { visibility: hidden; }
+            #ticket-impresion, #ticket-impresion * { visibility: visible; }
+            #ticket-impresion { position: absolute; left: 0; top: 0; width: 58mm; padding: 0mm; margin: 0; font-family: 'Courier New', monospace; font-size: 11px; color: black; }
+            @page { size: 58mm auto; margin: 0; }
+        }
+      `}} />
+      <div id="ticket-impresion" className="hidden">
+          <div style={{ textAlign: 'center', marginBottom: '10px', borderBottom: '1px dashed black', paddingBottom: '10px' }}>
+              <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>NEXUS SPORT</h1>
+              <p style={{ margin: '2px 0 0 0', fontSize: '10px' }}>Reserva #{reserva.id}</p>
+              <p style={{ margin: '0', fontSize: '10px' }}>Fech: {new Date(reserva.fechaInicio).toLocaleDateString()} {new Date(reserva.fechaInicio).toLocaleTimeString()}</p>
+              <p style={{ margin: '0', fontSize: '10px' }}>Cliente: {reserva.clienteNombre}</p>
+          </div>
+
+          <table style={{ width: '100%', marginBottom: '10px', borderBottom: '1px dashed black', paddingBottom: '5px' }}>
+              <tbody>
+                  <tr>
+                      <td style={{ textAlign: 'left' }}>ALQUILER CANCHA</td>
+                      <td style={{ textAlign: 'right' }}>${precioCancha}</td>
+                  </tr>
+                  {reserva.consumos.filter(c => !c.producto.startsWith('Alquiler') && !c.producto.startsWith('✅ PAGO')).map(c => (
+                      <tr key={c.id}>
+                          <td style={{ textAlign: 'left', textTransform: 'uppercase' }}>{c.cantidad}x {c.producto.substring(0, 15)}...</td>
+                          <td style={{ textAlign: 'right' }}>${c.precio}</td>
+                      </tr>
+                  ))}
+              </tbody>
+          </table>
+
+          <table style={{ width: '100%', fontWeight: 'bold' }}>
+              <tbody>
+                  <tr>
+                      <td style={{ textAlign: 'left' }}>SUBTOTAL</td>
+                      <td style={{ textAlign: 'right' }}>${totalBruto}</td>
+                  </tr>
+                  {descuentoGlobal > 0 && (
+                      <tr>
+                          <td style={{ textAlign: 'left' }}>DESCUENTO</td>
+                          <td style={{ textAlign: 'right' }}>-${descuentoGlobal}</td>
+                      </tr>
+                  )}
+                  <tr>
+                      <td style={{ textAlign: 'left', fontSize: '14px', paddingTop: '5px' }}>TOTAL</td>
+                      <td style={{ textAlign: 'right', fontSize: '14px', paddingTop: '5px' }}>${totalGeneral}</td>
+                  </tr>
+              </tbody>
+          </table>
+
+          <div style={{ textAlign: 'center', marginTop: '15px' }}>
+              <p style={{ margin: 0 }}>----------------</p>
+              <p style={{ margin: '5px 0 0 0', fontSize: '10px' }}>¡Gracias por tu visita!</p>
+          </div>
+      </div>
 
     </main>
   );

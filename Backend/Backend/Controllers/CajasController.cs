@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Domain.Entities;
 using Backend.Domain.Entities;
@@ -147,6 +147,9 @@ namespace Backend.Controllers
             decimal barraEfvo = barra.Sum(r => r.CobradoEfectivo);
             decimal barraTransf = barra.Sum(r => r.CobradoTransferencia);
 
+            // TOTAL DESCUENTOS GLOBALES
+            decimal totalDescuentos = movimientos.Sum(r => r.DescuentoTotalMonto);
+
             // LISTA VISUAL
             var listaVisual = new List<object>();
 
@@ -165,6 +168,7 @@ namespace Backend.Controllers
                             Detalle = item.ClienteNombre,
                             Metodo = (item.CobradoEfectivo > 0 && item.CobradoTransferencia > 0) ? "Mixto" : (item.CobradoTransferencia > 0 ? "Transferencia" : "Efectivo"),
                             Monto = item.CobradoEfectivo + item.CobradoTransferencia,
+                            Descuento = item.DescuentoTotalMonto,
                             Items = item.Consumos.Select(c => new { c.Producto, c.Precio, c.Cantidad }).ToList(),
                             Desglose = new { Efectivo = item.CobradoEfectivo, Transferencia = item.CobradoTransferencia },
                             Tipo = "Ingreso"
@@ -186,6 +190,7 @@ namespace Backend.Controllers
                 {
                     TotalEfectivo = caja.MontoInicial + canchasEfvo + mesasEfvo + barraEfvo,
                     TotalTransferencia = canchasTransf + mesasTransf + barraTransf,
+                    TotalDescuentos = totalDescuentos,
                     TotalSistema = (caja.MontoInicial + canchasEfvo + mesasEfvo + barraEfvo) + (canchasTransf + mesasTransf + barraTransf),
                     GastosRegistrados = caja.TotalGastos,
                     Observaciones = caja.Observaciones,

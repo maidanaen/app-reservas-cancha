@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -23,7 +23,13 @@ namespace Domain.Entities
 
         public string? MetodoPago { get; set; }
 
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal DescuentoPorcentaje { get; set; } = 0; // ej: 10.00%
+        
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal DescuentoMonto { get; set; } = 0; // Descuento en dinero calculado
+
         // 👇 ¡ESTA LÍNEA ES LA QUE FALTA! 👇
-        public DateTime FechaHora { get; set; } = DateTime.Now;
+        public DateTime FechaHora { get; set; } = DateTime.UtcNow;
     }
 }

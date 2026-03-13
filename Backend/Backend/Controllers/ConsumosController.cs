@@ -1,4 +1,4 @@
-﻿using Backend.Domain.Entities;
+using Backend.Domain.Entities;
 using Domain.Entities;
 using Infrastructure.Persistencia;
 using Microsoft.AspNetCore.Mvc;
@@ -46,9 +46,10 @@ namespace Backend.Controllers
             if (consumo.MetodoPago == "TRANSFERENCIA") reserva.CobradoTransferencia -= consumo.Precio;
 
             // 4. Lógica de PAGO NUEVO
-            // Sumamos el monto a la caja correspondiente
-            if (metodo == "EFECTIVO") reserva.CobradoEfectivo += consumo.Precio;
-            else if (metodo == "TRANSFERENCIA") reserva.CobradoTransferencia += consumo.Precio;
+            // Sumamos el monto a la caja correspondiente, contemplando el descuento
+            decimal montoAPagar = consumo.Precio - consumo.DescuentoMonto;
+            if (metodo == "EFECTIVO") reserva.CobradoEfectivo += montoAPagar;
+            else if (metodo == "TRANSFERENCIA") reserva.CobradoTransferencia += montoAPagar;
 
             // 5. Marcamos el consumo como pagado
             consumo.MetodoPago = metodo;
@@ -72,8 +73,9 @@ namespace Backend.Controllers
                 var reserva = await _context.Reservas.FindAsync(consumo.ReservaId);
                 if (reserva != null)
                 {
-                    if (consumo.MetodoPago == "EFECTIVO") reserva.CobradoEfectivo -= consumo.Precio;
-                    else if (consumo.MetodoPago == "TRANSFERENCIA") reserva.CobradoTransferencia -= consumo.Precio;
+                    decimal montoDevolver = consumo.Precio - consumo.DescuentoMonto;
+                    if (consumo.MetodoPago == "EFECTIVO") reserva.CobradoEfectivo -= montoDevolver;
+                    else if (consumo.MetodoPago == "TRANSFERENCIA") reserva.CobradoTransferencia -= montoDevolver;
                 }
             }
 

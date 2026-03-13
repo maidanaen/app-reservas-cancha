@@ -134,7 +134,6 @@ D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\staticwebassets.build.jso
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\staticwebassets.development.json
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\staticwebassets.build.endpoints.json
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\swae.build.ex.cache
-D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\staticwebassets.upToDateCheck.txt
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\Backend.csproj.Up2Date
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\Backend.dll
 D:\AppReservasCanchas\Backend\Backend\obj\Debug\net9.0\refint\Backend.dll
