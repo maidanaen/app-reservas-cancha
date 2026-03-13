@@ -44,11 +44,14 @@ export default function CrearReservaAdmin() {
   };
 
   // --- ESTADOS DE FORMULARIO ---
+  const hoyLocal = new Date();
+  const fechaLocalStr = `${hoyLocal.getFullYear()}-${String(hoyLocal.getMonth() + 1).padStart(2, '0')}-${String(hoyLocal.getDate()).padStart(2, '0')}`;
+
   const [form, setForm] = useState({
     canchaId: "",
     clienteNombre: "",
     clienteTelefono: "",
-    fecha: new Date().toISOString().split("T")[0],
+    fecha: fechaLocalStr,
     horaInicio: "", 
     horaFin: "",
     duracionMinutos: 90,

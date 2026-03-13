@@ -48,7 +48,10 @@ export default function ReservarPage() {
   const [paso, setPaso] = useState(1);
 
   // Formulario
-  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date().toISOString().split('T')[0]);
+  const hoyLocal = new Date();
+  const fechaLocalStr = `${hoyLocal.getFullYear()}-${String(hoyLocal.getMonth() + 1).padStart(2, '0')}-${String(hoyLocal.getDate()).padStart(2, '0')}`;
+
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaLocalStr);
   const [horaSeleccionada, setHoraSeleccionada] = useState("");
   const [horaFinCalculada, setHoraFinCalculada] = useState("");
   const [duracionSeleccionada, setDuracionSeleccionada] = useState(90); 

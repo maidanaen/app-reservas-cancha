@@ -38,7 +38,10 @@ export default function ReservasPage() {
   const [cargando, setCargando] = useState(false);
   const router = useRouter(); 
   
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+  const hoyLocal = new Date();
+  const fechaLocalStr = `${hoyLocal.getFullYear()}-${String(hoyLocal.getMonth() + 1).padStart(2, '0')}-${String(hoyLocal.getDate()).padStart(2, '0')}`;
+  
+  const [fecha, setFecha] = useState(fechaLocalStr);
   const [canchaId, setCanchaId] = useState<number>(0);
 
   // 🟢 ESTADOS MODAL ELIMINAR Y NOTIFICACIONES

@@ -45,7 +45,11 @@ export default function PartidosPage() {
   // Formulario Crear Sala
   const [nuevoCreador, setNuevoCreador] = useState("");
   const [nuevoContacto, setNuevoContacto] = useState("");
-  const [nuevaFecha, setNuevaFecha] = useState(new Date().toISOString().split('T')[0]);
+  
+  const hoyLocal = new Date();
+  const fechaLocalStr = `${hoyLocal.getFullYear()}-${String(hoyLocal.getMonth() + 1).padStart(2, '0')}-${String(hoyLocal.getDate()).padStart(2, '0')}`;
+  
+  const [nuevaFecha, setNuevaFecha] = useState(fechaLocalStr);
   const [nuevaHora, setNuevaHora] = useState("20:00");
  
   const [cuantosFaltan, setCuantosFaltan] = useState(2);

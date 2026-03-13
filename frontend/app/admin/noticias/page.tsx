@@ -74,7 +74,7 @@ export default function AdminNoticiasPage() {
                     id: idEditar, 
                     titulo, 
                     cuerpo, 
-                    fechaPublicacion: new Date().toISOString(),
+                    fechaPublicacion: new Date().toLocaleString(),
                     usuarioId: Number(userId) // 🟢 Validamos propiedad al editar
                 })
             });
