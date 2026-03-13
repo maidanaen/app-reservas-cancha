@@ -1,24 +1,28 @@
-﻿using Backend.Domain.Entities;
+using Backend.Domain.Entities;
 using Domain.Entities;
 using Infrastructure.Persistencia;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class MesasController : ControllerBase
     {
         private readonly AppDbContext _context;
 
         public MesasController(AppDbContext context) { _context = context; }
 
-        // GET: api/Mesas?usuarioId=5
+        // GET: api/Mesas
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Mesa>>> GetMesas([FromQuery] int usuarioId)
+        public async Task<ActionResult<IEnumerable<Mesa>>> GetMesas()
         {
-            if (usuarioId == 0) return BadRequest("Falta usuarioId");
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized("Token inválido");
             return await _context.Mesas
                 .Where(m => m.UsuarioId == usuarioId)
                 .OrderBy(m => m.Id)
@@ -29,7 +33,9 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Mesa>> PostMesa(Mesa mesa)
         {
-            if (mesa.UsuarioId == 0) return BadRequest("Falta usuarioId");
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized();
+            mesa.UsuarioId = usuarioId; // ASIGNAMOS DEL TOKEN
             _context.Mesas.Add(mesa);
             await _context.SaveChangesAsync();
             return Ok(mesa);
@@ -37,8 +43,9 @@ namespace Backend.Controllers
 
         // 🟢 1. ABRIR MESA 
         [HttpPost("{id}/abrir")]
-        public async Task<IActionResult> AbrirMesa(int id, [FromQuery] int usuarioId)
+        public async Task<IActionResult> AbrirMesa(int id)
         {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var mesa = await _context.Mesas.FirstOrDefaultAsync(m => m.Id == id && m.UsuarioId == usuarioId);
             if (mesa == null) return NotFound("Mesa no encontrada.");
             if (mesa.EstaOcupada) return BadRequest("Esta mesa ya está ocupada.");
@@ -75,8 +82,9 @@ namespace Backend.Controllers
 
         // 🟢 2. CERRAR MESA (Liberar y cobrar REALMENTE)
         [HttpPost("{id}/cerrar")]
-        public async Task<IActionResult> CerrarMesa(int id, [FromQuery] int usuarioId, [FromBody] PagoMesaDto pago)
+        public async Task<IActionResult> CerrarMesa(int id, [FromBody] PagoMesaDto pago)
         {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             // Nota: Necesitas crear la clase PagoMesaDto abajo o usar un dynamic
             var mesa = await _context.Mesas.FirstOrDefaultAsync(m => m.Id == id && m.UsuarioId == usuarioId);
             if (mesa == null) return NotFound("Mesa no encontrada.");
@@ -115,8 +123,9 @@ namespace Backend.Controllers
 
         // DELETE: api/Mesas/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteMesa(int id, [FromQuery] int usuarioId)
+        public async Task<IActionResult> DeleteMesa(int id)
         {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var mesa = await _context.Mesas.FindAsync(id);
             if (mesa == null) return NotFound();
             if (usuarioId != 0 && mesa.UsuarioId != usuarioId) return Unauthorized();

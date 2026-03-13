@@ -3,11 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Domain.Entities;
 using Backend.Domain.Entities;
 using Infrastructure.Persistencia;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class CajasController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -20,9 +23,10 @@ namespace Backend.Controllers
         //MULTICLIENTE
         // 1. ABRIR CAJA 
         [HttpPost("abrir")]
-        public async Task<ActionResult<Caja>> AbrirCaja([FromQuery] int usuarioId, [FromBody] decimal montoInicial)
+        public async Task<ActionResult<Caja>> AbrirCaja([FromBody] decimal montoInicial)
         {
-            if (usuarioId == 0) return BadRequest("Se requiere el ID del usuario.");
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized();
 
             var cajaAbierta = await _context.Cajas
                 .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId && c.FechaCierre == null);
@@ -43,9 +47,10 @@ namespace Backend.Controllers
 
         // 2. OBTENER RESUMEN ACTUAL 
         [HttpGet("actual")]
-        public async Task<ActionResult<object>> GetCajaActual([FromQuery] int usuarioId)
+        public async Task<ActionResult<object>> GetCajaActual()
         {
-            if (usuarioId == 0) return BadRequest("Se requiere el ID del usuario.");
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized();
 
             var caja = await _context.Cajas
                 .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId && c.FechaCierre == null);
@@ -57,9 +62,10 @@ namespace Backend.Controllers
 
         // 3. HISTORIAL
         [HttpGet("historial")]
-        public async Task<ActionResult<IEnumerable<Caja>>> GetHistorial([FromQuery] int usuarioId)
+        public async Task<ActionResult<IEnumerable<Caja>>> GetHistorial()
         {
-            if (usuarioId == 0) return BadRequest("Se requiere el ID del usuario.");
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized();
 
             return await _context.Cajas
                 .Where(c => c.UsuarioId == usuarioId && c.FechaCierre != null)
@@ -70,9 +76,10 @@ namespace Backend.Controllers
 
         // 4. DETALLE HISTORIAL 
         [HttpGet("{id}")]
-        public async Task<ActionResult<object>> GetDetalleCaja(int id, [FromQuery] int usuarioId)
+        public async Task<ActionResult<object>> GetDetalleCaja(int id)
         {
-            if (usuarioId == 0) return BadRequest("Se requiere el ID del usuario.");
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized();
 
             var caja = await _context.Cajas.FindAsync(id);
             if (caja == null) return NotFound();
@@ -85,9 +92,10 @@ namespace Backend.Controllers
 
         // 5. CERRAR CAJA 
         [HttpPost("cerrar")]
-        public async Task<IActionResult> CerrarCaja([FromQuery] int usuarioId, [FromBody] ArqueoCierreDto arqueo)
+        public async Task<IActionResult> CerrarCaja([FromBody] ArqueoCierreDto arqueo)
         {
-            if (usuarioId == 0) return BadRequest("Se requiere el ID del usuario.");
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized();
             // 1. Buscamos la caja (CON SEGURIDAD DE USUARIO)
             var caja = await _context.Cajas
                 .FirstOrDefaultAsync(c => c.UsuarioId == usuarioId && c.FechaCierre == null);

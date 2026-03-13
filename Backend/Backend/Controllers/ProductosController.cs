@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Domain.Entities;
 using Infrastructure.Persistencia;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ProductosController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -16,11 +19,12 @@ namespace Backend.Controllers
             _context = context;
         }
 
-        // GET: api/Productos?usuarioId=5
+        // GET: api/Productos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Producto>>> GetProductos([FromQuery] int usuarioId)
+        public async Task<ActionResult<IEnumerable<Producto>>> GetProductos()
         {
-            if (usuarioId == 0) return BadRequest("Falta usuarioId");
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized();
 
             return await _context.Productos
                 .Where(p => p.Activo && p.UsuarioId == usuarioId) //  SOLO SUS PRODUCTOS
@@ -31,7 +35,9 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Producto>> PostProducto(Producto producto)
         {
-            if (producto.UsuarioId == 0) return BadRequest("Falta usuarioId");
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized();
+            producto.UsuarioId = usuarioId;
 
             producto.Activo = true;
             _context.Productos.Add(producto);
@@ -43,12 +49,13 @@ namespace Backend.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProducto(int id, Producto producto)
         {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             if (id != producto.Id) return BadRequest();
 
             // Verificamos seguridad antes de editar
             var existente = await _context.Productos.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
             if (existente == null) return NotFound();
-            if (existente.UsuarioId != producto.UsuarioId) return Unauthorized();
+            if (existente.UsuarioId != usuarioId) return Unauthorized();
 
             _context.Entry(producto).State = EntityState.Modified;
             producto.Activo = true;
@@ -59,14 +66,15 @@ namespace Backend.Controllers
             return NoContent();
         }
 
-        // DELETE: api/Productos/5?usuarioId=5
+        // DELETE: api/Productos/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProducto(int id, [FromQuery] int usuarioId)
+        public async Task<IActionResult> DeleteProducto(int id)
         {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var producto = await _context.Productos.FindAsync(id);
             if (producto == null) return NotFound();
 
-            if (usuarioId != 0 && producto.UsuarioId != usuarioId) return Unauthorized();
+            if (producto.UsuarioId != usuarioId) return Unauthorized();
 
             producto.Activo = false; // Borrado lógico
             await _context.SaveChangesAsync();

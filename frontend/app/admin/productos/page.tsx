@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, Trash2, Save, Tag } from "lucide-react";
 import Link from "next/link";
 import { API_URL } from '@/utils/config';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
+import { useRouter } from 'next/navigation';
 
 interface Producto {
   id: number;
@@ -14,27 +17,41 @@ interface Producto {
 const CATEGORIAS = ["Bebidas", "Comidas", "Accesorios", "General"];
 
 export default function GestionProductosPage() {
-  const [productos, setProductos] = useState<Producto[]>([]);
+  const router = useRouter();
   const [nuevo, setNuevo] = useState({ nombre: "", precio: "", categoria: "Bebidas" });
 
-  useEffect(() => { cargarProductos(); }, []);
+  const userId = typeof window !== 'undefined' ? localStorage.getItem("usuarioId") : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
-  const cargarProductos = async () => {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    try {
-        const res = await fetch(`${API_URL}/api/Productos`);
-        if(res.ok) setProductos(await res.json());
-    } catch (e) { console.error(e); }
-  };
+  // --- CARGA CON SWR ---
+  const { data: productosData, mutate: recargarProductos } = useSWR(
+      userId && token ? `${API_URL}/api/Productos?usuarioId=${userId}` : null,
+      fetcher
+  );
+  const productos: Producto[] = productosData || [];
+
+  useEffect(() => {
+      if (!token && typeof window !== 'undefined') {
+          router.push("/admin/login");
+      }
+  }, [token, router]);
+
+  const cargarProductos = () => recargarProductos();
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nuevo.nombre || !nuevo.precio) return;
     
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     await fetch(`${API_URL}/api/Productos`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` 
+        },
         body: JSON.stringify({ ...nuevo, precio: Number(nuevo.precio) })
     });
     setNuevo({ nombre: "", precio: "", categoria: "Bebidas" });
@@ -44,7 +61,11 @@ export default function GestionProductosPage() {
   const borrar = async (id: number) => {
       if(!confirm("¿Borrar producto?")) return;
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      await fetch(`${API_URL}/api/Productos/${id}`, { method: "DELETE" });
+      const token = localStorage.getItem("token");
+      await fetch(`${API_URL}/api/Productos/${id}`, { 
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+      });
       cargarProductos();
   };
 

@@ -6,6 +6,8 @@ import {
     CreditCard, Wallet, AlertTriangle, CheckCircle, Tag, Printer, X, Pencil, Minus, Trash2
 } from "lucide-react";
 import { API_URL } from '@/utils/config';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
 
 // --- INTERFACES ---
 interface Producto {
@@ -23,14 +25,9 @@ export default function CantinaPage() {
     const router = useRouter();
 
     // --- ESTADOS ---
-    const [productos, setProductos] = useState<Producto[]>([]);
-    const [cargandoProductos, setCargandoProductos] = useState(true);
     const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
     const [filtro, setFiltro] = useState("");
     const [categoriaActiva, setCategoriaActiva] = useState("Todas");
-    const [cajaAbierta, setCajaAbierta] = useState(false);
-    const [totalEfectivo, setTotalEfectivo] = useState(0);
-    const [totalTransferencia, setTotalTransferencia] = useState(0);
     const [showModalProducto, setShowModalProducto] = useState(false);
     const [idEdicion, setIdEdicion] = useState<number | null>(null);
     const [formProd, setFormProd] = useState({ nombre: "", precio: "", categoria: "Bebidas" });
@@ -45,40 +42,41 @@ export default function CantinaPage() {
     const [itemDescuento, setItemDescuento] = useState<ItemCarrito | null>(null);
     const [nuevoPrecio, setNuevoPrecio] = useState("");
 
+    const userId = typeof window !== 'undefined' ? localStorage.getItem("usuarioId") : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+
+    // --- CARGA CON SWR (Productos) ---
+    const { data: productosData, isLoading: cargandoProductos, mutate: recargarProductos } = useSWR(
+        userId && token ? `${API_URL}/api/Productos?usuarioId=${userId}` : null,
+        fetcher
+    );
+    const productos: Producto[] = productosData || [];
+
+    // --- CARGA CON SWR (Caja Actual) ---
+    const { data: cajaActualData, mutate: recargarCaja } = useSWR(
+        userId && token ? `${API_URL}/api/Cajas/actual?usuarioId=${userId}` : null,
+        fetcher
+    );
+
+    const cajaAbierta = !!cajaActualData;
+    const totalEfectivo = cajaActualData?.resumen?.detalle?.barra?.efectivo || 0;
+    const totalTransferencia = cajaActualData?.resumen?.detalle?.barra?.transferencia || 0;
+
+    useEffect(() => {
+        if (!token && typeof window !== 'undefined') {
+            router.push("/admin/login");
+        }
+    }, [token, router]);
+
+    const cargarTodo = () => {
+        recargarProductos();
+        recargarCaja();
+    };
 
     const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
         setNotificacion({ tipo, msj });
         setTimeout(() => setNotificacion(null), 4000);
     };
-
-    const cargarTodo = async () => {
-        const userId = localStorage.getItem("usuarioId");
-        if (!userId) return;
-        try {
-            const resProd = await fetch(`${API_URL}/api/Productos?usuarioId=${userId}`);
-            if (resProd.ok) setProductos(await resProd.json());
-        } catch (error) {
-            console.error("Error cargando productos:", error);
-        } finally {
-            setCargandoProductos(false);
-        }
-
-        try {
-            const resCaja = await fetch(`${API_URL}/api/Cajas/actual?usuarioId=${userId}`);
-            if (resCaja.ok) {
-                const data = await resCaja.json();
-                setCajaAbierta(true);
-                setTotalEfectivo(data.resumen?.detalle?.barra?.efectivo || 0);
-                setTotalTransferencia(data.resumen?.detalle?.barra?.transferencia || 0);
-            } else {
-                setCajaAbierta(false);
-            }
-        } catch (error) {
-            setCajaAbierta(false);
-        }
-    };
-
-    useEffect(() => { cargarTodo(); }, []);
 
     const agregarAlCarrito = (producto: Producto) => {
         setCarrito(prev => {
@@ -133,7 +131,8 @@ export default function CantinaPage() {
 
     const confirmarCobro = async () => {
         const userId = localStorage.getItem("usuarioId");
-        if (carrito.length === 0 || !userId) return;
+        const token = localStorage.getItem("token");
+        if (carrito.length === 0 || !userId || !token) return;
         if (!cajaAbierta) {
             mostrarMensaje('error', "La caja está CERRADA.");
             return;
@@ -156,7 +155,10 @@ export default function CantinaPage() {
         try {
             const res = await fetch(`${API_URL}/api/Reservas/venta-express`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify(ventaDto)
             });
             if (res.ok) {
@@ -185,8 +187,14 @@ export default function CantinaPage() {
     const confirmarEliminacion = async () => {
         if (!idEdicion) return;
         const userId = localStorage.getItem("usuarioId");
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        
         try {
-            await fetch(`${API_URL}/api/Productos/${idEdicion}?usuarioId=${userId}`, { method: "DELETE" });
+            await fetch(`${API_URL}/api/Productos/${idEdicion}?usuarioId=${userId}`, { 
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             cargarTodo();
             setShowModalProducto(false);
             setMostrarModalEliminar(false);
@@ -198,11 +206,20 @@ export default function CantinaPage() {
 
     const guardarProducto = async () => {
         const userId = localStorage.getItem("usuarioId");
-        if (!formProd.nombre || !formProd.precio || !userId) return;
+        const token = localStorage.getItem("token");
+        if (!formProd.nombre || !formProd.precio || !userId || !token) return;
+        
         const productoData = { id: idEdicion || 0, nombre: formProd.nombre, precio: Number(formProd.precio), categoria: formProd.categoria, activo: true, usuarioId: Number(userId) };
         try {
             const url = idEdicion ? `${API_URL}/api/Productos/${idEdicion}` : `${API_URL}/api/Productos`;
-            await fetch(url, { method: idEdicion ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(productoData) });
+            await fetch(url, { 
+                method: idEdicion ? "PUT" : "POST", 
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }, 
+                body: JSON.stringify(productoData) 
+            });
             cargarTodo();
             setShowModalProducto(false);
             mostrarMensaje('exito', '✅ Producto guardado');

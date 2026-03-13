@@ -1,9 +1,12 @@
-﻿using Domain.Interfaces;
+using Domain.Interfaces;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Backend.Services;
 using System.Text.Json.Serialization;
 using Infrastructure.Persistencia;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -31,6 +34,26 @@ builder.Services.AddControllers().AddJsonOptions(x =>
 // 3. Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// ==================================================================
+// 3.5. AUTENTICACIÓN JWT
+// ==================================================================
+var jwtSecretKey = builder.Configuration["JwtSettings:SecretKey"] ?? "nexus_sport_super_secret_key_123456789";
+var key = Encoding.ASCII.GetBytes(jwtSecretKey);
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false; // Vercel/Railway manage SSL
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
 
 // ==================================================================
 // 4. BASE DE DATOS (Conexión Inteligente para Railway)
@@ -106,6 +129,7 @@ app.UseHttpsRedirection();
 // ¡IMPORTANTE! Usar la política "PermitirVercel" que definimos arriba
 app.UseCors("PermitirTodo");
 
+app.UseAuthentication();
 app.UseAuthorization();
 app.UseStaticFiles();
 

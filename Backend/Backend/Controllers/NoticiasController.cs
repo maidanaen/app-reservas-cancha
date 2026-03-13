@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Domain.Entities;
 using Infrastructure.Persistencia;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Backend.Controllers
 {
@@ -15,17 +17,18 @@ namespace Backend.Controllers
 
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class NoticiasController : ControllerBase
     {
         private readonly AppDbContext _context;
         public NoticiasController(AppDbContext context) { _context = context; }
 
         // 1. ENDPOINT PARA EL ADMINISTRADOR (Panel de Control)
-        // Ruta: GET api/Noticias?usuarioId=5
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Noticia>>> GetNoticias([FromQuery] int usuarioId)
+        public async Task<ActionResult<IEnumerable<Noticia>>> GetNoticias()
         {
-            if (usuarioId == 0) return BadRequest("Falta usuarioId (Admin)");
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized("Token inválido");
 
             return await _context.Noticias
                 .Where(n => n.UsuarioId == usuarioId) //  SOLO SUS NOTICIAS
@@ -36,6 +39,7 @@ namespace Backend.Controllers
         // 2. ENDPOINT PARA EL PÚBLICO (Web de Clientes)
         // Ruta: GET api/Noticias/publicas?usuarioId=0 (o el ID del club)
         [HttpGet("publicas")] 
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<Noticia>>> GetNoticiasPublicas([FromQuery] int usuarioId = 0)
         {
             // Empezamos trayendo todo
@@ -53,11 +57,12 @@ namespace Backend.Controllers
                 .ToListAsync();
         }
 
-        // POST: api/Noticias?usuarioId=5
+        // POST: api/Noticias
         [HttpPost]
-        public async Task<ActionResult<Noticia>> PostNoticia([FromForm] CrearNoticiaDto datos, [FromQuery] int usuarioId)
+        public async Task<ActionResult<Noticia>> PostNoticia([FromForm] CrearNoticiaDto datos)
         {
-            if (usuarioId == 0) return BadRequest("Falta usuarioId");
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized();
 
             var nuevaNoticia = new Noticia
             {
@@ -74,13 +79,14 @@ namespace Backend.Controllers
             return Ok(nuevaNoticia);
         }
 
-        // DELETE: api/Noticias/5?usuarioId=5
+        // DELETE: api/Noticias/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteNoticia(int id, [FromQuery] int usuarioId)
+        public async Task<IActionResult> DeleteNoticia(int id)
         {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var noticia = await _context.Noticias.FindAsync(id);
             if (noticia == null) return NotFound();
-            if (usuarioId != 0 && noticia.UsuarioId != usuarioId) return Unauthorized();
+            if (noticia.UsuarioId != usuarioId) return Unauthorized();
 
             _context.Noticias.Remove(noticia);
             await _context.SaveChangesAsync();

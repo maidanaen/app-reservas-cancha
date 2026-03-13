@@ -71,12 +71,15 @@ export default function CrearReservaAdmin() {
   // 1. CARGAR CANCHAS
   useEffect(() => {
     const userId = localStorage.getItem("usuarioId");
-    if (!userId) {
+    const token = localStorage.getItem("token");
+    if (!userId || !token) {
         router.push("/admin/login");
         return;
     }
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    fetch(`${API_URL}/api/Canchas?usuarioId=${userId}`)
+    fetch(`${API_URL}/api/Canchas?usuarioId=${userId}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+    })
       .then(res => res.ok ? res.json() : [])
       .then(data => setCanchas(data))
       .catch(err => console.error(err));
@@ -85,8 +88,13 @@ export default function CrearReservaAdmin() {
   // 2. CARGAR OCUPACIÓN
   useEffect(() => {
     if (form.canchaId && form.fecha) {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        fetch(`${API_URL}/api/Reservas/cancha/${form.canchaId}?fecha=${form.fecha}`)
+        fetch(`${API_URL}/api/Reservas/cancha/${form.canchaId}?fecha=${form.fecha}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        })
             .then(res => res.json())
             .then((data: any[]) => {
                 const ocupados = data.map(r => ({
@@ -189,6 +197,9 @@ export default function CrearReservaAdmin() {
             return new Date(date.getTime() - offset).toISOString().slice(0, -1);
         };
 
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
         if (esFijo) {
             // MODO FIJO
             if (diasSeleccionados.length === 0 || !fechaFinFijo) {
@@ -210,7 +221,11 @@ export default function CrearReservaAdmin() {
             };
 
             const res = await fetch(`${API_URL}/api/Reservas/fija`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
+                method: "POST", 
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                },
                 body: JSON.stringify(bodyFijo)
             });
 
@@ -241,7 +256,11 @@ export default function CrearReservaAdmin() {
             };
 
             const res = await fetch(`${API_URL}/api/Reservas`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
+                method: "POST", 
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                },
                 body: JSON.stringify(nuevaReserva)
             });
 

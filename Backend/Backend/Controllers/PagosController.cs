@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Backend.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PagosController : ControllerBase
     {
         private readonly MercadoPagoService _mpService;
@@ -15,6 +17,7 @@ namespace Backend.Controllers
         }
 
         [HttpPost("crear")]
+        [AllowAnonymous] // 🟢 CUALQUIERA PUEDE INICIAR UN PAGO DESDE LA WEB PÚBLICA
         public async Task<ActionResult> CrearPago([FromBody] DatosPago datos)
         {
             try

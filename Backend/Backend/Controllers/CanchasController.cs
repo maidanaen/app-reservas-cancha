@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
 using Domain.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class CanchasController : ControllerBase
     {
         private readonly ICanchaRepository _repository;
@@ -15,14 +18,13 @@ namespace Backend.Controllers
             _repository = repository;
         }
 
-        // GET: api/canchas?usuarioId=5
-        // SEGURIDAD: Exigimos el usuarioId para filtrar
         [HttpGet]
-        public async Task<ActionResult<List<Cancha>>> ObtenerTodas([FromQuery] int usuarioId)
+        public async Task<ActionResult<List<Cancha>>> ObtenerTodas()
         {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             if (usuarioId <= 0)
             {
-                return BadRequest("⚠️ Error de seguridad: Se requiere el ID del usuario.");
+                return Unauthorized("⚠️ Error de seguridad: Token inválido.");
             }
 
             // Traemos todas y filtramos (Idealmente esto se hace en el repositorio, pero así funciona rápido)
@@ -32,15 +34,15 @@ namespace Backend.Controllers
             return Ok(misCanchas);
         }
 
-        // POST: api/canchas
-        //  SEGURIDAD: Validamos que la cancha tenga dueño
         [HttpPost]
         public async Task<ActionResult<Cancha>> CrearCancha(Cancha cancha)
         {
-            if (cancha.UsuarioId <= 0)
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId <= 0)
             {
-                return BadRequest("❌ No se puede crear una cancha sin asignar un dueño (UsuarioId).");
+                return Unauthorized("❌ No se puede crear una cancha sin estar autenticado.");
             }
+            cancha.UsuarioId = usuarioId; // ASIGNAMOS EL DUEÑO DEL TOKEN
 
             var nuevaCancha = await _repository.AddAsync(cancha);
 
@@ -70,25 +72,26 @@ namespace Backend.Controllers
 
             // 2. PROTECCIÓN CRÍTICA:
             // Aseguramos que no estén intentando cambiar el dueño de la cancha o editar una ajena
-            if (canchaExistente.UsuarioId != cancha.UsuarioId)
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (canchaExistente.UsuarioId != usuarioId)
             {
                 return Unauthorized("⛔ No tienes permiso para editar esta cancha o cambiar su dueño.");
             }
+            cancha.UsuarioId = usuarioId; // Forzamos a que no pueda cambiar el dueño original
 
             await _repository.UpdateAsync(cancha);
             return NoContent();
         }
 
-        // DELETE: api/Canchas/5
-        // SEGURIDAD: Verificamos existencia antes de borrar
         [HttpDelete("{id}")]
         public async Task<IActionResult> EliminarCancha(int id)
         {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var cancha = await _repository.GetByIdAsync(id);
             if (cancha == null) return NotFound();
 
-            // Aquí podríamos validar también el usuarioId si se enviara, 
-            // pero al menos validamos que exista antes de intentar borrar.
+            if (cancha.UsuarioId != usuarioId) 
+                return Unauthorized("No tienes permiso de borrar esta cancha.");
 
             await _repository.DeleteAsync(id);
             return NoContent();

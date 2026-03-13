@@ -8,6 +8,8 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation"; 
 import { API_URL } from '@/utils/config';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
 
 interface Cancha {
   id: number;
@@ -33,9 +35,6 @@ interface Reserva {
 }
 
 export default function ReservasPage() {
-  const [canchas, setCanchas] = useState<Cancha[]>([]);
-  const [reservas, setReservas] = useState<Reserva[]>([]);
-  const [cargando, setCargando] = useState(false);
   const router = useRouter(); 
   
   const hoyLocal = new Date();
@@ -53,50 +52,29 @@ export default function ReservasPage() {
       setTimeout(() => setNotificacion(null), 4000);
   };
 
+  const userId = typeof window !== 'undefined' ? localStorage.getItem("usuarioId") : null;
+  
+  // 🟢 SWR: Fetch Automático de Canchas con Caché
+  const { data: canchasData } = useSWR(userId ? `${API_URL}/api/Canchas?usuarioId=${userId}` : null, fetcher);
+  const canchas = canchasData || [];
+
+  // Seleccionamos la primera cancha por defecto
   useEffect(() => {
-    async function cargarCanchas() {
-      const userId = localStorage.getItem("usuarioId");
-      if (!userId) {
-          router.push("/admin/login");
-          return;
-      }
+      if (canchas.length > 0 && canchaId === 0) setCanchaId(canchas[0].id);
+  }, [canchas, canchaId]);
 
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      try {
-        const res = await fetch(`${API_URL}/api/Canchas?usuarioId=${userId}`);
-        
-        if (res.ok) {
-          const data = await res.json();
-          setCanchas(data);
-          if (data.length > 0) setCanchaId(data[0].id);
-        }
-      } catch (error) { console.error("Error cargando canchas"); }
-    }
-    cargarCanchas();
-  }, [router]);
+  // 🟢 SWR: Fetch Automático de Reservas (Dependiente de canchaId y fecha)
+  const { data: reservasData, mutate: recargarReservas } = useSWR(
+      canchaId !== 0 ? `${API_URL}/api/Reservas/cancha/${canchaId}?fecha=${fecha}` : null, fetcher
+  );
 
-  useEffect(() => {
-    if (canchaId === 0) return;
-    buscarReservas();
-  }, [fecha, canchaId]);
+  const reservasCrudas: Reserva[] = reservasData || [];
+  const reservas = reservasCrudas
+      .filter(r => r.clienteNombre !== "🍻 VENTAS BARRA")
+      .sort((a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
 
-  const buscarReservas = async () => {
-    setCargando(true);
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    try {
-      const res = await fetch(`${API_URL}/api/Reservas/cancha/${canchaId}?fecha=${fecha}`);
-      if (res.ok) {
-        const data = await res.json();
-        
-        const soloJuegos = data.filter((r: any) => r.clienteNombre !== "🍻 VENTAS BARRA");
-        soloJuegos.sort((a: any, b: any) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
-        
-        setReservas(soloJuegos);
-      }
-    } catch (error) {
-      console.error("Error buscando reservas");
-    } finally { setCargando(false); }
-  };
+  // Indicador global de carga si SWR no ha devuelto data o errores aún
+  const cargando = (!canchasData && userId) || (canchaId !== 0 && !reservasData);
 
   // FUNCIÓN WHATSAPP INTELIGENTE
   const abrirWhatsApp = (telefono: string) => {
@@ -118,11 +96,17 @@ export default function ReservasPage() {
     if (!reservaAEliminar) return;
 
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     try {
-      const res = await fetch(`${API_URL}/api/Reservas/${reservaAEliminar}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}/api/Reservas/${reservaAEliminar}`, { 
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${token}` }
+      });
       if (res.ok) {
           mostrarMensaje('exito', '🗑️ El turno ha sido cancelado.');
-          buscarReservas();
+          recargarReservas();
       } else {
           mostrarMensaje('error', 'No se pudo cancelar el turno.');
       }
@@ -144,7 +128,7 @@ export default function ReservasPage() {
   };
 
   const renderEstadoPago = (reserva: Reserva) => {
-      const canchaActual = canchas.find(c => c.id === canchaId);
+      const canchaActual = canchas.find((c: Cancha) => c.id === canchaId);
       let totalDeuda = 0;
       if (canchaActual) {
         const diffHoras = (new Date(reserva.fechaFin).getTime() - new Date(reserva.fechaInicio).getTime()) / (1000 * 60 * 60);
@@ -207,7 +191,7 @@ export default function ReservasPage() {
             <Link href="/admin/reservas/crear" className="bg-black text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 flex items-center gap-2 shadow-sm transition">
                 <CalendarPlus size={18} /> Nuevo Turno
             </Link>
-            <button onClick={buscarReservas} className="bg-white border text-gray-600 p-2 rounded-lg hover:bg-gray-50 transition">
+            <button onClick={() => recargarReservas()} className="bg-white border text-gray-600 p-2 rounded-lg hover:bg-gray-50 transition">
                 <RefreshCw size={20} className={cargando ? "animate-spin" : ""} />
             </button>
         </div>
@@ -223,7 +207,7 @@ export default function ReservasPage() {
                 onChange={(e) => setCanchaId(Number(e.target.value))}
             >
                 {canchas.length === 0 && <option>No tienes canchas creadas</option>}
-                {canchas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                {canchas.map((c: Cancha) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
         </div>
         <div className="flex-1 min-w-[200px]">
@@ -235,7 +219,7 @@ export default function ReservasPage() {
                 onChange={(e) => setFecha(e.target.value)}
             />
         </div>
-        <button onClick={buscarReservas} className="bg-black text-white p-3 rounded-lg hover:bg-gray-800 transition">
+        <button onClick={() => recargarReservas()} className="bg-black text-white p-3 rounded-lg hover:bg-gray-800 transition">
             <Search size={20} />
         </button>
       </div>

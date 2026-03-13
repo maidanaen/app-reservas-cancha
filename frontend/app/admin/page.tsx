@@ -9,80 +9,58 @@ import {
   ArrowRight, Lock, Send // 🟢 IMPORTAMOS 'Send'
 } from "lucide-react";
 import { API_URL } from '@/utils/config';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
+import { useRouter } from 'next/navigation';
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [nombreNegocio, setNombreNegocio] = useState("Panel Principal");
-  
-  // Datos Estadísticos
-  const [stats, setStats] = useState({
-    ventasDiarias: 0,
-    turnosHoy: 0,
-    cajaActual: 0,
-    grafico: [] as any[]
-  });
-
-  const [proximosTurnos, setProximosTurnos] = useState<any[]>([]);
-  const [cargando, setCargando] = useState(true);
-
-  // 🟢 NUEVO: Estado para el botón de Telegram
   const [generandoLink, setGenerandoLink] = useState(false);
 
+  const userId = typeof window !== 'undefined' ? localStorage.getItem("usuarioId") : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+
+  // --- CARGA CON SWR (Resumen) ---
+  const { data: dashboardData } = useSWR(
+      userId && token ? `${API_URL}/api/Dashboard/resumen?usuarioId=${userId}` : null,
+      fetcher
+  );
+
+  // Transformación de Stats
+  const stats = {
+    ventasDiarias: dashboardData?.ventasDiarias || 0,
+    turnosHoy: dashboardData?.turnosHoy || 0,
+    cajaActual: dashboardData?.cajaActual || 0,
+    grafico: Array.isArray(dashboardData?.grafico) ? dashboardData.grafico.map((g: any) => ({
+        fecha: new Date(g.fecha).toLocaleDateString('es-AR', { weekday: 'short' }),
+        total: g.total
+    })) : []
+  };
+
+  // --- CARGA CON SWR (Turnos) ---
+  const { data: todasLasReservasRaw } = useSWR(
+      userId && token ? `${API_URL}/api/Reservas?usuarioId=${userId}` : null,
+      fetcher
+  );
+
+  const proximosTurnos = Array.isArray(todasLasReservasRaw) ? todasLasReservasRaw
+    .filter((r: any) => {
+        const fechaR = new Date(r.fechaInicio);
+        const ahora = new Date();
+        return fechaR >= ahora && (r.tipo === "Cancha" || r.canchaId != null); 
+    })
+    .sort((a: any, b: any) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime()) 
+    .slice(0, 5) : [];
+
   useEffect(() => {
-    async function cargarTodo() {
-      const userId = localStorage.getItem("usuarioId");
-      const nombre = localStorage.getItem("nombreNegocio");
-      if (nombre) setNombreNegocio(nombre);
-      
-      if (!userId) {
-        window.location.href = "/admin/login";
-        return;
-      }
+    const nombre = localStorage.getItem("nombreNegocio");
+    if (nombre) setNombreNegocio(nombre);
 
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-      
-      // 1. CARGAR ESTADÍSTICAS (KPIs y Gráfico)
-      try {
-        const resStats = await fetch(`${API_URL}/api/Dashboard/resumen?usuarioId=${userId}`);
-        if (resStats.ok) {
-          const data = await resStats.json();
-          setStats(prev => ({
-            ...prev,
-            ventasDiarias: data.ventasDiarias || 0,
-            turnosHoy: data.turnosHoy || 0,
-            cajaActual: data.cajaActual || 0,
-            grafico: Array.isArray(data.grafico) ? data.grafico.map((g: any) => ({
-                fecha: new Date(g.fecha).toLocaleDateString('es-AR', { weekday: 'short' }),
-                total: g.total
-            })) : []
-          }));
-        }
-      } catch (err) { console.error("Error stats:", err); }
-
-      // 2. CARGAR PRÓXIMOS TURNOS (Independiente)
-      try {
-        const resReservas = await fetch(`${API_URL}/api/Reservas?usuarioId=${userId}`);
-        if (resReservas.ok) {
-            const todasLasReservas = await resReservas.json();
-            const ahora = new Date(); 
-
-            const filtradas = todasLasReservas
-                .filter((r: any) => {
-                    const fechaR = new Date(r.fechaInicio);
-                    // Solo futuros y tipo Cancha
-                    return fechaR >= ahora && (r.tipo === "Cancha" || r.canchaId != null); 
-                })
-                .sort((a: any, b: any) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime()) 
-                .slice(0, 5); 
-
-            setProximosTurnos(filtradas);
-        }
-      } catch (err) { console.error("Error turnos:", err); }
-      
-      setCargando(false);
+    if (!token && typeof window !== 'undefined') {
+        router.push("/admin/login");
     }
-
-    cargarTodo();
-  }, []);
+  }, [token, router]);
 
   // 🟢 NUEVA FUNCIÓN: Conectar Telegram
   const conectarTelegram = async () => {
@@ -95,11 +73,15 @@ export default function AdminDashboard() {
       setGenerandoLink(true);
       try {
           process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; 
+          const token = localStorage.getItem("token");
           
           // Llamamos a tu AuthController
           const res = await fetch(`${API_URL}/api/Auth/generar-link-telegram?usuarioId=${userId}`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" }
+              headers: { 
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}` 
+              }
           });
 
           if (res.ok) {
@@ -117,7 +99,7 @@ export default function AdminDashboard() {
       }
   };
 
-  if (cargando) return <div className="min-h-screen flex items-center justify-center text-gray-400 font-medium">Cargando tu imperio...</div>;
+
 
   return (
     <main className="max-w-7xl mx-auto p-4 font-sans bg-gray-50 min-h-screen relative" >

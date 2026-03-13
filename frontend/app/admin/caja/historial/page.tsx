@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Eye, MessageSquare } from "lucide-react";
 import { API_URL } from '@/utils/config';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
+import { useRouter } from 'next/navigation';
 
 interface CajaCerrada {
     id: number;
@@ -20,10 +23,25 @@ interface CajaCerrada {
 }
 
 export default function HistorialCajaPage() {
-    const [historial, setHistorial] = useState<CajaCerrada[]>([]);
-    const [cargando, setCargando] = useState(true);
+    const router = useRouter();
 
-    // ✅ LÓGICA DE TIEMPO IGUAL A TU REPORTE DETALLADO
+    const userId = typeof window !== 'undefined' ? localStorage.getItem("usuarioId") : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+
+    // --- CARGA CON SWR ---
+    const { data: historialData, isLoading: cargando } = useSWR(
+        userId && token ? `${API_URL}/api/Cajas/historial?usuarioId=${userId}` : null,
+        fetcher
+    );
+    const historial: CajaCerrada[] = historialData || [];
+
+    useEffect(() => {
+        if (!token && typeof window !== 'undefined') {
+            router.push("/admin/login");
+        }
+    }, [token, router]);
+
+    // ✅ LÓGICA DE TIEMPO IGUAL A TU REPORTE DETALADO
     const formatearHoraLocal = (fechaString?: string) => {
         if (!fechaString) return "---";
         const utcString = fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`;
@@ -35,25 +53,6 @@ export default function HistorialCajaPage() {
         const utcString = fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`;
         return new Date(utcString).toLocaleDateString();
     };
-
-    useEffect(() => {
-        const cargarHistorial = async () => {
-            const userId = localStorage.getItem("usuarioId");
-            if (!userId) return;
-            try {
-                const res = await fetch(`${API_URL}/api/Cajas/historial?usuarioId=${userId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setHistorial(data);
-                }
-            } catch (error) { 
-                console.error("Error:", error); 
-            } finally { 
-                setCargando(false); 
-            }
-        };
-        cargarHistorial();
-    }, []);
 
     return (
         <main className="max-w-7xl mx-auto p-4 md:p-6 font-sans bg-gray-50 min-h-screen">

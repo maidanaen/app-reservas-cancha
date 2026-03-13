@@ -6,6 +6,9 @@ import {
     Calendar, Phone, User, CheckCircle, Lock
 } from "lucide-react";
 import { API_URL } from '@/utils/config';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
+import { useRouter } from 'next/navigation';
 
 // --- INTERFACES ---
 interface Cancha {
@@ -35,10 +38,10 @@ interface SalaPartido {
 }
 
 export default function GestionCanchasPage() {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState<'infra' | 'salas'>('infra');
 
     // --- ESTADOS: CANCHAS ---
-    const [canchas, setCanchas] = useState<Cancha[]>([]);
     const [showModalCancha, setShowModalCancha] = useState(false);
     
     const [canchaForm, setCanchaForm] = useState<Partial<Cancha>>({ 
@@ -63,64 +66,50 @@ export default function GestionCanchasPage() {
     const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
 
     // --- ESTADOS: SALAS (PARTIDOS) ---
-    const [salas, setSalas] = useState<SalaPartido[]>([]);
     const [showModalSala, setShowModalSala] = useState(false); 
     const [salaForm, setSalaForm] = useState<Partial<SalaPartido>>({}); 
+
+    const userId = typeof window !== 'undefined' ? localStorage.getItem("usuarioId") : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+
+    // --- CARGA CON SWR ---
+    const { data: canchasData, mutate: recargarCanchas } = useSWR(
+        userId && token ? `${API_URL}/api/Canchas?usuarioId=${userId}` : null,
+        fetcher
+    );
+    const canchas: Cancha[] = canchasData || [];
+
+    const { data: salasData, mutate: recargarSalas } = useSWR(
+        userId && token ? `${API_URL}/api/Partidos?usuarioId=${userId}` : null,
+        fetcher
+    );
+    const salasRaw: any[] = salasData || [];
+    const salas: SalaPartido[] = salasRaw.map((p: any) => ({
+        id: p.id,
+        fecha: p.fecha,
+        hora: p.hora,
+        canchaNombre: p.lugar || "Sin ubicación",
+        deporte: p.deporte || "Padel",
+        organizador: p.creador || "Anónimo",
+        faltan: p.jugadoresFaltantes,
+        clave: p.claveBorrado,
+        contacto: p.contacto,
+        nivel: p.nivel
+    }));
+
+    useEffect(() => {
+        if (!token && typeof window !== 'undefined') {
+            router.push("/admin/login");
+        }
+    }, [token, router]);
 
     const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
         setNotificacion({ tipo, msj });
         setTimeout(() => setNotificacion(null), 4000);
     };
 
-    useEffect(() => {
-        if (activeTab === 'infra') cargarCanchas();
-        if (activeTab === 'salas') cargarSalas();
-    }, [activeTab]);
-
-    // --- CARGAR DATOS ---
-    const cargarCanchas = async () => {
-        const userId = localStorage.getItem("usuarioId");
-        if (!userId) return; 
-
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        try {
-            const res = await fetch(`${API_URL}/api/Canchas?usuarioId=${userId}`);
-            if (res.ok) {
-                setCanchas(await res.json());
-            }
-        } catch (error) { console.error(error); }
-    };
-
-    const cargarSalas = async () => {
-        // 🟢 1. OBTENEMOS EL ID DEL DUEÑO LOGUEADO
-        const userId = localStorage.getItem("usuarioId");
-        if (!userId) return;
-
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        try {
-            // 🟢 2. CAMBIO CRÍTICO: FILTRAR POR USUARIO
-            // Antes decía: ?todo=true (Traía todo)
-            // Ahora dice: ?usuarioId=... (Trae solo lo tuyo)
-            const res = await fetch(`${API_URL}/api/Partidos?usuarioId=${userId}`);
-            
-            if (res.ok) {
-                const data = await res.json();
-                const partidosMapeados = data.map((p: any) => ({
-                    id: p.id,
-                    fecha: p.fecha,
-                    hora: p.hora,
-                    canchaNombre: p.lugar || "Sin ubicación",
-                    deporte: p.deporte || "Padel",
-                    organizador: p.creador || "Anónimo",
-                    faltan: p.jugadoresFaltantes,
-                    clave: p.claveBorrado,
-                    contacto: p.contacto,
-                    nivel: p.nivel
-                }));
-                setSalas(partidosMapeados);
-            }
-        } catch (error) { console.error(error); }
-    };
+    const cargarCanchas = () => recargarCanchas();
+    const cargarSalas = () => recargarSalas();
 
     // --- LOGICA CANCHAS ---
     
@@ -128,7 +117,8 @@ export default function GestionCanchasPage() {
         if (!canchaForm.nombre || !canchaForm.precioPorHora) return mostrarMensaje('error', "Faltan datos");
 
         const userId = localStorage.getItem("usuarioId");
-        if (!userId) {
+        const token = localStorage.getItem("token");
+        if (!userId || !token) {
             mostrarMensaje('error', "Sesión expirada.");
             return;
         }
@@ -145,7 +135,10 @@ export default function GestionCanchasPage() {
         try {
             const res = await fetch(url, { 
                 method, 
-                headers: { "Content-Type": "application/json" }, 
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                }, 
                 body: JSON.stringify(canchaParaGuardar) 
             });
             if (res.ok) { 
@@ -165,11 +158,15 @@ export default function GestionCanchasPage() {
     const confirmarEliminacion = async () => {
         if (!canchaAEliminar) return;
         const userId = localStorage.getItem("usuarioId");
-        if(!userId) return;
+        const token = localStorage.getItem("token");
+        if(!userId || !token) return;
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            await fetch(`${API_URL}/api/Canchas/${canchaAEliminar.id}?usuarioId=${userId}`, { method: "DELETE" });
+            await fetch(`${API_URL}/api/Canchas/${canchaAEliminar.id}?usuarioId=${userId}`, { 
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` } 
+            });
             mostrarMensaje('exito', "Cancha eliminada correctamente");
             cargarCanchas();
         } catch (error) { mostrarMensaje('error', "Error al eliminar"); } 
@@ -184,7 +181,8 @@ export default function GestionCanchasPage() {
     const confirmarToggleEstado = async () => {
         if(!canchaAEditarEstado) return;
         const userId = localStorage.getItem("usuarioId");
-        if(!userId) return;
+        const token = localStorage.getItem("token");
+        if(!userId || !token) return;
 
         const nuevoEstado = !canchaAEditarEstado.activa;
         const canchaActualizada = { ...canchaAEditarEstado, activa: nuevoEstado, usuarioId: Number(userId) };
@@ -192,7 +190,12 @@ export default function GestionCanchasPage() {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
             const res = await fetch(`${API_URL}/api/Canchas/${canchaAEditarEstado.id}`, {
-                method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(canchaActualizada)
+                method: "PUT", 
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                }, 
+                body: JSON.stringify(canchaActualizada)
             });
             if (res.ok) { cargarCanchas(); mostrarMensaje('exito', nuevoEstado ? "Cancha Habilitada" : "Cancha Pausada"); }
         } catch (error) { console.error(error); }
@@ -213,6 +216,9 @@ export default function GestionCanchasPage() {
 
     const guardarSala = async () => {
         if (!salaForm.id) return;
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
         const partidoBackend = {
             id: salaForm.id,
             creador: salaForm.organizador,
@@ -228,7 +234,12 @@ export default function GestionCanchasPage() {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
             const res = await fetch(`${API_URL}/api/Partidos/${salaForm.id}`, {
-                method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(partidoBackend)
+                method: "PUT", 
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                }, 
+                body: JSON.stringify(partidoBackend)
             });
             if (res.ok) { setShowModalSala(false); cargarSalas(); mostrarMensaje('exito', "Partido actualizado"); }
         } catch (error) { console.error(error); }
@@ -242,9 +253,15 @@ export default function GestionCanchasPage() {
 
     const confirmarEliminacionSala = async () => {
         if (!salaAEliminar) return;
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            await fetch(`${API_URL}/api/Partidos/admin/${salaAEliminar.id}`, { method: "DELETE" });
+            await fetch(`${API_URL}/api/Partidos/admin/${salaAEliminar.id}`, { 
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             mostrarMensaje('exito', "Partido público eliminado");
             cargarSalas();
         } catch (error) { mostrarMensaje('error', "Error al eliminar"); }

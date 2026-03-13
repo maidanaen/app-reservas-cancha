@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Infrastructure.Persistencia;
 using Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class DashboardController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -17,8 +20,11 @@ namespace Backend.Controllers
         }
 
         [HttpGet("resumen")]
-        public async Task<ActionResult> GetResumen(int usuarioId)
+        public async Task<ActionResult> GetResumen()
         {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized();
+
             // 1. BUSCAR CAJA ABIERTA (El contenedor de la jornada actual)
             var cajaAbierta = await _context.Cajas
                 .Where(c => c.UsuarioId == usuarioId && c.FechaCierre == null)

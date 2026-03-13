@@ -76,9 +76,14 @@ export default function DetalleReservaPage() {
     const cargarDatos = async () => {
         if (!id) return;
 
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const res = await fetch(`${API_URL}/api/Reservas/${id}`);
+            const res = await fetch(`${API_URL}/api/Reservas/${id}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             if (!res.ok) throw new Error("Error al buscar la reserva");
 
             const dataReserva = await res.json();
@@ -88,7 +93,9 @@ export default function DetalleReservaPage() {
             const fin = new Date(dataReserva.fechaFin).getTime();
             const duracionHoras = (fin - inicio) / 3600000;
 
-            const resCancha = await fetch(`${API_URL}/api/Canchas/${dataReserva.canchaId}`);
+            const resCancha = await fetch(`${API_URL}/api/Canchas/${dataReserva.canchaId}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             const dataCancha = await resCancha.json();
             setPrecioCancha(Math.round(duracionHoras * dataCancha.precioPorHora));
 
@@ -100,11 +107,14 @@ export default function DetalleReservaPage() {
     // 2. CARGA DE PRODUCTOS
     useEffect(() => {
         const userId = localStorage.getItem("usuarioId");
-        if (!userId) return;
+        const token = localStorage.getItem("token");
+        if (!userId || !token) return;
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-        fetch(`${API_URL}/api/Productos?usuarioId=${userId}`)
+        fetch(`${API_URL}/api/Productos?usuarioId=${userId}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        })
             .then(async (res) => {
                 if (res.ok) {
                     const data = await res.json();
@@ -124,6 +134,7 @@ export default function DetalleReservaPage() {
         setCargando(true);
         try {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+            const token = localStorage.getItem("token");
             const pagos = {
                 cobradoEfectivo: dataToSave.cobradoEfectivo,
                 cobradoTransferencia: dataToSave.cobradoTransferencia,
@@ -132,7 +143,10 @@ export default function DetalleReservaPage() {
 
             const res = await fetch(`${API_URL}/api/Reservas/cobrar/${id}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify(pagos)
             });
 
@@ -165,10 +179,14 @@ export default function DetalleReservaPage() {
 
         try {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+            const token = localStorage.getItem("token");
 
             await fetch(`${API_URL}/api/Reservas/cobrar/${id}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify(nuevosPagos)
             });
 
@@ -183,7 +201,10 @@ export default function DetalleReservaPage() {
 
             await fetch(`${API_URL}/api/Consumos`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify(consumoData)
             });
 
@@ -213,9 +234,13 @@ export default function DetalleReservaPage() {
 
         try {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+            const token = localStorage.getItem("token");
             const res = await fetch(`${API_URL}/api/Consumos`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify(consumoData)
             });
             if (res.ok) {
@@ -252,7 +277,11 @@ export default function DetalleReservaPage() {
         if (!consumoAEliminar) return;
         try {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-            await fetch(`${API_URL}/api/Consumos/${consumoAEliminar}`, { method: "DELETE" });
+            const token = localStorage.getItem("token");
+            await fetch(`${API_URL}/api/Consumos/${consumoAEliminar}`, { 
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             mostrarMensaje('exito', '🗑️ Ítem eliminado correctamente.');
             cargarDatos();
         } catch (error) {
@@ -269,9 +298,13 @@ export default function DetalleReservaPage() {
         setCargando(true);
         try {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+            const token = localStorage.getItem("token");
             const res = await fetch(`${API_URL}/api/Reservas/extender/${id}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify(minutosAExtender)
             });
 

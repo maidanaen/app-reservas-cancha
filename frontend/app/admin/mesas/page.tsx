@@ -7,6 +7,8 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { API_URL } from '@/utils/config';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
 
 // --- TIPOS DE DATOS ---
 interface Mesa {
@@ -50,14 +52,33 @@ const CATEGORIAS = ["Bebidas", "Comidas", "General"];
 
 export default function GestionMesasPage() {
     const router = useRouter();
-    const [mesas, setMesas] = useState<Mesa[]>([]);
-    const [mesaSeleccionada, setMesaSeleccionada] = useState<Mesa | null>(null);
-
-    // Datos de la Mesa Activa
-    const [reservaActiva, setReservaActiva] = useState<ReservaMesa | null>(null);
-    const [productos, setProductos] = useState<Producto[]>([]);
-    const [catActiva, setCatActiva] = useState("Bebidas");
     const [nuevaMesaNombre, setNuevaMesaNombre] = useState("");
+
+    const [mesaSeleccionada, setMesaSeleccionada] = useState<Mesa | null>(null);
+    const [reservaActiva, setReservaActiva] = useState<ReservaMesa | null>(null);
+    const [catActiva, setCatActiva] = useState("Bebidas");
+
+    const userId = typeof window !== 'undefined' ? localStorage.getItem("usuarioId") : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+
+    // --- CARGA CON SWR ---
+    const { data: mesasData, mutate: recargarMesas } = useSWR(
+        userId && token ? `${API_URL}/api/Mesas?usuarioId=${userId}` : null, 
+        fetcher
+    );
+    const mesas: Mesa[] = mesasData || [];
+
+    const { data: productosData } = useSWR(
+        userId && token ? `${API_URL}/api/Productos?usuarioId=${userId}` : null, 
+        fetcher
+    );
+    const productos: Producto[] = productosData || [];
+
+    useEffect(() => {
+        if (!token && typeof window !== 'undefined') {
+            router.push("/admin/login");
+        }
+    }, [token, router]);
 
     // ESTADOS DE COBRO
     const [pagando, setPagando] = useState(false);
@@ -86,46 +107,26 @@ export default function GestionMesasPage() {
         setTimeout(() => setNotificacion(null), 4000);
     };
 
-    // 1. CARGA INICIAL
-    useEffect(() => {
-        cargarMesas();
-        cargarProductos();
-    }, []);
-
-    const cargarMesas = async () => {
-        const userId = localStorage.getItem("usuarioId");
-        if (!userId) return;
-
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        try {
-            const res = await fetch(`${API_URL}/api/Mesas?usuarioId=${userId}`);
-            if (res.ok) setMesas(await res.json());
-        } catch (e) { console.error(e); }
-    };
-
-    const cargarProductos = async () => {
-        const userId = localStorage.getItem("usuarioId");
-        if (!userId) return;
-
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        try {
-            const res = await fetch(`${API_URL}/api/Productos?usuarioId=${userId}`);
-            if (res.ok) setProductos(await res.json());
-        } catch (e) { console.error(e); }
-    };
+    const cargarMesas = () => recargarMesas();
+    const cargarProductos = () => {}; // Ya no es necesario cargar manualmente
 
     // 2. CREAR MESA
     const crearMesa = async () => {
         if (!nuevaMesaNombre) return;
         const userId = localStorage.getItem("usuarioId");
-        if (!userId) {
+        const token = localStorage.getItem("token");
+        if (!userId || !token) {
             mostrarMensaje('error', 'Error de sesión. Recarga la página.');
             return;
         }
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         await fetch(`${API_URL}/api/Mesas`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
+            method: "POST", 
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify({
                 nombre: nuevaMesaNombre,
                 estaOcupada: false,
@@ -146,10 +147,15 @@ export default function GestionMesasPage() {
     const confirmarEliminarMesa = async () => {
         if (!mesaAEliminar) return;
         const userId = localStorage.getItem("usuarioId");
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
-            const res = await fetch(`${API_URL}/api/Mesas/${mesaAEliminar}?usuarioId=${userId}`, { method: "DELETE" });
+            const res = await fetch(`${API_URL}/api/Mesas/${mesaAEliminar}?usuarioId=${userId}`, { 
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             if (res.ok) {
                 cargarMesas();
                 if (mesaSeleccionada?.id === mesaAEliminar) setMesaSeleccionada(null);
@@ -169,8 +175,11 @@ export default function GestionMesasPage() {
         setPagando(false);
 
         if (mesa.estaOcupada && mesa.reservaActualId) {
+            const token = localStorage.getItem("token");
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-            const res = await fetch(`${API_URL}/api/Reservas/${mesa.reservaActualId}`);
+            const res = await fetch(`${API_URL}/api/Reservas/${mesa.reservaActualId}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             if (res.ok) setReservaActiva(await res.json());
         } else {
             setReservaActiva(null);
@@ -181,9 +190,13 @@ export default function GestionMesasPage() {
     const abrirMesa = async () => {
         if (!mesaSeleccionada) return;
         const userId = localStorage.getItem("usuarioId");
+        const token = localStorage.getItem("token");
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        const res = await fetch(`${API_URL}/api/Mesas/${mesaSeleccionada.id}/abrir?usuarioId=${userId}`, { method: "POST" });
+        const res = await fetch(`${API_URL}/api/Mesas/${mesaSeleccionada.id}/abrir?usuarioId=${userId}`, { 
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
 
         if (res.ok) {
             cargarMesas();
@@ -199,47 +212,67 @@ export default function GestionMesasPage() {
     // 6. AGREGAR PRODUCTO (OPTIMISTA DESDE CATÁLOGO)
     const agregarProducto = async (prod: Producto) => {
         if (!reservaActiva || !mesaSeleccionada) return;
+        const token = localStorage.getItem("token");
 
         const tempItem = { id: Date.now(), producto: prod.nombre, precio: prod.precio, cantidad: 1 };
         setReservaActiva({ ...reservaActiva, consumos: [...reservaActiva.consumos, tempItem] });
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         await fetch(`${API_URL}/api/Consumos`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
+            method: "POST", 
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify({ reservaId: reservaActiva.id, producto: prod.nombre, precio: prod.precio, cantidad: 1, jugador: "Cliente Mesa" })
         });
 
-        const res = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`);
+        const res = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
         if (res.ok) setReservaActiva(await res.json());
     };
 
     // 6.5 AGREGAR UNIDAD MANUAL (CON PRECIO ESPECÍFICO)
     const agregarUnidadManual = async (nombre: string, precioBase: number) => {
         if (!reservaActiva || !mesaSeleccionada) return;
+        const token = localStorage.getItem("token");
 
         const tempItem = { id: Date.now(), producto: nombre, precio: precioBase, cantidad: 1 };
         setReservaActiva({ ...reservaActiva, consumos: [...reservaActiva.consumos, tempItem] });
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         await fetch(`${API_URL}/api/Consumos`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
+            method: "POST", 
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify({ reservaId: reservaActiva.id, producto: nombre, precio: precioBase, cantidad: 1, jugador: "Cliente Mesa" })
         });
 
-        const res = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`);
+        const res = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
         if (res.ok) setReservaActiva(await res.json());
     };
 
     // 7. ELIMINAR PRODUCTO
     const eliminarProducto = async (id: number) => {
+        const token = localStorage.getItem("token");
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         if (reservaActiva) {
             setReservaActiva({ ...reservaActiva, consumos: reservaActiva.consumos.filter(c => c.id !== id) });
         }
-        await fetch(`${API_URL}/api/Consumos/${id}`, { method: "DELETE" });
+        await fetch(`${API_URL}/api/Consumos/${id}`, { 
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
 
         if (reservaActiva) {
-            const resReserva = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`);
+            const resReserva = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
             if (resReserva.ok) setReservaActiva(await resReserva.json());
         }
     };
@@ -280,12 +313,16 @@ export default function GestionMesasPage() {
 
         // Tomamos el último ID del grupo de consumos iguales
         const consumoId = itemDescuento.ids[itemDescuento.ids.length - 1];
+        const token = localStorage.getItem("token");
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         try {
             const res = await fetch(`${API_URL}/api/Consumos/precio/${consumoId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify(precioParsed)
             });
 
@@ -295,7 +332,9 @@ export default function GestionMesasPage() {
                 setItemDescuento(null);
                 // Recargamos la reserva para ver el nuevo total
                 if (reservaActiva) {
-                    const resReserva = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`);
+                    const resReserva = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`, {
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
                     if (resReserva.ok) setReservaActiva(await resReserva.json());
                 }
             } else {
@@ -357,16 +396,25 @@ export default function GestionMesasPage() {
         setProcesandoPago(true);
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         const userId = localStorage.getItem("usuarioId");
+        const token = localStorage.getItem("token");
 
         try {
             const res = await fetch(`${API_URL}/api/Reservas/cobrar/${reservaActiva?.id}`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
+                method: "POST", 
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                },
                 body: JSON.stringify({ cobradoEfectivo: efectivoReal, cobradoTransferencia: transfReal })
             });
 
             if (res.ok) {
                 const resMesa = await fetch(`${API_URL}/api/Mesas/${mesaSeleccionada?.id}/cerrar?usuarioId=${userId}`, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
+                    method: "POST", 
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}` 
+                    },
                     body: JSON.stringify({ cobradoEfectivo: efectivoReal, cobradoTransferencia: transfReal })
                 });
 

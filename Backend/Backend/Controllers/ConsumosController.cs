@@ -3,11 +3,13 @@ using Domain.Entities;
 using Infrastructure.Persistencia;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ConsumosController : ControllerBase
     {
         private readonly AppDbContext _context;

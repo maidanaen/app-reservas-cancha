@@ -4,6 +4,9 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Printer, Unlock, Lock, Banknote, Smartphone, Calendar, Activity, Utensils, ShoppingBag, List, X, TrendingUp, MessageSquare, TrendingDown, Download } from "lucide-react"; // Agregado icono Download
 import { API_URL } from '@/utils/config';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
+import { useRouter } from 'next/navigation';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -50,16 +53,30 @@ interface ReporteCaja {
 }
 
 export default function DetalleCajaPage() {
+    const router = useRouter();
     const params = useParams();
     const id = params?.id; 
     const reporteRef = useRef<HTMLDivElement>(null); // 2. Referencia para capturar el diseño
 
-    const [reporte, setReporte] = useState<ReporteCaja | null>(null);
-    const [cargando, setCargando] = useState(true);
     const [descargando, setDescargando] = useState(false); // Estado para el botón de PDF
     const [error, setError] = useState("");
     
     const [showModalMovimientos, setShowModalMovimientos] = useState(false);
+
+    const userId = typeof window !== 'undefined' ? localStorage.getItem("usuarioId") : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+
+    // --- CARGA CON SWR ---
+    const { data: reporte, isLoading: cargando } = useSWR(
+        id && userId && token ? `${API_URL}/api/Cajas/${id}?usuarioId=${userId}` : null,
+        fetcher
+    );
+
+    useEffect(() => {
+        if (!token && typeof window !== 'undefined') {
+            router.push("/admin/login");
+        }
+    }, [token, router]);
 
     // --- FUNCIÓN PARA DESCARGAR PDF ---
     const descargarPDF = async () => {
@@ -103,30 +120,6 @@ export default function DetalleCajaPage() {
         const utcString = fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`;
         return new Date(utcString).toLocaleDateString();
     };
-
-    useEffect(() => {
-        if (!id) return;
-        const cargar = async () => {
-            const userId = localStorage.getItem("usuarioId");
-            if (!userId) {
-                setError("Sesión no válida");
-                setCargando(false);
-                return;
-            }
-
-            try {
-                const res = await fetch(`${API_URL}/api/Cajas/${id}?usuarioId=${userId}`);
-                if (res.ok) {
-                    setReporte(await res.json());
-                } else {
-                    if (res.status === 401) setError("⛔ No tienes permiso para ver esta caja.");
-                    else setError("Caja no encontrada.");
-                }
-            } catch (e) { console.error(e); setError("Error de conexión"); } 
-            finally { setCargando(false); }
-        };
-        cargar();
-    }, [id]);
 
     if (cargando) return <div className="p-20 text-center animate-pulse text-gray-500 font-bold">Cargando reporte...</div>;
     
@@ -346,7 +339,7 @@ export default function DetalleCajaPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-100 text-sm">
-                                            {movimientos.map((m) => (
+                                            {movimientos.map((m: Movimiento) => (
                                                 <tr key={m.id} className="hover:bg-slate-50 transition break-inside-avoid">
                                                     <td className="p-4 pl-6 font-mono text-xs text-gray-500 align-top whitespace-nowrap">
                                                         {formatearHoraLocal(m.hora)}hs
@@ -358,7 +351,7 @@ export default function DetalleCajaPage() {
                                                         <div className="font-bold mb-1 text-slate-800">{m.detalle}</div>
                                                         {m.items && m.items.length > 0 && (
                                                             <div className="space-y-1 mt-2 pl-2 border-l-2 border-gray-100">
-                                                                {m.items.filter(i => !i.producto.toLowerCase().includes('alquiler') && i.precio > 0).map((item, idx) => (
+                                                                {m.items.filter((i: any) => !i.producto.toLowerCase().includes('alquiler') && i.precio > 0).map((item: any, idx: number) => (
                                                                     <div key={idx} className="flex gap-2 text-[11px]">
                                                                         <span className="text-gray-400 font-bold">{item.cantidad || 1}x</span>
                                                                         <span className="text-gray-600">{item.producto}</span>

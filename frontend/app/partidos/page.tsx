@@ -1,7 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Users, Plus, UserPlus, Calendar, Trash2, MessageCircle, CheckCircle, MapPin, Trophy, AlertCircle, X, Lock } from "lucide-react";
 import { API_URL } from '@/utils/config';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
 
 interface Inscripcion {
     id: number;
@@ -24,12 +26,15 @@ interface Partido {
 }
 
 export default function PartidosPage() {
-  const [partidos, setPartidos] = useState<Partido[]>([]);
+  const { data: partidosData, mutate: recargarPartidos } = useSWR(`${API_URL}/api/Partidos`, fetcher);
+  const partidos: Partido[] = partidosData || [];
+
   const [mostrarForm, setMostrarForm] = useState(false);
   const [cargando, setCargando] = useState(false);
 
   // NUEVOS ESTADOS PARA SEDES
-  const [sedes, setSedes] = useState<any[]>([]);
+  const { data: sedesData } = useSWR(`${API_URL}/api/Publico/sedes`, fetcher);
+  const sedes: any[] = sedesData || [];
   const [clubSeleccionado, setClubSeleccionado] = useState<string>("");
   const [canchaSeleccionada, setCanchaSeleccionada] = useState<string>("");
 
@@ -63,20 +68,6 @@ export default function PartidosPage() {
       setNotificacion({ tipo, msj });
       setTimeout(() => setNotificacion(null), 4000);
   };
-
-  const cargarDatos = async () => {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    try {
-        const resPartidos = await fetch(`${API_URL}/api/Partidos`);
-        if (resPartidos.ok) setPartidos(await resPartidos.json());
-
-        const resSedes = await fetch(`${API_URL}/api/Publico/sedes`);
-        if (resSedes.ok) setSedes(await resSedes.json());
-
-    } catch (error) { console.error(error); }
-  };
-
-  useEffect(() => { cargarDatos(); }, []);
 
   const generarLinkWhatsApp = (numero: string, nombreOrg: string, deporte: string) => {
       if (!numero) return "#";
@@ -122,7 +113,7 @@ export default function PartidosPage() {
     setNuevaClave(""); 
     setClubSeleccionado("");
     setCanchaSeleccionada("");
-    cargarDatos(); 
+    recargarPartidos(); 
     mostrarMensaje('exito', "✅ Sala creada correctamente.");
   };
 
@@ -148,7 +139,7 @@ export default function PartidosPage() {
           setPartidoAUnirse(null);
           setMiNombre("");
           setMiContacto("");
-          cargarDatos();
+          recargarPartidos();
       } else {
           mostrarMensaje('error', "Error: Quizás ya se llenó el cupo.");
       }
@@ -174,7 +165,7 @@ export default function PartidosPage() {
       if (res.ok) {
           mostrarMensaje('exito', "🗑️ Sala eliminada.");
           setSalaAEliminar(null);
-          cargarDatos();
+          recargarPartidos();
       } else {
           mostrarMensaje('error', "⛔ La clave ingresada es incorrecta.");
       }

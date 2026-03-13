@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DollarSign, Lock, Unlock, History, Eye, Banknote, Smartphone, TrendingUp, Calendar, Clock, X, CheckCircle, List, User, ShoppingBag, Utensils, Activity, AlertCircle } from "lucide-react";
 import { API_URL } from '@/utils/config';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
+import { useRouter } from 'next/navigation';
 
 // --- INTERFACES ---
 interface Movimiento {
@@ -47,8 +50,8 @@ interface ReporteCaja {
 }
 
 export default function CajaPage() {
+    const router = useRouter();
     const [reporteActual, setReporteActual] = useState<ReporteCaja | null>(null);
-    const [cargando, setCargando] = useState(true);
     
     // Estados Inputs
     const [montoInicial, setMontoInicial] = useState("");
@@ -71,6 +74,31 @@ export default function CajaPage() {
     // SISTEMA DE NOTIFICACIONES
     const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito', msj: string } | null>(null);
 
+    const userId = typeof window !== 'undefined' ? localStorage.getItem("usuarioId") : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+
+    // --- CARGA CON SWR ---
+    const { data: cajaData, isLoading: cargando, mutate: recargarCaja } = useSWR(
+        userId && token ? `${API_URL}/api/Cajas/actual?usuarioId=${userId}` : null,
+        fetcher
+    );
+
+    useEffect(() => {
+        if (cajaData) {
+            setReporteActual(cajaData);
+        } else if (cajaData === null) {
+            setReporteActual(null);
+        }
+    }, [cajaData]);
+
+    useEffect(() => {
+        if (!token && typeof window !== 'undefined') {
+            router.push("/admin/login");
+        }
+    }, [token, router]);
+
+    const cargarDatos = () => recargarCaja();
+
     const mostrarMensaje = (tipo: 'error' | 'exito', msj: string) => {
         setNotificacion({ tipo, msj });
         setTimeout(() => setNotificacion(null), 4000);
@@ -90,32 +118,20 @@ export default function CajaPage() {
         return new Date(utcString).toLocaleDateString();
     };
 
-    const cargarDatos = async () => {
-        const userId = localStorage.getItem("usuarioId");
-        if (!userId) return;
-
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        try {
-            const resActual = await fetch(`${API_URL}/api/Cajas/actual?usuarioId=${userId}`);
-            
-            if (resActual.ok) {
-                setReporteActual(await resActual.json());
-            } else {
-                setReporteActual(null);
-            }
-        } catch (error) { console.error(error); } finally { setCargando(false); }
-    };
-
-    useEffect(() => { cargarDatos(); }, []);
-
     const abrirCaja = async () => {
         if (!montoInicial) return mostrarMensaje('error', "⚠️ Ingresa el monto inicial");
         const userId = localStorage.getItem("usuarioId");
-        if(!userId) return;
+        const token = localStorage.getItem("token");
+        if(!userId || !token) return;
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         await fetch(`${API_URL}/api/Cajas/abrir?usuarioId=${userId}`, {
-            method: "POST", headers: { "Content-Type": "application/json" }, body: montoInicial
+            method: "POST", 
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}` 
+            }, 
+            body: montoInicial
         });
         setMontoInicial("");
         cargarDatos();
@@ -133,6 +149,8 @@ export default function CajaPage() {
     const cerrarCajaDefinitivo = async () => {
         if (!reporteActual) return;
         const userId = localStorage.getItem("usuarioId");
+        const token = localStorage.getItem("token");
+        if (!token) return;
         
         const dto = { 
             efectivoReal: Number(arqueoEfectivo), 
@@ -143,7 +161,12 @@ export default function CajaPage() {
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         const res = await fetch(`${API_URL}/api/Cajas/cerrar?usuarioId=${userId}`, {
-            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(dto)
+            method: "POST", 
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}` 
+            }, 
+            body: JSON.stringify(dto)
         });
 
         if(res.ok){

@@ -1,23 +1,32 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Infrastructure.Persistencia;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _config;
 
-        public AuthController(AppDbContext context)
+        public AuthController(AppDbContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
         }
 
         // POST: api/Auth/register
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] LoginRequest request)
         {
             // 1. Validar que no exista ya ese usuario
@@ -46,6 +55,7 @@ namespace Backend.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             // 1. Buscamos al usuario por nombre y contraseña
@@ -64,12 +74,31 @@ namespace Backend.Controllers
                 return Unauthorized(new { message = "⛔ Su cuenta está suspendida por falta de pago. Contacte al soporte." });
             }
 
-            // 4. Si pasa todo, Login exitoso
+            // 4. GENERAR TOKEN JWT
+            var jwtSecretKey = _config["JwtSettings:SecretKey"] ?? "nexus_sport_super_secret_key_123456789";
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(jwtSecretKey);
+            
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+                    new Claim(ClaimTypes.Name, usuario.userName)
+                }),
+                Expires = DateTime.UtcNow.AddDays(7), // El token dura 7 días
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenString = tokenHandler.WriteToken(token);
+
+            // 5. Si pasa todo, Login exitoso
             return Ok(new
             {
                 message = "Login exitoso",
+                token = tokenString,
                 usuario = usuario.userName,
-                // Agregamos esto por si quieres mostrarlo en el Dashboard luego:
                 nombreNegocio = usuario.NombreNegocio,
                 id=usuario.Id,
                 esAdmin=true
@@ -79,6 +108,7 @@ namespace Backend.Controllers
         
         // GET: api/Auth/estado/usuario123
         [HttpGet("estado/{userName}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetEstadoUsuario(string userName)
         {
             var usuario = await _context.Usuarios
@@ -92,6 +122,7 @@ namespace Backend.Controllers
 
         // GET: api/Auth/clubes-publicos
         [HttpGet("clubes-publicos")]
+        [AllowAnonymous]
         public async Task<ActionResult> GetClubesPublicos()
         {
             // Seleccionamos solo los datos públicos (ID y Nombre).
@@ -110,8 +141,9 @@ namespace Backend.Controllers
         }
 
         [HttpPost("generar-link-telegram")]
-        public async Task<ActionResult> GenerarLinkTelegram([FromQuery] int usuarioId)
+        public async Task<ActionResult> GenerarLinkTelegram()
         {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
             var usuario = await _context.Usuarios.FindAsync(usuarioId);
             if (usuario == null) return NotFound(new { message = "Usuario no encontrado" });
 

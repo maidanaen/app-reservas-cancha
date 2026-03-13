@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Megaphone, Send, Pencil, Eye, X, Save, Image as ImageIcon } from "lucide-react";
 import { API_URL } from '@/utils/config';
+import useSWR from 'swr';
+import { fetcher } from '@/utils/fetcher';
+import { useRouter } from 'next/navigation';
 
 interface Noticia {
   id: number;
@@ -12,7 +15,7 @@ interface Noticia {
 }
 
 export default function AdminNoticiasPage() {
-  const [noticias, setNoticias] = useState<Noticia[]>([]);
+  const router = useRouter();
   const [titulo, setTitulo] = useState("");
   const [cuerpo, setCuerpo] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -22,30 +25,32 @@ export default function AdminNoticiasPage() {
   const [noticiaVer, setNoticiaVer] = useState<Noticia | null>(null);
   const [archivo, setArchivo] = useState<File | null>(null);
 
-  // 1. Cargar noticias
-  const cargarNoticias = async () => {
-    // 🟢 1. RECUPERAR ID (Llave maestra)
-    const userId = localStorage.getItem("usuarioId");
-    if (!userId) return;
+  const userId = typeof window !== 'undefined' ? localStorage.getItem("usuarioId") : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    try {
-        // 🟢 2. ENVIAR ID EN LA URL (Filtro por dueño)
-        const res = await fetch(`${API_URL}/api/Noticias?usuarioId=${userId}`);
-        if (res.ok) setNoticias(await res.json());
-    } catch (error) { console.error("Error al cargar", error); }
-  };
+  // --- CARGA CON SWR ---
+  const { data: noticiasData, mutate: recargarNoticias } = useSWR(
+      userId && token ? `${API_URL}/api/Noticias?usuarioId=${userId}` : null,
+      fetcher
+  );
+  const noticias: Noticia[] = noticiasData || [];
 
-  useEffect(() => { cargarNoticias(); }, []);
+  useEffect(() => {
+      if (!token && typeof window !== 'undefined') {
+          router.push("/admin/login");
+      }
+  }, [token, router]);
+
+  const cargarNoticias = () => recargarNoticias();
 
   // 2. Manejar Envío (Crear o Editar)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!titulo.trim() || !cuerpo.trim()) return;
 
-    // 🟢 RECUPERAMOS ID
     const userId = localStorage.getItem("usuarioId");
-    if (!userId) return alert("Sesión expirada");
+    const token = localStorage.getItem("token");
+    if (!userId || !token) return alert("Sesión expirada");
 
     setCargando(true);
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -69,7 +74,10 @@ export default function AdminNoticiasPage() {
             // Por ahora mantenemos JSON para texto como tenías, pero agregando usuarioId.
             await fetch(`${API_URL}/api/Noticias/${idEditar}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                },
                 body: JSON.stringify({ 
                     id: idEditar, 
                     titulo, 
@@ -84,6 +92,7 @@ export default function AdminNoticiasPage() {
             // Enviamos el FormData que ya incluye el UsuarioId dentro
             await fetch(`${API_URL}/api/Noticias?usuarioId=${userId}`, {
                 method: "POST",
+                headers: { "Authorization": `Bearer ${token}` },
                 body: formData 
             });
             alert("✅ Noticia publicada con éxito");
@@ -120,12 +129,16 @@ export default function AdminNoticiasPage() {
     
     // 🟢 4. RECUPERAR ID PARA BORRADO SEGURO
     const userId = localStorage.getItem("usuarioId");
-    if (!userId) return;
+    const token = localStorage.getItem("token");
+    if (!userId || !token) return;
 
     try {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         // Enviamos ID en la URL para que el backend valide que es NUESTRA noticia
-        await fetch(`${API_URL}/api/Noticias/${id}?usuarioId=${userId}`, { method: "DELETE" });
+        await fetch(`${API_URL}/api/Noticias/${id}?usuarioId=${userId}`, { 
+            method: "DELETE",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
         cargarNoticias();
     } catch (error) { alert("Error al borrar"); }
   };

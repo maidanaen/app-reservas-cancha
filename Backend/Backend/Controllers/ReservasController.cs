@@ -3,11 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Domain.Entities;
 using Domain.Interfaces;
 using Infrastructure.Persistencia;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // 🟢 REQUERIR TOKEN JWT PARA TODAS LAS PETICIONES POR DEFECTO
     public class ReservasController : ControllerBase
     {
         private readonly IReservaRepository _repository;
@@ -22,9 +25,11 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Reserva>>> GetReservas([FromQuery] int usuarioId, [FromQuery] DateTime? fecha)
+        public async Task<ActionResult<IEnumerable<Reserva>>> GetReservas([FromQuery] DateTime? fecha)
         {
-            if (usuarioId == 0) return BadRequest("Falta usuarioId");
+            // 🟢 LEER EL ID DEL USUARIO DESDE EL TOKEN JWT SEGURO
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized("Token inválido");
 
             var query = _context.Reservas
                 .Include(r => r.Cancha)
@@ -40,6 +45,7 @@ namespace Backend.Controllers
         }
 
         [HttpGet("ocupadas")]
+        [AllowAnonymous] // 🟢 CUALQUIERA PUEDE VER LOS HORARIOS OCUPADOS
         public async Task<ActionResult<IEnumerable<string>>> GetHorariosOcupados(int canchaId, DateTime fecha)
         {
             if (fecha.Kind == DateTimeKind.Unspecified || fecha.Kind == DateTimeKind.Local)
@@ -66,6 +72,7 @@ namespace Backend.Controllers
         }
 
         [HttpGet("cancha/{canchaId}")]
+        [AllowAnonymous] // 🟢 CUALQUIERA PUEDE VER LOS TURNOS DE UNA CANCHA
         public async Task<ActionResult<List<Reserva>>> VerTurnos(int canchaId, [FromQuery] DateTime? fecha)
         {
             var fechaFiltro = fecha ?? DateTime.UtcNow;
@@ -97,8 +104,10 @@ namespace Backend.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous] // 🟢 CUALQUIERA PUEDE CREAR UNA RESERVA (CLIENTE DESDE LA WEB)
         public async Task<ActionResult<Reserva>> CrearReserva(Reserva reserva)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
             try
             {
                 var cancha = await _context.Canchas
@@ -108,13 +117,23 @@ namespace Backend.Controllers
                 if (cancha == null)
                     return BadRequest(new { mensaje = "La cancha seleccionada no existe." });
 
-                reserva.UsuarioId = cancha.UsuarioId;
-                reserva.Tipo = "Cancha";
-
                 if (reserva.FechaFin == default)
                 {
                     reserva.FechaFin = reserva.FechaInicio.AddHours(1);
                 }
+
+                // 🟢 NUEVO BLOQUEO: Verificar superposición de horarios dentro de la transacción
+                bool existeSuperposicion = await _context.Reservas.AnyAsync(r => 
+                    r.CanchaId == reserva.CanchaId && 
+                    r.FechaInicio < reserva.FechaFin && r.FechaFin > reserva.FechaInicio);
+
+                if (existeSuperposicion)
+                {
+                    return BadRequest(new { mensaje = "Ups, el horario acaba de ser reservado por alguien más." });
+                }
+
+                reserva.UsuarioId = cancha.UsuarioId;
+                reserva.Tipo = "Cancha";
 
                 if (reserva.Estado == "Pagado" || reserva.CobradoEfectivo > 0 || reserva.CobradoTransferencia > 0)
                 {
@@ -152,10 +171,12 @@ namespace Backend.Controllers
                     Console.WriteLine($"Error al enviar Telegram: {ex.Message}");
                 }
 
+                await transaction.CommitAsync();
                 return CreatedAtAction(nameof(VerTurnos), new { canchaId = nueva.CanchaId }, nueva);
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 return BadRequest(new { mensaje = ex.InnerException?.Message ?? ex.Message });
             }
         }

@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Domain.Entities;
 using Infrastructure.Persistencia;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PartidosController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -18,13 +21,17 @@ namespace Backend.Controllers
 
         // 1. VER PARTIDOS
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Partido>>> GetPartidos([FromQuery] bool todo = false, [FromQuery] int? usuarioId = null)
+        [AllowAnonymous] // 🟢 PÚBLICO
+        public async Task<ActionResult<IEnumerable<Partido>>> GetPartidos([FromQuery] bool todo = false)
         {
             var query = _context.Partidos
                 .Include(p => p.Inscripciones)
                 .AsQueryable();
 
-            //  Si mandan un usuarioId, filtramos solo los de él
+            int? usuarioId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int id) ? id : null;
+
+            //  Si está logueado como Admin (tiene token), filtramos por su ID en el panel Admin
+            // Si entra el público no hay token, no filtra por usuarioId y ve todo
             if (usuarioId.HasValue && usuarioId.Value > 0)
             {
                 
@@ -43,6 +50,7 @@ namespace Backend.Controllers
 
         // 2. CREAR SALA
         [HttpPost]
+        [AllowAnonymous] // 🟢 PÚBLICO
         public async Task<ActionResult<Partido>> CrearPartido(Partido partido)
         {
             _context.Partidos.Add(partido);
@@ -73,6 +81,7 @@ namespace Backend.Controllers
 
         // 4. INSCRIBIRSE (Usuario)
         [HttpPost("inscribirse")]
+        [AllowAnonymous] // 🟢 PÚBLICO
         public async Task<IActionResult> Inscribirse([FromBody] Inscripcion inscripcion)
         {
             var partido = await _context.Partidos.FindAsync(inscripcion.PartidoId);
@@ -90,6 +99,7 @@ namespace Backend.Controllers
 
         // 5. BORRAR SALA (Usuario con Clave)
         [HttpDelete("borrar/{id}")]
+        [AllowAnonymous] // 🟢 PÚBLICO (Requiere Clave en Query)
         public async Task<IActionResult> BorrarPartidoUsuario(int id, [FromQuery] string clave)
         {
             var partido = await _context.Partidos.FindAsync(id);
@@ -102,10 +112,12 @@ namespace Backend.Controllers
             return NoContent();
         }
 
-        // 6. BORRAR SALA (Admin - Sin Clave)
+        // 6. BORRAR SALA (Admin)
         [HttpDelete("admin/{id}")]
         public async Task<IActionResult> BorrarPartidoAdmin(int id)
         {
+            int usuarioId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (usuarioId == 0) return Unauthorized();
             var partido = await _context.Partidos.FindAsync(id);
             if (partido == null) return NotFound();
 
