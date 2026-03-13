@@ -63,7 +63,9 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className} style={{ backgroundColor: 'white' }}>
         <Providers>
-          <ConditionalNavbar />
+          <div className="print:hidden">
+            <ConditionalNavbar />
+          </div>
           {children}
         </Providers>
       </body>

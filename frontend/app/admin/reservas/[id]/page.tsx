@@ -354,8 +354,8 @@ export default function DetalleReservaPage() {
                 {/* 🔔 NOTIFICACIÓN FLOTANTE (TOAST) */}
                 {notificacion && (
                     <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${notificacion.tipo === 'error'
-                            ? 'bg-red-50 text-red-800 border-red-200'
-                            : 'bg-green-50 text-green-800 border-green-200'
+                        ? 'bg-red-50 text-red-800 border-red-200'
+                        : 'bg-green-50 text-green-800 border-green-200'
                         }`}>
                         {notificacion.tipo === 'error' ? <AlertCircle size={24} className="text-red-600" /> : <CheckCircle size={24} className="text-green-600" />}
                         <div>
@@ -686,9 +686,7 @@ export default function DetalleReservaPage() {
       `}} />
             <div className="hidden print:block w-[78mm] mx-auto m-0 p-4 font-sans text-black bg-white leading-tight">
                 <div className="text-center mb-4 pb-3 border-b-2 border-dashed border-black">
-                    <h1 className="m-0 text-2xl font-black uppercase tracking-widest">NEXUS SPORT</h1>
-                    <p className="m-0 mt-1 text-[11px] uppercase font-bold text-gray-800">Complejo Deportivo</p>
-                    <p className="m-0 mt-3 font-bold text-[16px]">Ticket #{reserva.id}</p>
+                    <h1 className="m-0 text-2xl font-black uppercase tracking-widest">{localStorage.getItem("nombreNegocio") || "COMPLEJO"}</h1>
                     <p className="m-0 text-[12px] mt-1">Fecha: {new Date(reserva.fechaInicio).toLocaleDateString()} {new Date(reserva.fechaInicio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                     <p className="m-0 text-[12px] mt-1">Cliente: <span className="font-bold">{reserva.clienteNombre || 'Consumidor Final'}</span></p>
                 </div>
@@ -747,7 +745,6 @@ export default function DetalleReservaPage() {
                 <div className="text-center mt-6 pt-4 border-t-2 border-dashed border-black">
                     <p className="m-0 font-bold text-[15px]">¡Gracias por tu visita!</p>
                     <p className="m-0 mt-1 text-[11px] text-gray-800">No válido como factura</p>
-                    <p className="m-0 mt-3 text-[10px] break-all font-mono">nexussport.vercel.app</p>
                 </div>
             </div>
 
