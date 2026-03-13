@@ -58,6 +58,26 @@ namespace Backend.Controllers
             return Ok(new { mensaje = "Pago registrado correctamente", metodo = metodo });
         }
 
+        // Endpoint para alterar dinámicamente el precio/descuento de un consumo
+        // PUT: api/Consumos/precio/5
+        [HttpPut("precio/{id}")]
+        public async Task<IActionResult> ModificarPrecioConsumo(int id, [FromBody] decimal nuevoPrecio)
+        {
+            if (nuevoPrecio < 0) return BadRequest("El precio no puede ser negativo");
+
+            var consumo = await _context.Consumos.FindAsync(id);
+            if (consumo == null) return NotFound("Consumo no encontrado");
+
+            // Si el ítem ya fue pagado, no permitimos alterar el precio porque desvirtuaría los pagos parciales
+            if (consumo.MetodoPago != null)
+                return BadRequest("No se puede modificar el precio de un ítem que ya fue pagado o transferido. Cancela el pago primero.");
+
+            consumo.Precio = nuevoPrecio;
+            await _context.SaveChangesAsync();
+            
+            return Ok(new { mensaje = "Precio actualizado exitosamente", nuevoPrecio = consumo.Precio });
+        }
+
         
         // DELETE: api/Consumos/5
         [HttpDelete("{id}")]

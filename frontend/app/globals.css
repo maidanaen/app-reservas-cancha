@@ -42,3 +42,14 @@
     @apply bg-white text-slate-900 border-slate-300;
   }
 }
+
+@media print {
+  @page {
+    /* Esto previene que el navegador inyecte sus propios headers (fecha, título) y footers (URLs) */
+    margin: 0;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

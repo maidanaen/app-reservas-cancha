@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { 
   ArrowLeft, Plus, Users, Utensils, Coffee, 
-  Trash2, DollarSign, CheckCircle, Calculator, CreditCard, Wallet, X, AlertCircle 
+  Trash2, DollarSign, CheckCircle, Calculator, CreditCard, Wallet, X, AlertCircle, Tag, Printer
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -71,6 +71,12 @@ export default function GestionMesasPage() {
   
   const [mostrarModalCobroIncompleto, setMostrarModalCobroIncompleto] = useState(false);
   const [datosCobroPendiente, setDatosCobroPendiente] = useState<{faltante: number, efvo: number, trans: number} | null>(null);
+
+  // 🟢 ESTADOS DE DESCUENTOS Y TICKET
+  const [mostrarModalDescuento, setMostrarModalDescuento] = useState(false);
+  const [itemDescuento, setItemDescuento] = useState<ConsumoAgrupado | null>(null);
+  const [nuevoPrecio, setNuevoPrecio] = useState("");
+  const [imprimiendo, setImprimiendo] = useState(false);
 
   // SISTEMA DE NOTIFICACIONES (TOAST)
   const [notificacion, setNotificacion] = useState<{ tipo: 'error' | 'exito' | 'info', msj: string } | null>(null);
@@ -240,6 +246,58 @@ export default function GestionMesasPage() {
       return acc;
   }, []) || [];
 
+  // 8.5 MODIFICAR PRECIO DE PRODUCTO (NUEVO)
+  const abrirModalDescuento = (item: ConsumoAgrupado) => {
+      setItemDescuento(item);
+      setNuevoPrecio(item.precioUnitario.toString());
+      setMostrarModalDescuento(true);
+  };
+
+  const confirmarCambioPrecio = async () => {
+      if (!itemDescuento || !nuevoPrecio) return;
+      const precioParsed = Number(nuevoPrecio);
+      if (isNaN(precioParsed) || precioParsed < 0) {
+          mostrarMensaje('error', 'Ingrese un precio válido.');
+          return;
+      }
+
+      // Tomamos el último ID del grupo de consumos iguales
+      const consumoId = itemDescuento.ids[itemDescuento.ids.length - 1];
+
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      try {
+          const res = await fetch(`${API_URL}/api/Consumos/precio/${consumoId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(precioParsed)
+          });
+
+          if (res.ok) {
+              mostrarMensaje('exito', 'Precio modificado correctamente.');
+              setMostrarModalDescuento(false);
+              setItemDescuento(null);
+              // Recargamos la reserva para ver el nuevo total
+              if (reservaActiva) {
+                  const resReserva = await fetch(`${API_URL}/api/Reservas/${reservaActiva.id}`);
+                  if(resReserva.ok) setReservaActiva(await resReserva.json());
+              }
+          } else {
+              const err = await res.text();
+              mostrarMensaje('error', err || 'Error al modificar precio.');
+          }
+      } catch (error) {
+          mostrarMensaje('error', 'Error de conexión.');
+      }
+  };
+
+  const imprimirCuenta = () => {
+      setImprimiendo(true);
+      setTimeout(() => {
+          window.print();
+          setImprimiendo(false);
+      }, 100); // Pequeño delay para asegurar que React renderice el div de impresión
+  };
+
   // 9. LÓGICA DE COBRO
   const totalCuenta = reservaActiva?.consumos.reduce((a, b) => a + b.precio, 0) || 0;
 
@@ -318,7 +376,8 @@ export default function GestionMesasPage() {
   const productosFiltrados = productos.filter(p => p.categoria === catActiva);
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6 font-sans flex flex-col md:flex-row gap-6 relative ml-4">
+    <>
+    <main className="min-h-screen bg-gray-100 p-6 font-sans flex flex-col md:flex-row gap-6 relative ml-4 print:hidden">
       
       {/* 🔔 NOTIFICACIÓN FLOTANTE */}
       {notificacion && (
@@ -394,14 +453,21 @@ export default function GestionMesasPage() {
                                         </span>
                                         <span className="text-xs text-gray-400">${item.precioUnitario.toLocaleString()} c/u</span>
                                     </div>    
-                                    <div className="flex items-center gap-3">
-                                        <span className="font-black text-gray-900 text-lg">${item.total.toLocaleString()}</span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="font-black text-gray-900 text-lg mr-2">${item.total.toLocaleString()}</span>
+                                        <button 
+                                            onClick={() => abrirModalDescuento(item)}
+                                            className="text-orange-400 hover:text-orange-600 hover:bg-orange-50 p-2 rounded-full transition"
+                                            title="Cambiar Precio Unitario"
+                                        >
+                                            <Tag size={16}/>
+                                        </button>
                                         <button 
                                             onClick={() => eliminarProducto(item.ids[item.ids.length - 1])}
-                                            className="text-gray-300 hover:text-red-600 hover:bg-white p-1 rounded-full transition"
+                                            className="text-gray-300 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition"
                                             title="Quitar uno"
                                         >
-                                            <Trash2 size={18}/>
+                                            <Trash2 size={16}/>
                                         </button>
                                     </div>
                                 </div>
@@ -412,7 +478,10 @@ export default function GestionMesasPage() {
                         {/* ZONA DE COBRO */}
                         <div className="mt-auto pt-4 border-t border-gray-100">
                             {!pagando ? (
-                                <button onClick={iniciarCobro} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-lg hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2 active:scale-95"><DollarSign/> CERRAR Y COBRAR</button>
+                                <div className="space-y-2">
+                                    <button onClick={imprimirCuenta} disabled={!reservaActiva || reservaActiva.consumos.length === 0} className="w-full bg-blue-50 text-blue-700 py-3 rounded-2xl font-bold text-sm hover:bg-blue-100 transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 border border-blue-200"><Printer size={16}/> Imprimir Pre-Cuenta</button>
+                                    <button onClick={iniciarCobro} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-lg hover:bg-slate-800 transition shadow-lg flex items-center justify-center gap-2 active:scale-95"><DollarSign/> CERRAR Y COBRAR</button>
+                                </div>
                             ) : (
                                 <div className="animate-in slide-in-from-bottom-10 fade-in duration-300 h-full space-y-4">
                                     <div className="flex justify-between items-center border-b border-gray-100 pb-2 mb-2">
@@ -492,8 +561,72 @@ export default function GestionMesasPage() {
                 </div>
             </div>
         )}
+        
+        {/* 🟢 MODAL CAMBIAR PRECIO / DESCUENTO */}
+        {mostrarModalDescuento && itemDescuento && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 print:hidden animate-in fade-in duration-200">
+                <div className="bg-white rounded-3xl p-8 max-w-sm w-full border-t-8 border-orange-500 shadow-2xl">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-black text-slate-900 flex items-center gap-2"><Tag size={20} className="text-orange-500"/> Modificar Precio</h3>
+                        <button onClick={() => {setMostrarModalDescuento(false); setItemDescuento(null);}} className="text-gray-400 hover:bg-gray-100 rounded-full p-1"><X size={20}/></button>
+                    </div>
+                    <p className="text-sm text-gray-500 mb-6">Precio de: <strong className="text-slate-800 block text-lg font-black mt-1 leading-tight">{itemDescuento.nombre}</strong></p>
+                    <div className="mb-6 bg-orange-50 border border-orange-100 p-4 rounded-2xl">
+                        <label className="text-[10px] font-black text-orange-700 uppercase block mb-1">Nuevo Precio Unitario ($)</label>
+                        <input type="number" className="w-full bg-white border border-orange-200 p-3 rounded-xl text-xl font-black text-orange-900 outline-none focus:ring-2 focus:ring-orange-500" value={nuevoPrecio} onChange={e => setNuevoPrecio(e.target.value)} onFocus={e => e.target.select()}/>
+                    </div>
+                    <div className="flex gap-2">
+                        <button onClick={() => {setMostrarModalDescuento(false); setItemDescuento(null);}} className="flex-1 py-3 text-slate-500 font-bold text-sm bg-gray-100 hover:bg-gray-200 rounded-xl transition">Cancelar</button>
+                        <button onClick={confirmarCambioPrecio} className="flex-1 py-3 text-white font-bold bg-orange-500 hover:bg-orange-600 rounded-xl text-sm shadow-md transition">Guardar Precio</button>
+                    </div>
+                </div>
+            </div>
+        )}
 
       </div>
     </main>
+
+    {/* 🟢 TICKET DE IMPRESIÓN PRE-CUENTA (Solo visible al imprimir) */}
+    {reservaActiva && imprimiendo && (
+        <div id="ticket-impresion" className="hidden print:block w-[78mm] mx-auto m-0 p-4 font-sans text-black bg-white leading-tight">
+            <div className="text-center mb-4 pb-3 border-b-2 border-dashed border-black">
+                <h1 className="m-0 text-2xl font-black uppercase tracking-widest">{localStorage.getItem("nombreNegocio") || "COMPLEJO"}</h1>
+                <p className="m-0 text-[12px] mt-1 font-bold">CUENTA - {mesaSeleccionada?.nombre.toUpperCase()}</p>
+                <p className="m-0 text-[12px] mt-1">Fecha: {new Date().toLocaleDateString()} {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+            </div>
+
+            <table className="w-full mb-4 border-b-2 border-dashed border-black pb-3 text-[12px]">
+                <thead>
+                    <tr className="border-b border-black text-left">
+                        <th className="pb-1 font-bold">CANT DESCRIPCION</th>
+                        <th className="pb-1 text-right font-bold pr-1">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {consumosAgrupados.map((item: ConsumoAgrupado, idx: number) => (
+                        <tr key={idx}>
+                            <td className="py-1 uppercase pr-2 leading-tight">
+                                {item.cantidad} x {item.nombre} <br/>
+                                <span className="text-[10px] italic font-normal text-gray-700">(${item.precioUnitario.toLocaleString()} c/u)</span>
+                            </td>
+                            <td className="py-1 text-right font-bold pr-1 align-top">${item.total.toLocaleString()}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+            <div className="flex justify-between items-center mb-1 text-[16px] border-b-2 border-dashed border-black pb-3">
+                <span className="font-bold">TOTAL A PAGAR:</span>
+                <span className="font-black">${totalCuenta.toLocaleString()}</span>
+            </div>
+
+            <div className="text-center mt-6">
+                <p className="m-0 text-[10px] font-bold">El pago no incluye propina sugerida (10%)</p>
+                <p className="m-0 text-[12px] mt-2 font-bold uppercase">¡Esperamos que lo hayan disfrutado!</p>
+                <p className="m-0 text-[10px] mt-1">Documento no válido como factura</p>
+            </div>
+        </div>
+    )}
+    </>
   );
 }
