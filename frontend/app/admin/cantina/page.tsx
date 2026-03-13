@@ -168,7 +168,7 @@ export default function CantinaPage() {
                     cobroEfectivo: efectivoRealAGuardar,
                     cobroTransferencia: transferencia,
                     vuelto: vuelto > 0 ? vuelto : 0,
-                    fecha: new Date().toLocaleString()
+                    fecha: new Date().toISOString()
                 });
                 setCarrito([]);
                 setModoCobro(false);

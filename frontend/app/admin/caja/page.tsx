@@ -11,8 +11,8 @@ import { useRouter } from 'next/navigation';
 interface Movimiento {
     id: number;
     hora: string;
-    concepto: string; 
-    detalle: string;  
+    concepto: string;
+    detalle: string;
     metodo: string;
     monto: number;
     descuento?: number;
@@ -53,11 +53,11 @@ interface ReporteCaja {
 export default function CajaPage() {
     const router = useRouter();
     const [reporteActual, setReporteActual] = useState<ReporteCaja | null>(null);
-    
+
     // Estados Inputs
     const [montoInicial, setMontoInicial] = useState("");
     const [showModalCierre, setShowModalCierre] = useState(false);
-    
+
     // Modal de Confirmación Final
     const [showConfirmacionFinal, setShowConfirmacionFinal] = useState(false);
 
@@ -66,7 +66,7 @@ export default function CajaPage() {
     const [arqueoTransf, setArqueoTransf] = useState("");
 
     // ESTADOS PARA LA BITÁCORA DE CIERRE
-    const [totalGastos, setTotalGastos] = useState(""); 
+    const [totalGastos, setTotalGastos] = useState("");
     const [observaciones, setObservaciones] = useState("");
 
     // Modal Detalle
@@ -123,15 +123,15 @@ export default function CajaPage() {
         if (!montoInicial) return mostrarMensaje('error', "⚠️ Ingresa el monto inicial");
         const userId = localStorage.getItem("usuarioId");
         const token = localStorage.getItem("token");
-        if(!userId || !token) return;
+        if (!userId || !token) return;
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         await fetch(`${API_URL}/api/Cajas/abrir?usuarioId=${userId}`, {
-            method: "POST", 
-            headers: { 
+            method: "POST",
+            headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}` 
-            }, 
+                "Authorization": `Bearer ${token}`
+            },
             body: montoInicial
         });
         setMontoInicial("");
@@ -152,9 +152,9 @@ export default function CajaPage() {
         const userId = localStorage.getItem("usuarioId");
         const token = localStorage.getItem("token");
         if (!token) return;
-        
-        const dto = { 
-            efectivoReal: Number(arqueoEfectivo), 
+
+        const dto = {
+            efectivoReal: Number(arqueoEfectivo),
             transferenciaReal: Number(arqueoTransf),
             totalGastos: Number(totalGastos), // Coincide con C#
             observaciones: observaciones
@@ -162,19 +162,19 @@ export default function CajaPage() {
 
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         const res = await fetch(`${API_URL}/api/Cajas/cerrar?usuarioId=${userId}`, {
-            method: "POST", 
-            headers: { 
+            method: "POST",
+            headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}` 
-            }, 
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify(dto)
         });
 
-        if(res.ok){
+        if (res.ok) {
             setShowModalCierre(false);
-            setShowConfirmacionFinal(false); 
-            
-            setArqueoEfectivo(""); setArqueoTransf(""); 
+            setShowConfirmacionFinal(false);
+
+            setArqueoEfectivo(""); setArqueoTransf("");
             setTotalGastos(""); setObservaciones("");
 
             cargarDatos();
@@ -191,30 +191,29 @@ export default function CajaPage() {
     const difTransf = reporteActual ? (Number(arqueoTransf) - resumen.totalTransferencia) : 0;
 
     const getIconoConcepto = (concepto: string) => {
-        if (concepto.includes("Cancha")) return <Activity size={18} className="text-blue-500"/>;
-        if (concepto.includes("Restaurante")) return <Utensils size={18} className="text-orange-500"/>;
-        return <ShoppingBag size={18} className="text-pink-500"/>;
+        if (concepto.includes("Cancha")) return <Activity size={18} className="text-blue-500" />;
+        if (concepto.includes("Restaurante")) return <Utensils size={18} className="text-orange-500" />;
+        return <ShoppingBag size={18} className="text-pink-500" />;
     };
 
     return (
         <main className="max-w-7xl mx-auto p-6 font-sans bg-gray-50 min-h-screen relative">
-            
+
             {/* 🔔 NOTIFICACIÓN FLOTANTE */}
             {notificacion && (
-                <div className={`fixed top-6 right-6 z-[60] px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${
-                    notificacion.tipo === 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
-                }`}>
-                    {notificacion.tipo === 'error' ? <AlertCircle size={24}/> : <CheckCircle size={24}/>}
+                <div className={`fixed top-6 right-6 z-[60] px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-5 duration-300 border ${notificacion.tipo === 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
+                    }`}>
+                    {notificacion.tipo === 'error' ? <AlertCircle size={24} /> : <CheckCircle size={24} />}
                     <p className="font-bold">{notificacion.msj}</p>
                 </div>
             )}
 
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-black text-slate-900 flex items-center gap-2">
-                    <DollarSign className="text-green-600" size={32}/> Gestión de Caja
+                    <DollarSign className="text-green-600" size={32} /> Gestión de Caja
                 </h1>
                 <Link href="/admin/caja/historial" className="text-sm font-bold text-gray-500 hover:text-slate-900 flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
-                    <History size={16}/> Ver Cierres Anteriores
+                    <History size={16} /> Ver Cierres Anteriores
                 </Link>
             </div>
 
@@ -225,15 +224,15 @@ export default function CajaPage() {
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
                             <div>
                                 <h2 className="text-2xl font-black text-green-600 flex items-center gap-2 mb-1">
-                                    <Unlock size={24}/> Turno Abierto
+                                    <Unlock size={24} /> Turno Abierto
                                 </h2>
                                 <div className="flex gap-4 text-sm font-bold text-gray-400">
-                                    <span className="flex items-center gap-1"><Calendar size={14}/> {formatearFechaLocal(caja.fechaApertura)}</span>
-                                    <span className="flex items-center gap-1"><Clock size={14}/> {formatearHoraLocal(caja.fechaApertura)}hs</span>
+                                    <span className="flex items-center gap-1"><Calendar size={14} /> {formatearFechaLocal(caja.fechaApertura)}</span>
+                                    <span className="flex items-center gap-1"><Clock size={14} /> {formatearHoraLocal(caja.fechaApertura)}hs</span>
                                 </div>
                             </div>
                             <button onClick={() => setShowModalCierre(true)} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg shadow-slate-200 flex items-center gap-2">
-                                <Lock size={18}/> CERRAR TURNO
+                                <Lock size={18} /> CERRAR TURNO
                             </button>
                         </div>
 
@@ -251,7 +250,7 @@ export default function CajaPage() {
                                         <p className="text-xs font-black text-gray-400 uppercase tracking-wider">Efectivo Físico</p>
                                         <h3 className="text-3xl font-black text-slate-900 mt-1">${resumen.totalEfectivo.toLocaleString()}</h3>
                                     </div>
-                                    <div className="p-2 bg-green-50 text-green-600 rounded-lg"><Banknote size={24}/></div>
+                                    <div className="p-2 bg-green-50 text-green-600 rounded-lg"><Banknote size={24} /></div>
                                 </div>
                                 <div className="pt-4 border-t border-gray-100 text-xs font-bold text-gray-500 flex justify-between">
                                     <span>Fondo Inicial:</span> <span className="text-slate-900">${caja.montoInicial.toLocaleString()}</span>
@@ -263,7 +262,7 @@ export default function CajaPage() {
                                         <p className="text-xs font-black text-gray-400 uppercase tracking-wider">Transferencia</p>
                                         <h3 className="text-3xl font-black text-slate-900 mt-1">${resumen.totalTransferencia.toLocaleString()}</h3>
                                     </div>
-                                    <div className="p-2 bg-violet-50 text-violet-600 rounded-lg"><Smartphone size={24}/></div>
+                                    <div className="p-2 bg-violet-50 text-violet-600 rounded-lg"><Smartphone size={24} /></div>
                                 </div>
                                 <div className="pt-4 border-t border-gray-100 text-xs font-bold text-gray-400">Confirmados en cuenta</div>
                             </div>
@@ -275,7 +274,7 @@ export default function CajaPage() {
                         <h2 className="text-3xl font-black text-slate-900 mb-2">Turno Cerrado</h2>
                         <p className="text-gray-500 mb-8 max-w-md mx-auto">Ingresa el cambio inicial para comenzar.</p>
                         <div className="max-w-sm mx-auto flex gap-3 px-4">
-                            <input type="number" className="w-full p-4 border-2 border-gray-200 rounded-2xl font-bold text-lg outline-none focus:border-blue-500 transition text-slate-900" placeholder="$0.00" value={montoInicial} onChange={e => setMontoInicial(e.target.value)}/>
+                            <input type="number" className="w-full p-4 border-2 border-gray-200 rounded-2xl font-bold text-lg outline-none focus:border-blue-500 transition text-slate-900" placeholder="$0.00" value={montoInicial} onChange={e => setMontoInicial(e.target.value)} />
                             <button onClick={abrirCaja} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-blue-700 transition">Abrir</button>
                         </div>
                     </div>
@@ -288,10 +287,10 @@ export default function CajaPage() {
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden mb-10">
                         <div className="p-4 md:p-6 border-b border-gray-100">
                             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                <TrendingUp size={20} className="text-slate-900"/> DESGLOSE POR ACTIVIDAD
+                                <TrendingUp size={20} className="text-slate-900" /> DESGLOSE POR ACTIVIDAD
                             </h3>
                         </div>
-                        
+
                         {/* 🟢 MAGIA AQUÍ: Contenedor con Scroll Horizontal para el desglose */}
                         <div className="p-4 md:p-6 overflow-x-auto custom-scrollbar">
                             <div className="min-w-[550px]"> {/* Fuerza el ancho mínimo para que no se aplaste */}
@@ -331,9 +330,9 @@ export default function CajaPage() {
 
                     {/* LISTA MOVIMIENTOS */}
                     <div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2"><List size={24} className="text-gray-400"/> Movimientos del Turno</h3>
+                        <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2"><List size={24} className="text-gray-400" /> Movimientos del Turno</h3>
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-                            
+
                             {/* 🟢 MAGIA AQUÍ: Contenedor con Scroll Horizontal para la tabla */}
                             <div className="overflow-x-auto custom-scrollbar">
                                 {/* Le damos un min-w a la tabla para que no se aplaste nunca */}
@@ -363,7 +362,7 @@ export default function CajaPage() {
                                                         <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide border ${m.metodo.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-100' : 'bg-violet-50 text-violet-700 border-violet-100'}`}>{m.metodo}</span>
                                                     </td>
                                                     <td className="p-4 text-right font-black text-slate-900 whitespace-nowrap">${m.monto.toLocaleString()}</td>
-                                                    <td className="p-4 text-center"><button onClick={() => setMovimientoSeleccionado(m)} className="text-gray-400 hover:text-blue-600 transition"><Eye size={20}/></button></td>
+                                                    <td className="p-4 text-center"><button onClick={() => setMovimientoSeleccionado(m)} className="text-gray-400 hover:text-blue-600 transition"><Eye size={20} /></button></td>
                                                 </tr>
                                             ))
                                         )}
@@ -380,7 +379,7 @@ export default function CajaPage() {
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in">
                     <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center transform transition-all scale-100">
                         <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
-                            <Lock size={32}/>
+                            <Lock size={32} />
                         </div>
                         <h3 className="text-xl font-black text-slate-900 mb-2">¿Cerrar Turno?</h3>
                         <p className="text-gray-500 mb-6 text-sm">
@@ -403,23 +402,23 @@ export default function CajaPage() {
                 <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
                     <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 sticky top-0 z-10">
-                            <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><Lock size={20} className="text-red-500"/> Confirmar Cierre</h3>
-                            <button onClick={() => setShowModalCierre(false)} className="text-gray-400 hover:text-red-500"><X size={24}/></button>
+                            <h3 className="text-xl font-black text-slate-900 flex items-center gap-2"><Lock size={20} className="text-red-500" /> Confirmar Cierre</h3>
+                            <button onClick={() => setShowModalCierre(false)} className="text-gray-400 hover:text-red-500"><X size={24} /></button>
                         </div>
                         <div className="p-8 space-y-6">
                             <p className="text-sm text-gray-500 text-center mb-4">Ingresa los montos reales contados.</p>
-                            
+
                             {/* ARQUEO EFECTIVO */}
                             <div className="space-y-2">
                                 <label className="flex justify-between text-sm font-bold text-green-700"><span>Efectivo en Caja</span><span className="text-gray-400 font-normal">Teórico: ${resumen.totalEfectivo.toLocaleString()}</span></label>
-                                <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span><input type="number" autoFocus className="w-full p-4 pl-8 text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" value={arqueoEfectivo} onChange={e => setArqueoEfectivo(e.target.value)}/></div>
+                                <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span><input type="number" autoFocus className="w-full p-4 pl-8 text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none" value={arqueoEfectivo} onChange={e => setArqueoEfectivo(e.target.value)} /></div>
                                 {arqueoEfectivo && <div className={`text-xs font-bold text-right ${difEfectivo >= 0 ? 'text-green-600' : 'text-red-500'}`}>Diferencia: {difEfectivo >= 0 ? '+' : ''}${difEfectivo.toLocaleString()}</div>}
                             </div>
 
                             {/* ARQUEO TRANSFERENCIA */}
                             <div className="space-y-2">
                                 <label className="flex justify-between text-sm font-bold text-violet-700"><span>Banco / MP</span><span className="text-gray-400 font-normal">Teórico: ${resumen.totalTransferencia.toLocaleString()}</span></label>
-                                <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span><input type="number" className="w-full p-4 pl-8 text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 outline-none" value={arqueoTransf} onChange={e => setArqueoTransf(e.target.value)}/></div>
+                                <div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span><input type="number" className="w-full p-4 pl-8 text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 outline-none" value={arqueoTransf} onChange={e => setArqueoTransf(e.target.value)} /></div>
                                 {arqueoTransf && <div className={`text-xs font-bold text-right ${difTransf >= 0 ? 'text-green-600' : 'text-red-500'}`}>Diferencia: {difTransf >= 0 ? '+' : ''}${difTransf.toLocaleString()}</div>}
                             </div>
 
@@ -427,15 +426,15 @@ export default function CajaPage() {
                             <div className="pt-4 border-t border-gray-100 space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-red-500 uppercase flex items-center gap-1">
-                                         💸 Salidas de Caja / Gastos
+                                        💸 Salidas de Caja / Gastos
                                     </label>
                                     <div className="relative">
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">-$</span>
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             placeholder="0"
                                             className="w-full p-3 pl-8 text-sm font-bold bg-red-50 border border-red-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-red-700"
-                                            value={totalGastos} 
+                                            value={totalGastos}
                                             onChange={e => setTotalGastos(e.target.value)}
                                         />
                                     </div>
@@ -444,13 +443,13 @@ export default function CajaPage() {
 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1">
-                                         📝 Bitácora / Observaciones
+                                        📝 Bitácora / Observaciones
                                     </label>
-                                    <textarea 
+                                    <textarea
                                         rows={3}
                                         placeholder="Ej: Faltaron $500 por error en vuelto. Se pagó hielo..."
                                         className="w-full p-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-slate-500 outline-none resize-none"
-                                        value={observaciones} 
+                                        value={observaciones}
                                         onChange={e => setObservaciones(e.target.value)}
                                     />
                                 </div>
@@ -458,17 +457,17 @@ export default function CajaPage() {
                         </div>
                         <div className="p-6 bg-gray-50 border-t border-gray-100 flex gap-4 sticky bottom-0 z-10">
                             <button onClick={() => setShowModalCierre(false)} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-200 transition">Cancelar</button>
-                            <button onClick={validarYConfirmar} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition flex justify-center items-center gap-2"><CheckCircle size={18}/> FINALIZAR TURNO</button>
+                            <button onClick={validarYConfirmar} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition flex justify-center items-center gap-2"><CheckCircle size={18} /> FINALIZAR TURNO</button>
                         </div>
                     </div>
                 </div>
             )}
 
-           {/* --- MODAL DETALLE INTELIGENTE --- */}
+            {/* --- MODAL DETALLE INTELIGENTE --- */}
             {movimientoSeleccionado && (
-                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setMovimientoSeleccionado(null)}>
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setMovimientoSeleccionado(null)}>
                     <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                        
+
                         <div className="p-6 bg-slate-50 border-b border-gray-100 flex justify-between items-start">
                             <div>
                                 <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
@@ -480,11 +479,11 @@ export default function CajaPage() {
                                     {formatearFechaLocal(movimientoSeleccionado.hora)} • {formatearHoraLocal(movimientoSeleccionado.hora)}hs
                                 </p>
                             </div>
-                            <button onClick={() => setMovimientoSeleccionado(null)} className="bg-white p-1 rounded-full text-gray-400 hover:text-red-500 shadow-sm border border-gray-100 transition"><X size={18}/></button>
+                            <button onClick={() => setMovimientoSeleccionado(null)} className="bg-white p-1 rounded-full text-gray-400 hover:text-red-500 shadow-sm border border-gray-100 transition"><X size={18} /></button>
                         </div>
 
                         <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
-                            
+
                             {/* CLIENTE */}
                             <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
                                 <div className="flex justify-between items-center">
@@ -493,38 +492,40 @@ export default function CajaPage() {
                                         <span className="font-bold text-slate-800 text-sm">{movimientoSeleccionado.detalle}</span>
                                     </div>
                                     <div className="text-right">
-                                         <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide border ${movimientoSeleccionado.metodo.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-100' : movimientoSeleccionado.metodo.includes('Transferencia') ? 'bg-violet-50 text-violet-700 border-violet-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                                        <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wide border ${movimientoSeleccionado.metodo.includes('Efectivo') ? 'bg-green-50 text-green-700 border-green-100' : movimientoSeleccionado.metodo.includes('Transferencia') ? 'bg-violet-50 text-violet-700 border-violet-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
                                             {movimientoSeleccionado.metodo}
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* RESUMEN DE CUENTA (Similar a la reserva) */}
-                            <div className="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200 space-y-2">
-                                <div className="flex justify-between text-xs font-bold text-slate-500">
-                                    <span>Subtotal Turno</span>
-                                    <span>${((movimientoSeleccionado.monto || 0) + (movimientoSeleccionado.descuento || 0)).toLocaleString()}</span>
-                                </div>
-                                {movimientoSeleccionado.descuento && movimientoSeleccionado.descuento > 0 ? (
-                                    <div className="flex justify-between text-xs font-bold text-orange-600">
-                                        <span>Descuento Aplicado</span>
-                                        <span>- ${movimientoSeleccionado.descuento.toLocaleString()}</span>
+                            {/* RESUMEN DE CUENTA (Sólo para Canchas o si hay Descuento) */}
+                            {(movimientoSeleccionado.concepto === "Alquiler Cancha" || (movimientoSeleccionado.descuento && movimientoSeleccionado.descuento > 0)) && (
+                                <div className="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200 space-y-2">
+                                    <div className="flex justify-between text-xs font-bold text-slate-500">
+                                        <span>Subtotal Turno</span>
+                                        <span>${((movimientoSeleccionado.monto || 0) + (movimientoSeleccionado.descuento || 0)).toLocaleString()}</span>
                                     </div>
-                                ) : null}
-                                <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
-                                    <span>Total Real</span>
-                                    <span>${movimientoSeleccionado.monto.toLocaleString()}</span>
+                                    {movimientoSeleccionado.descuento && movimientoSeleccionado.descuento > 0 ? (
+                                        <div className="flex justify-between text-xs font-bold text-orange-600">
+                                            <span>Descuento Aplicado</span>
+                                            <span>- ${movimientoSeleccionado.descuento.toLocaleString()}</span>
+                                        </div>
+                                    ) : null}
+                                    <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
+                                        <span>Total Real</span>
+                                        <span>${movimientoSeleccionado.monto.toLocaleString()}</span>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
-                           {/* LISTA DE ITEMS */}
+                            {/* LISTA DE ITEMS */}
                             {movimientoSeleccionado.items && movimientoSeleccionado.items.length > 0 ? (
                                 <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                                     <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1 border-b border-gray-100 pb-2">
-                                        <ShoppingBag size={12}/> Detalle del Consumo
+                                        <ShoppingBag size={12} /> Detalle del Consumo
                                     </h4>
-                                    
+
                                     <div className="space-y-2">
                                         {(() => {
                                             const esAlquiler = (nombre: string) => nombre.toLowerCase().includes('alquiler') || nombre.toLowerCase().includes('pista') || nombre.toLowerCase().includes('luz');
@@ -532,8 +533,8 @@ export default function CajaPage() {
                                             const itemsRaw = movimientoSeleccionado.items!.filter(i => !esAlquiler(i.producto) && i.precio > 0);
                                             const itemsAgrupados = itemsRaw.reduce((acc: any[], curr) => {
                                                 const existing = acc.find((i: any) => i.producto === curr.producto);
-                                                const cantidadReal = curr.cantidad || 1; 
-                                                if (existing) { existing.cantidad += cantidadReal; existing.total += curr.precio; } 
+                                                const cantidadReal = curr.cantidad || 1;
+                                                if (existing) { existing.cantidad += cantidadReal; existing.total += curr.precio; }
                                                 else { acc.push({ producto: curr.producto, cantidad: cantidadReal, total: curr.precio }); }
                                                 return acc;
                                             }, []);
@@ -567,7 +568,7 @@ export default function CajaPage() {
                                             );
                                         })()}
                                     </div>
-                                    
+
                                     <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100 font-bold text-slate-800 text-sm">
                                         <span>Suma Productos</span>
                                         <span className="font-mono text-base text-slate-900">${movimientoSeleccionado.items!.reduce((acc, item) => acc + item.precio, 0).toLocaleString()}</span>
@@ -584,7 +585,7 @@ export default function CajaPage() {
 
                             {movimientoSeleccionado.desglose && (
                                 <div>
-                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1"><DollarSign size={12}/> Desglose de Pago</h4>
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1"><DollarSign size={12} /> Desglose de Pago</h4>
                                     <div className="grid grid-cols-2 gap-2">
                                         <div className="p-3 bg-green-50/50 border border-green-100 rounded-xl flex flex-col items-center justify-center">
                                             <span className="text-[10px] text-green-700 font-bold uppercase">Efectivo</span>
@@ -604,7 +605,7 @@ export default function CajaPage() {
                             <span className="text-2xl font-black tracking-tight">${movimientoSeleccionado.monto.toLocaleString()}</span>
                         </div>
                     </div>
-                 </div>
+                </div>
             )}
         </main>
     );
