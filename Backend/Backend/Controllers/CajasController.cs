@@ -127,6 +127,8 @@ namespace Backend.Controllers
             // Traemos las reservas vinculadas a esta caja específica
             var movimientos = await _context.Reservas
                 .Include(r => r.Consumos)
+                .Include(r => r.Cancha)
+                .Include(r => r.Mesa)
                 .Where(r => r.CajaId == caja.Id) // Esto ya filtra indirectamente por usuario porque la caja es del usuario
                 .ToListAsync();
 
@@ -173,7 +175,7 @@ namespace Backend.Controllers
                             // 🟢 MAGIA AQUÍ: Usamos FechaCobro (Hora real en que se cobró). Si es vieja y no tiene, usa FechaInicio
                             Hora = item.FechaCobro ?? item.FechaInicio,
                             Concepto = conceptoDefault,
-                            Detalle = item.ClienteNombre,
+                            Detalle = item.Cancha != null ? $"{item.ClienteNombre} ({item.Cancha.Nombre})" : (item.Mesa != null ? $"{item.ClienteNombre} ({item.Mesa.Nombre})" : item.ClienteNombre),
                             Metodo = (item.CobradoEfectivo > 0 && item.CobradoTransferencia > 0) ? "Mixto" : (item.CobradoTransferencia > 0 ? "Transferencia" : "Efectivo"),
                             Monto = item.CobradoEfectivo + item.CobradoTransferencia,
                             Descuento = item.DescuentoTotalMonto,

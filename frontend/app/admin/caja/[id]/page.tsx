@@ -23,6 +23,7 @@ interface Movimiento {
     detalle: string;  
     metodo: string;
     monto: number;
+    descuento?: number;
     tipo: string;
     items?: { producto: string; precio: number; cantidad?: number }[];
     desglose?: { efectivo: number; transferencia: number };
@@ -365,7 +366,12 @@ export default function DetalleCajaPage() {
                                                             {m.metodo}
                                                         </span>
                                                     </td>
-                                                    <td className="p-4 text-right font-black text-slate-900 align-top whitespace-nowrap">${m.monto.toLocaleString()}</td>
+                                                    <td className="p-4 text-right align-top whitespace-nowrap">
+                                                        <div className="font-black text-slate-900">${m.monto.toLocaleString()}</div>
+                                                        {m.descuento && m.descuento > 0 ? (
+                                                            <div className="text-[10px] font-bold text-orange-600">- ${m.descuento.toLocaleString()} desc.</div>
+                                                        ) : null}
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>

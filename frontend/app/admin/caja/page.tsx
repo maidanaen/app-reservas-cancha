@@ -15,6 +15,7 @@ interface Movimiento {
     detalle: string;  
     metodo: string;
     monto: number;
+    descuento?: number;
     tipo: string;
     items?: { producto: string; precio: number; cantidad?: number }[];
     desglose?: { efectivo: number; transferencia: number };
@@ -488,7 +489,7 @@ export default function CajaPage() {
                             <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
                                 <div className="flex justify-between items-center">
                                     <div className="flex flex-col">
-                                        <span className="text-[10px] uppercase font-bold text-gray-400">Detalle</span>
+                                        <span className="text-[10px] uppercase font-bold text-gray-400">Detalle / Cliente</span>
                                         <span className="font-bold text-slate-800 text-sm">{movimientoSeleccionado.detalle}</span>
                                     </div>
                                     <div className="text-right">
@@ -499,8 +500,26 @@ export default function CajaPage() {
                                 </div>
                             </div>
 
+                            {/* RESUMEN DE CUENTA (Similar a la reserva) */}
+                            <div className="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200 space-y-2">
+                                <div className="flex justify-between text-xs font-bold text-slate-500">
+                                    <span>Subtotal Turno</span>
+                                    <span>${((movimientoSeleccionado.monto || 0) + (movimientoSeleccionado.descuento || 0)).toLocaleString()}</span>
+                                </div>
+                                {movimientoSeleccionado.descuento && movimientoSeleccionado.descuento > 0 ? (
+                                    <div className="flex justify-between text-xs font-bold text-orange-600">
+                                        <span>Descuento Aplicado</span>
+                                        <span>- ${movimientoSeleccionado.descuento.toLocaleString()}</span>
+                                    </div>
+                                ) : null}
+                                <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
+                                    <span>Total Real</span>
+                                    <span>${movimientoSeleccionado.monto.toLocaleString()}</span>
+                                </div>
+                            </div>
+
                            {/* LISTA DE ITEMS */}
-                            {movimientoSeleccionado.items && movimientoSeleccionado.items.length > 0 && (
+                            {movimientoSeleccionado.items && movimientoSeleccionado.items.length > 0 ? (
                                 <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                                     <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1 border-b border-gray-100 pb-2">
                                         <ShoppingBag size={12}/> Detalle del Consumo
@@ -550,10 +569,17 @@ export default function CajaPage() {
                                     </div>
                                     
                                     <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100 font-bold text-slate-800 text-sm">
-                                        <span>Total Consumo</span>
+                                        <span>Suma Productos</span>
                                         <span className="font-mono text-base text-slate-900">${movimientoSeleccionado.items!.reduce((acc, item) => acc + item.precio, 0).toLocaleString()}</span>
                                     </div>
                                 </div>
+                            ) : (
+                                movimientoSeleccionado.concepto === "Alquiler Cancha" && (
+                                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 text-center">
+                                        <p className="text-[10px] font-bold text-blue-400 uppercase mb-1">Concepto Principal</p>
+                                        <p className="text-sm font-bold text-blue-800 uppercase tracking-tight">Cobro de Pista / Turno</p>
+                                    </div>
+                                )
                             )}
 
                             {movimientoSeleccionado.desglose && (
@@ -574,7 +600,7 @@ export default function CajaPage() {
                         </div>
 
                         <div className="p-6 bg-slate-900 text-white flex justify-between items-center mt-auto">
-                            <span className="text-sm font-medium text-slate-400">Total Cobrado</span>
+                            <span className="text-sm font-medium text-slate-400">Total Recibido</span>
                             <span className="text-2xl font-black tracking-tight">${movimientoSeleccionado.monto.toLocaleString()}</span>
                         </div>
                     </div>
