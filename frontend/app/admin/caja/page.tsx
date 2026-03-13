@@ -500,7 +500,7 @@ export default function CajaPage() {
                             </div>
 
                             {/* RESUMEN DE CUENTA (Sólo para Canchas o si hay Descuento) */}
-                            {(movimientoSeleccionado.concepto === "Alquiler Cancha" || (movimientoSeleccionado.descuento && movimientoSeleccionado.descuento > 0)) && (
+                            {!!(movimientoSeleccionado.concepto === "Alquiler Cancha" || (movimientoSeleccionado.descuento && movimientoSeleccionado.descuento > 0)) && (
                                 <div className="bg-slate-50 p-4 rounded-xl border border-dashed border-slate-200 space-y-2">
                                     <div className="flex justify-between text-xs font-bold text-slate-500">
                                         <span>Subtotal Turno</span>

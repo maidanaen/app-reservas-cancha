@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-    Search, Plus, Package, ShoppingCart, DollarSign, Calculator, Calculator as CalculatorIcon, 
+import {
+    Search, Plus, Package, ShoppingCart, DollarSign, Calculator, Calculator as CalculatorIcon,
     CreditCard, Wallet, AlertTriangle, CheckCircle, Tag, Printer, X, Pencil, Minus, Trash2
 } from "lucide-react";
 import { API_URL } from '@/utils/config';
@@ -155,7 +155,7 @@ export default function CantinaPage() {
         try {
             const res = await fetch(`${API_URL}/api/Reservas/venta-express`, {
                 method: "POST",
-                headers: { 
+                headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
@@ -189,9 +189,9 @@ export default function CantinaPage() {
         const userId = localStorage.getItem("usuarioId");
         const token = localStorage.getItem("token");
         if (!token) return;
-        
+
         try {
-            await fetch(`${API_URL}/api/Productos/${idEdicion}?usuarioId=${userId}`, { 
+            await fetch(`${API_URL}/api/Productos/${idEdicion}?usuarioId=${userId}`, {
                 method: "DELETE",
                 headers: { "Authorization": `Bearer ${token}` }
             });
@@ -208,17 +208,17 @@ export default function CantinaPage() {
         const userId = localStorage.getItem("usuarioId");
         const token = localStorage.getItem("token");
         if (!formProd.nombre || !formProd.precio || !userId || !token) return;
-        
+
         const productoData = { id: idEdicion || 0, nombre: formProd.nombre, precio: Number(formProd.precio), categoria: formProd.categoria, activo: true, usuarioId: Number(userId) };
         try {
             const url = idEdicion ? `${API_URL}/api/Productos/${idEdicion}` : `${API_URL}/api/Productos`;
-            await fetch(url, { 
-                method: idEdicion ? "PUT" : "POST", 
-                headers: { 
+            await fetch(url, {
+                method: idEdicion ? "PUT" : "POST",
+                headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
-                }, 
-                body: JSON.stringify(productoData) 
+                },
+                body: JSON.stringify(productoData)
             });
             cargarTodo();
             setShowModalProducto(false);
@@ -430,7 +430,7 @@ export default function CantinaPage() {
                     <div className="text-center mb-4 pb-3 border-b-2 border-dashed border-black">
                         <h1 className="m-0 text-2xl font-black uppercase tracking-widest">{localStorage.getItem("nombreNegocio") || "COMPLEJO"}</h1>
                         <p className="m-0 text-[12px] mt-1">Fecha: {new Date(ticketAImprimir.fecha).toLocaleDateString()} {new Date(ticketAImprimir.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                        <p className="m-0 text-[12px] mt-1 font-bold">VENTA EXPRESS CANTINA</p>
+                        <p className="m-0 text-[12px] mt-1 font-bold">VENTA EXPRES CANTINA</p>
                     </div>
 
                     <table className="w-full mb-4 border-b-2 border-dashed border-black pb-3 text-[12px]">
