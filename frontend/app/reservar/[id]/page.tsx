@@ -29,6 +29,7 @@ export default function ClubProfilePage() {
   const [canchas, setCanchas] = useState<Cancha[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [activeTab, setActiveTab] = useState<'canchas' | 'carta'>('canchas');
+  const [categoriaActiva, setCategoriaActiva] = useState("Todas");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,7 +61,11 @@ export default function ClubProfilePage() {
   }, [clubId]);
 
   // Agrupar productos por categoría
-  const categorias = Array.from(new Set(productos.map(p => p.categoria)));
+  const categoriasUnicas = ["Todas", ...Array.from(new Set(productos.map(p => p.categoria)))];
+
+  const productosFiltrados = productos.filter(p => 
+    categoriaActiva === "Todas" || p.categoria === categoriaActiva
+  );
 
   return (
     <main className="max-w-5xl mx-auto p-6 min-h-screen">
@@ -174,35 +179,52 @@ export default function ClubProfilePage() {
             )}
         </div>
       ) : (
-          /* VISTA DE LA CARTA */
+          /* VISTA DE LA CARTA MEJORADA */
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {productos.length === 0 ? (
                     <div className="p-20 text-center bg-white rounded-3xl border border-dashed border-gray-200">
-                        <p className="text-gray-400 font-medium">Este club aún no ha cargado su carta de productos.</p>
+                        <p className="text-gray-400 font-medium tracking-tight">Este club aún no ha cargado su carta de productos.</p>
                     </div>
                 ) : (
-                    <div className="space-y-10">
-                        {categorias.map(cat => (
-                            <div key={cat}>
-                                <h2 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                                    <span className="w-8 h-1 bg-slate-900 rounded-full"></span>
+                    <div className="space-y-8">
+                        {/* Selector de Categorías (Pills) */}
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                            {categoriasUnicas.map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setCategoriaActiva(cat)}
+                                    className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap
+                                    ${categoriaActiva === cat 
+                                        ? 'bg-slate-900 text-white border-slate-900 shadow-md transform scale-105' 
+                                        : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300 hover:bg-gray-50'}`}
+                                >
                                     {cat}
-                                </h2>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {productos.filter(p => p.categoria === cat).map(p => (
-                                        <div key={p.id} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex justify-between items-center group hover:border-orange-200 transition-colors">
-                                            <div>
-                                                <h4 className="font-bold text-slate-800">{p.nombre}</h4>
-                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{cat}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-lg font-black text-orange-600">${p.precio.toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Grid de Productos */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {productosFiltrados.map(p => (
+                                <div 
+                                    key={p.id} 
+                                    className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex justify-between items-center group hover:shadow-md hover:border-slate-200 transition-all"
+                                >
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{p.categoria}</span>
+                                        <h4 className="font-bold text-slate-900 text-lg leading-tight uppercase">{p.nombre}</h4>
+                                    </div>
+                                    <div className="bg-slate-50 px-4 py-2 rounded-2xl border border-gray-50 group-hover:bg-slate-100 transition-colors">
+                                        <p className="text-xl font-black text-slate-900 tracking-tighter">${p.precio.toLocaleString()}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                            {productosFiltrados.length === 0 && (
+                                <div className="col-span-full py-20 text-center text-gray-400 font-medium">
+                                    No hay productos en esta categoría.
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
           </div>
